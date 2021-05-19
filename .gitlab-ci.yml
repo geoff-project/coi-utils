@@ -61,7 +61,7 @@ test_install:
 .base_docs:
   extends: .base_conda
   variables:
-    env_spec: python=3.7 openjdk=11 JPype1=1.0 graphviz
+    env_spec: python=3.7 openjdk=11 JPype1=1.0 graphviz curl
 
 build_docs:
   extends:
