@@ -8,7 +8,7 @@ import logging
 import threading
 import time
 import typing as t
-from unittest.mock import Mock
+from unittest.mock import Mock, ANY
 
 import pytest
 
@@ -200,6 +200,25 @@ def test_clear(japc: Mock) -> None:
     assert [stream.oldest[0]] == [stream.newest[0]] == sent_values
     stream.clear()
     assert not stream.ready
+
+
+def test_wait_for_next_clears_queue(japc: Mock) -> None:
+    sent_values = [Mock() for _ in range(5)]
+    japc.subscribeParam.mock_values = sent_values
+    token = cancellation.Token()
+    stream = japc_utils.subscribe_stream(japc, "", maxlen=3, token=token)
+    with stream:
+        cond = token.wait_handle
+        with cond:
+            # Wait until the queue is full.
+            cond.wait_for(lambda: stream.ready)
+            cond.wait_for(lambda: stream.oldest != (sent_values[0], ANY))
+            # Fetch the next value. The queue holds three items, one has
+            # been pushed out, so the next one must be the fifth.
+            assert stream.wait_for_next() == (sent_values[4], ANY)
+            # The queue must be empty.
+            with pytest.raises(IndexError):
+                _ = stream.oldest
 
 
 def test_oldest_newest(japc: Mock) -> None:

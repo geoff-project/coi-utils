@@ -294,10 +294,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
     # Tricky: We write the docstring on this internal method and
     # dynamically copy it onto the public method in the subclasses.
     def _pop_or_wait(self, timeout: t.Optional[float]) -> t.Optional[_Item]:
-        """Wait for the next value received by the stream.
+        """Return the next item from the queue or wait for one.
 
         If there already is an item in the queue, it is removed and this
-        function returns immediately. If there is none, this function
+        function returns it immediately. If there is none, this function
         blocks and waits for a new value to arrive.
 
         Args:
@@ -356,6 +356,37 @@ class _BaseStream(metaclass=abc.ABCMeta):
                 event = self._queue.popleft()
                 return _unwrap_event(event)
         return None
+
+    # Tricky: We write the docstring on this internal method and
+    # dynamically copy it onto the public method in the subclasses.
+    def _wait_for_next(self, timeout: t.Optional[float] = None) -> t.Optional[_Item]:
+        """Clear the queue and wait for a new item to arrive.
+
+        This is like calling :meth:`clear()` followed by
+        :meth:`pop_or_wait()`, but does not release the lock in-between.
+        In any case, the queue is empty after this call.
+
+        Args:
+            timeout: If passed and not None, the amount of time (in
+                seconds) for which to wait.
+
+        Returns:
+            The next value to arrive. None if the specified timeout
+            elapses before a new value has arrived.
+
+        Raises:
+            CancelledError: if a :class:`cancellation.Token` has been
+                passed to :func:`subscribe_stream()` and the token has
+                been cancelled.
+            JavaException: if an exception occurred on the Java side
+                while receiving this value.
+            StreamError: if the subscription is not active and no
+                timeout has been specified; this serves to prevent a
+                deadlock in the application.
+        """
+        with self.locked():
+            self.clear()
+            return self._pop_or_wait(timeout)
 
     def _on_value(
         self,
@@ -457,6 +488,21 @@ class ParamStream(_BaseStream):
         # pylint: disable = missing-function-docstring
         return t.cast(t.Tuple[object, Header], super()._pop_if_ready())
 
+    @t.overload
+    def wait_for_next(self) -> t.Tuple[object, Header]:
+        ...
+
+    @t.overload
+    def wait_for_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
+        ...
+
+    @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
+    def wait_for_next(
+        self, timeout: t.Optional[float] = None
+    ) -> t.Optional[t.Tuple[object, Header]]:
+        # pylint: disable = missing-function-docstring
+        return t.cast(t.Tuple[object, Header], super()._wait_for_next(timeout))
+
 
 class ParamGroupStream(_BaseStream):
     """A synchronized handle to a multi-parameter PyJapc subscription.
@@ -521,6 +567,23 @@ class ParamGroupStream(_BaseStream):
     def pop_if_ready(self) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.List[t.Tuple[object, Header]], super()._pop_if_ready())
+
+    @t.overload
+    def wait_for_next(self) -> t.List[t.Tuple[object, Header]]:
+        ...
+
+    @t.overload
+    def wait_for_next(
+        self, timeout: float
+    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
+        ...
+
+    @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
+    def wait_for_next(
+        self, timeout: t.Optional[float] = None
+    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
+        # pylint: disable = missing-function-docstring
+        return t.cast(t.List[t.Tuple[object, Header]], super()._wait_for_next(timeout))
 
 
 @t.overload
