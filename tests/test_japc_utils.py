@@ -41,6 +41,18 @@ def mock_header() -> japc_utils.Header:
 
 
 class MockSubscription:
+    """A mock of :meth:`PyJapc.subscribeParam()`.
+
+    This is both the subscription method and the subscription handle.
+    Calling this object returns itself.
+
+    Set :attr:`mock_values` to a list of values to send, then call this
+    object. While monitoring the returned handle (this object itself),
+    the values in :attr:`mock_values` will be sent to the subscription
+    handler one by one. The time between callbacks is
+    :attr:`TIME_STEP_SECONDS`.
+    """
+
     TIME_STEP_SECONDS = 0.01
 
     # pylint: disable = invalid-name
