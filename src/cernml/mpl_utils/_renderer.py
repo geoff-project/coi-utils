@@ -7,7 +7,9 @@ import typing as t
 from matplotlib import pyplot
 from matplotlib.figure import Figure
 
-from ._iter import MatplotlibFigures
+if t.TYPE_CHECKING:
+    # pylint: disable = unused-import
+    from ._iter import MatplotlibFigures
 
 
 class Renderer:
