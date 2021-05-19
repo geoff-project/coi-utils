@@ -70,7 +70,7 @@ build_docs:
 
 build_docs_on_tag:
   extends:
-    - .acc_py_build_docs
+    - .acc_py_build_docs_on_tag
     - .base_docs
 
 # Deploy: Publish the wheel on acc-py-repo.cern.ch.
