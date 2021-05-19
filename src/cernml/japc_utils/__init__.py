@@ -228,8 +228,8 @@ class _BaseStream(metaclass=abc.ABCMeta):
         short periods of time; blocking the subscription handler for too
         long risks that data gets lost.
 
-        However, you *may* call :meth:`wait_next()` while the stream is
-        locked. It automatically releases the lock while waiting.
+        However, you *may* call :meth:`pop_or_wait()` while the stream
+        is locked. It automatically releases the lock while waiting.
 
         The returned context manager is neither reentrant nor reusable
         nor meaningful. Call this method again to get new or nested
@@ -250,9 +250,9 @@ class _BaseStream(metaclass=abc.ABCMeta):
             ...             stream.clear()
             ...             return value
             ...         # `ParamStream` uses a reentrant lock, so
-            ...         # nothing bad happens if you call `wait_next()`
-            ...         # while it is locked.
-            ...         return stream.wait_next()
+            ...         # nothing bad happens if you call
+            ...         # `pop_or_wait()` while it is locked.
+            ...         return stream.pop_or_wait()
         """
         with self._condition:
             yield
@@ -293,7 +293,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     # Tricky: We write the docstring on this internal method and
     # dynamically copy it onto the public method in the subclasses.
-    def _wait_next(self, timeout: t.Optional[float]) -> t.Optional[_Item]:
+    def _pop_or_wait(self, timeout: t.Optional[float]) -> t.Optional[_Item]:
         """Wait for the next value received by the stream.
 
         If there already is an item in the queue, it is removed and this
@@ -322,7 +322,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         """
         # Prevent deadlock.
         if not self.monitoring and timeout is None and not self._queue:
-            raise StreamError("queue is empty, wait_next() would deadlock")
+            raise StreamError("would deadlock")
         with self._condition:
             if self._token:
                 self._token.raise_if_cancellation_requested()
@@ -341,13 +341,11 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     # Tricky: We write the docstring on this internal method and
     # dynamically copy it onto the public method in the subclasses.
-    def _next_if_ready(self) -> t.Optional[_Item]:
+    def _pop_if_ready(self) -> t.Optional[_Item]:
         """Return the next value or None if the queue is empty.
 
-        This is similar to ``wait_next(timeout=0.0)``, but skips
-        checking the token for a cancellation request. Most importantly,
-        this function still acquires a lock on the queue to check its
-        contents.
+        This is similar to ``pop_or_wait(timeout=0.0)``, but never
+        checks the token for a cancellation request.
 
         Raises:
             JavaException: if an exception occurred on the Java side
@@ -440,24 +438,24 @@ class ParamStream(_BaseStream):
         return t.cast(t.Tuple[object, Header], super().newest)
 
     @t.overload
-    def wait_next(self) -> t.Tuple[object, Header]:
+    def pop_or_wait(self) -> t.Tuple[object, Header]:
         ...
 
     @t.overload
-    def wait_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
+    def pop_or_wait(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
         ...
 
-    @functools.wraps(_BaseStream._wait_next, assigned=["__doc__"], updated=[])
-    def wait_next(
+    @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
+    def pop_or_wait(
         self, timeout: t.Optional[float] = None
     ) -> t.Optional[t.Tuple[object, Header]]:
         # pylint: disable = missing-function-docstring
-        return t.cast(t.Tuple[object, Header], super()._wait_next(timeout))
+        return t.cast(t.Tuple[object, Header], super()._pop_or_wait(timeout))
 
-    @functools.wraps(_BaseStream._next_if_ready, assigned=["__doc__"], updated=[])
-    def next_if_ready(self) -> t.Optional[t.Tuple[object, Header]]:
+    @functools.wraps(_BaseStream._pop_if_ready, assigned=["__doc__"], updated=[])
+    def pop_if_ready(self) -> t.Optional[t.Tuple[object, Header]]:
         # pylint: disable = missing-function-docstring
-        return t.cast(t.Tuple[object, Header], super()._next_if_ready())
+        return t.cast(t.Tuple[object, Header], super()._pop_if_ready())
 
 
 class ParamGroupStream(_BaseStream):
@@ -503,24 +501,26 @@ class ParamGroupStream(_BaseStream):
         return t.cast(t.List[t.Tuple[object, Header]], super().newest)
 
     @t.overload
-    def wait_next(self) -> t.List[t.Tuple[object, Header]]:
+    def pop_or_wait(self) -> t.List[t.Tuple[object, Header]]:
         ...
 
     @t.overload
-    def wait_next(self, timeout: float) -> t.Optional[t.List[t.Tuple[object, Header]]]:
+    def pop_or_wait(
+        self, timeout: float
+    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         ...
 
-    @functools.wraps(_BaseStream._wait_next, assigned=["__doc__"], updated=[])
-    def wait_next(
+    @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
+    def pop_or_wait(
         self, timeout: t.Optional[float] = None
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         # pylint: disable = missing-function-docstring
-        return t.cast(t.List[t.Tuple[object, Header]], super()._wait_next(timeout))
+        return t.cast(t.List[t.Tuple[object, Header]], super()._pop_or_wait(timeout))
 
-    @functools.wraps(_BaseStream._next_if_ready, assigned=["__doc__"], updated=[])
-    def next_if_ready(self) -> t.Optional[t.List[t.Tuple[object, Header]]]:
+    @functools.wraps(_BaseStream._pop_if_ready, assigned=["__doc__"], updated=[])
+    def pop_if_ready(self) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         # pylint: disable = missing-function-docstring
-        return t.cast(t.List[t.Tuple[object, Header]], super()._next_if_ready())
+        return t.cast(t.List[t.Tuple[object, Header]], super()._pop_if_ready())
 
 
 @t.overload
@@ -570,8 +570,9 @@ def subscribe_stream(
 
     The returned stream synchronizes with the subscription handler to
     ensure that no race conditions occur. It provides methods that allow
-    the caller to wait for the next value to arrive. By default, the
-    stream also maintains a queue to ensure that no values are lost.
+    the caller to fetch the latest value or to wait for the next one to
+    arrive. By default, the stream also maintains a queue to reduce the
+    risk of losing values.
 
     Args:
         japc: The :class:`PyJapc` object on which to subscribe.
@@ -579,7 +580,7 @@ def subscribe_stream(
             single string to subscribe to a parameter, a list of strings
             to subscribe to a parameter group.
         token: If passed, the stream will hold onto this token and
-            watch it. In this case, :meth:`wait_next()` can get
+            watch it. In this case, :meth:`pop_or_wait()` can get
             cancelled through the token.
         maxlen: The maximum length of the stream's internal queue. The
             default is ``1``, i.e. only the most recent value is
@@ -612,7 +613,7 @@ def subscribe_stream(
         ...     stream = subscribe_stream(japc, "device/property#field")
         ...     with stream:
         ...         values_and_headers = [
-        ...             stream.wait_next() for _ in range(10)
+        ...             stream.pop_or_wait() for _ in range(10)
         ...         ]
         ...     values, headers = zip(*values_and_headers)
         ...     ...

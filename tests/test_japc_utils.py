@@ -108,8 +108,8 @@ def test_receive_values(japc: Mock) -> None:
     japc.subscribeParam.mock_values = expected
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
-        received = [stream.wait_next()[0] for _ in range(3)]
-        assert stream.wait_next(2 * MockSubscription.TIME_STEP_SECONDS) is None
+        received = [stream.pop_or_wait()[0] for _ in range(3)]
+        assert stream.pop_or_wait(2 * MockSubscription.TIME_STEP_SECONDS) is None
     assert received == expected
 
 
@@ -117,15 +117,15 @@ def test_block_without_values(japc: Mock) -> None:
     japc.subscribeParam.mock_values = []
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
-        assert stream.wait_next(2 * MockSubscription.TIME_STEP_SECONDS) is None
+        assert stream.pop_or_wait(2 * MockSubscription.TIME_STEP_SECONDS) is None
 
 
 def test_raise_if_not_monitoring(japc: Mock) -> None:
     japc.subscribeParam.mock_values = []
     stream = japc_utils.subscribe_stream(japc, "")
     with pytest.raises(japc_utils.StreamError):
-        stream.wait_next()
-        assert stream.wait_next(MockSubscription.TIME_STEP_SECONDS) is None
+        stream.pop_or_wait()
+        assert stream.pop_or_wait(MockSubscription.TIME_STEP_SECONDS) is None
 
 
 def test_queue_maxlen_is_one(japc: Mock) -> None:
@@ -134,7 +134,7 @@ def test_queue_maxlen_is_one(japc: Mock) -> None:
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         japc.subscribeParam.thread.join()
-        all_available = [value for value, _header in iter(stream.next_if_ready, None)]
+        all_available = [value for value, _header in iter(stream.pop_if_ready, None)]
     assert all_available == sent_values[-1:]
 
 
@@ -144,18 +144,18 @@ def test_queue_without_maxlen(japc: Mock) -> None:
     stream = japc_utils.subscribe_stream(japc, "", maxlen=None)
     with stream:
         japc.subscribeParam.thread.join()
-        all_available = [value for value, _header in iter(stream.next_if_ready, None)]
+        all_available = [value for value, _header in iter(stream.pop_if_ready, None)]
     assert all_available == sent_values
 
 
-def test_next_if_ready_doesnt_block(japc: Mock) -> None:
+def test_pop_if_ready_doesnt_block(japc: Mock) -> None:
     sent_values = [Mock() for _ in range(2)]
     japc.subscribeParam.mock_values = sent_values
     stream = japc_utils.subscribe_stream(japc, "", maxlen=None)
     with stream:
-        first, _ = stream.wait_next()
-        assert stream.next_if_ready() is None
-        second, _ = stream.wait_next()
+        first, _ = stream.pop_or_wait()
+        assert stream.pop_if_ready() is None
+        second, _ = stream.pop_or_wait()
     assert [first, second] == sent_values
 
 
@@ -201,9 +201,9 @@ def test_oldest_newest(japc: Mock) -> None:
     second = stream.newest
     assert [first[0], second[0]] == sent_values
     assert stream.ready
-    assert stream.next_if_ready() == first
-    assert stream.next_if_ready() == second
-    assert stream.next_if_ready() is None
+    assert stream.pop_if_ready() == first
+    assert stream.pop_if_ready() == second
+    assert stream.pop_if_ready() is None
     assert not stream.ready
 
 
@@ -215,7 +215,7 @@ def test_exception(japc: Mock) -> None:
         received = []
         with pytest.raises(japc_utils.JavaException):
             while True:
-                value, _ = stream.wait_next()
+                value, _ = stream.pop_or_wait()
                 received.append(value)
     assert received == sent_values[:-1]
 
@@ -226,7 +226,7 @@ def test_cancel(japc: Mock) -> None:
     stream = japc_utils.subscribe_stream(japc, "", token=token)
     with pytest.raises(cancellation.CancelledError):
         with stream:
-            stream.wait_next()
+            stream.pop_or_wait()
     assert not stream.ready
 
 
@@ -237,7 +237,7 @@ def test_cancel_preempts_ready(japc: Mock) -> None:
     with pytest.raises(cancellation.CancelledError):
         with stream:
             japc.subscribeParam.thread.join()
-            stream.wait_next()
+            stream.pop_or_wait()
     assert stream.ready
 
 
@@ -259,7 +259,7 @@ def test_cancel_breaks_deadlock(japc: Mock) -> None:
         with stream:
             canceller.start()
             # Would eventually deadlock if not cancelled.
-            for value, _ in iter(stream.wait_next, None):
+            for value, _ in iter(stream.pop_or_wait, None):
                 received_values.append(value)
     canceller.join()
     assert not stream.ready
