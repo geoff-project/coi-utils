@@ -292,8 +292,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         return _unwrap_event(event)
 
     # Tricky: We write the docstring on this internal method and
-    # dynamically copy it onto the public method `wait_next()`
-    # in the subclasses.
+    # dynamically copy it onto the public method in the subclasses.
     def _wait_next(self, timeout: t.Optional[float]) -> t.Optional[_Item]:
         """Wait for the next value received by the stream.
 
@@ -341,8 +340,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         return _unwrap_event(event)
 
     # Tricky: We write the docstring on this internal method and
-    # dynamically copy it onto the public method `next_if_ready()`
-    # in the subclasses.
+    # dynamically copy it onto the public method in the subclasses.
     def _next_if_ready(self) -> t.Optional[_Item]:
         """Return the next value or None if the queue is empty.
 
@@ -382,7 +380,8 @@ class _BaseStream(metaclass=abc.ABCMeta):
             # Threading: Notify all will wake up all threads waiting for
             # new data. They will race for `self._condition` and only
             # one will acquire it and successfully pop off the queue.
-            # The others fail and go back to sleep.
+            # The others will find each find an empty queue (after
+            # acquiring the lock in turn) and go back to sleep.
             # Threading: We cannot use `notify()` because we share our
             # condition variable with `self._token`. A thread that waits
             # only on the token might be woken up and none of the
