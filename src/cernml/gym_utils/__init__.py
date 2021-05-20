@@ -37,7 +37,7 @@ class Scaler:
         ...     '''Precise, but non-monotonic interpolation.'''
         ...     return box.high * t + box.low * (np.ones_like(t) - t)
         >>> box = Box(1.0, 3.0, shape=())
-        >>> # Operate close to the low end, this makes addition imprecise.
+        >>> # Operate close to the low end, this makes addition inexact.
         >>> t1 = np.float32(2.9802322e-8)
         >>> t2 = np.float32(3.352763e-8)
         >>> # One is obviously smaller than the other.
