@@ -119,10 +119,10 @@ number of problems:
 ### Synchronization
 
 For now, let us only focus on the last problem: Figuring out how long exactly
-to wait. Luckily, the Python standard library module {mod}`std:threading`
-provides multiple primitives for cross-thread synchronization. In our case, we
-want to wait on thread A for a condition to become true, and signal such from
-thread B. For this, we can use a {class}`~std:threading.Condition` variable:
+to wait. Luckily, the Python standard library module {mod}`threading` provides
+multiple primitives for cross-thread synchronization. In our case, we want to
+wait on thread A for a condition to become true, and signal such from thread B.
+For this, we can use a {class}`~threading.Condition` variable:
 
 ```{code-block} python
 ---
@@ -234,7 +234,7 @@ class ExampleEnv(coi.SingleOptimizable):
 
     def compute_single_objective(self, params):
         self.japc.setParam("SOME.DIPOLE/Settings", params)
-        value, header = self.stream.wait_for_next()  # See 3.
+        value, header = self.stream.wait_for_next()  # See 3. and 4.
         return value
 ```
 
@@ -247,6 +247,10 @@ class ExampleEnv(coi.SingleOptimizable):
    invalidates the queue, synchronizes with the subscription handler and waits
    for the next acquisition to arrive. Note that parameter streams always
    return the JAPC header.
+4. The `header` variable is an object of type
+   {class}`~cernml.japc_utils.Header`. It is mostly a regular dictionary (which
+   you would get from raw subscriptions with `getHeader=True`), but also
+   exposes its most common keys as attributes.
 
 There are also methods to support other workflows, such as
 {meth}`~cernml.japc_utils.ParamStream.pop_or_wait()`,
@@ -366,6 +370,62 @@ Some notes as usual:
    we let it know that we understood the request and brought ourselves into a
    clean state. This way, the host can reuse our object – for example to reset
    `SOME.DIPOLE` back to its original state.
+
+### Context Managers
+
+You can monitor parameter streams not only manually (as usual), but they are
+also compatible with {keyword}`with` statements:
+
+```{code-block} python
+stream = japc_utils.subscribe_stream(japc, "SOME.MONITOR/Acquisition")
+with stream:
+    # stream.start_monitoring() is called here.
+    value, header = stream.pop_or_wait()
+# stream.stop_monitoring() is called here.
+```
+
+Here, {meth}`~cernml.japc_utils.ParamStream.start_monitoring()` is called upon
+entry into the block and
+{meth}`~cernml.japc_utils.ParamStream.stop_monitoring()` is called upon exit.
+The advantage of {keyword}`with` statements is that the exit handler is called
+even if the block is exited through an exception.
+
+The package also provides two context managers –
+{func}`~cernml.japc_utils.subscriptions()` and
+{func}`~cernml.japc_utils.monitoring()` – to handle raw
+{class}`~pyjapc:pyjapc.PyJapc`. objects and subscription handles respectively
+in an analogous manner:
+
+```{code-block} python
+with japc_utils.subscriptions(japc):
+    # japc.startSubscriptions() is called here.
+    ...
+# japc.stopSubscriptions() is called here.
+
+handle = japc.subscribeParam("SOME.MONITOR/Acquisition", print)
+with japc_utils.monitoring(handle):
+    # handle.startMonitoring() is called here.
+    ...
+# handle.stopMonitoring() is called here.
+```
+
+### Parameter Group Streams
+
+Much like {class}`~pyjapc:pyjapc.PyJapc` itself, parameter streams support
+subscriptions to multiple parameters at once. If you pass a list of strings to
+{func}`~cernml.japc_utils.subscribe_stream()`, it returns a
+{class}`~cernml.japc_utils.ParamGroupStream`:
+
+```
+stream = japc_utils.subscribe_stream(japc, ["PARAM1", "PARAM2"])
+with stream:
+    data_and_headers = stream.pop_or_wait()
+    data, headers = zip(*data_and_headers)
+```
+
+Note that the stream returns a list of value–header tuples. The last line in
+the above snippet uses {func}`zip` to unzip it into a tuple of two lists.
+
 
 ## Communicating with the LSA Database
 
