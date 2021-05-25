@@ -98,7 +98,6 @@ graphviz_output_format = "svg"
 ACC_PY_DOCS_ROOT = "https://acc-py.web.cern.ch/gitlab/"
 
 intersphinx_mapping = {
-    "std": ("https://docs.python.org/3", None),
     "coi": (
         ACC_PY_DOCS_ROOT + "be-op-ml-optimization/cernml-coi/docs/stable/",
         None,
