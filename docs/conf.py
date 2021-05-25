@@ -106,6 +106,10 @@ intersphinx_mapping = {
         ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/",
         None,
     ),
+    "jpype": (
+        "https://jpype.readthedocs.io/en/latest/",
+        None,
+    ),
 }
 
 # -- Options for Myst-Parser -------------------------------------------
