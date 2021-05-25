@@ -17,7 +17,9 @@
         :inherited-members:
         :exclude-members: Self
     .. autoclass:: Header
+        :show-inheritance:
         :members:
+        :undoc-members:
     .. autoexception:: JavaException
     .. autoexception:: StreamError
 ```
