@@ -8,11 +8,11 @@ import logging
 import threading
 import time
 import typing as t
-from unittest.mock import Mock, ANY
+from unittest.mock import ANY, Mock
 
 import pytest
-
 from cernml.coi.unstable import cancellation
+
 from cernml import japc_utils
 
 
@@ -40,41 +40,78 @@ def mock_header() -> japc_utils.Header:
     return japc_utils.Header({key: Mock() for key in keys})
 
 
-class MockSubscription:
-    """A mock of :meth:`PyJapc.subscribeParam()`.
+class MockJapc:
+    """A minimal mock of PyJapc.
 
-    This is both the subscription method and the subscription handle.
-    Calling this object returns itself.
+    This only provides a :meth:`subscribeParam()` method that returns a
+    mock handle. The values that are published by this mock handle are
+    determined in the constructor.
 
-    Set :attr:`mock_values` to a list of values to send, then call this
-    object. While monitoring the returned handle (this object itself),
-    the values in :attr:`mock_values` will be sent to the subscription
-    handler one by one. The time between callbacks is
-    :attr:`TIME_STEP_SECONDS`.
+    The argument is either a list or a mapping from strings to lists. In
+    the former case, the same list (or rather, a copy) is passed to each
+    subscription handle as a list of mock values. In the latter case,
+    the subscription parameter's name is used as a key into the mapping
+    to retrieve the list of mock values.
     """
+
+    # pylint: disable = invalid-name
+    # pylint: disable = too-few-public-methods
 
     TIME_STEP_SECONDS = 0.01
 
-    # pylint: disable = invalid-name
+    def __init__(self, mock_values: t.Union[list, t.Dict[str, list]]) -> None:
+        self.mock_values = mock_values
 
-    def __init__(self) -> None:
-        self.mock_values: list = []
-        self.name: t.Optional[str] = None
-        self.on_value: t.Optional[t.Callable] = None
-        self.on_exception: t.Optional[t.Callable] = None
-        self.thread: t.Optional[threading.Thread] = None
-
-    def __call__(
+    def subscribeParam(
         self,
         name: str,
         onValueReceived: t.Callable,
         onException: t.Callable,
-        **kwargs: t.Any,
-    ) -> "MockSubscription":
+        **_kwargs: t.Any,
+    ) -> "MockSubscriptionHandle":
+        mock_values = (
+            self.mock_values[name]
+            if isinstance(self.mock_values, dict)
+            else self.mock_values
+        )
+        return MockSubscriptionHandle(
+            name=name,
+            on_value=onValueReceived,
+            on_exception=onException,
+            mock_values=mock_values,
+            time_step=self.TIME_STEP_SECONDS,
+        )
+
+
+class MockSubscriptionHandle:
+    """Return value of :class:`MockJapc.subscribeParam()`.
+
+    This is a mock of PyJapc subscription handles. It contains a list of
+    arbitrary values. Whenever monitoring starts, it spins up a thread
+    that publishes each item of this list in turn. Once it has iterated
+    over this list, the thread ends and no further items are published.
+    When monitoring is stopped and restarted, iteration starts from the
+    beginning. The time between two item publications is at least
+    :attr:`time_step` seconds.
+    """
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        on_value: t.Callable,
+        on_exception: t.Callable,
+        mock_values: list,
+        time_step: float,
+    ) -> None:
         self.name = name
-        self.on_value = onValueReceived
-        self.on_exception = onException
-        return self
+        self.on_value = on_value
+        self.on_exception = on_exception
+        self.mock_values = list(mock_values)
+        self.time_step = time_step
+        self.thread: t.Optional[threading.Thread] = None
+
+    # pylint: disable = invalid-name
 
     def isMonitoring(self) -> bool:
         return bool(self.thread)
@@ -97,8 +134,8 @@ class MockSubscription:
         logging.info("starting thread")
         assert self.on_value is not None
         assert self.on_exception is not None
-        for value in list(self.mock_values):
-            time.sleep(self.TIME_STEP_SECONDS)
+        for value in self.mock_values:
+            time.sleep(self.time_step)
             if not self.isMonitoring():
                 break
             if isinstance(value, Exception):
@@ -110,59 +147,63 @@ class MockSubscription:
         logging.info("terminating thread")
 
 
-@pytest.fixture
-def japc() -> Mock:
-    return Mock(subscribeParam=MockSubscription())
+def extract_mock_handle(stream: japc_utils.ParamStream) -> MockSubscriptionHandle:
+    # pylint: disable = protected-access
+    return t.cast(MockSubscriptionHandle, stream._handle)
 
 
-def test_receive_values(japc: Mock) -> None:
+def test_receive_values() -> None:
     expected = [Mock(), Mock(), Mock()]
-    japc.subscribeParam.mock_values = expected
+    japc = MockJapc(expected)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         received = [stream.pop_or_wait()[0] for _ in range(3)]
-        assert stream.pop_or_wait(2 * MockSubscription.TIME_STEP_SECONDS) is None
+        assert stream.pop_or_wait(2 * MockJapc.TIME_STEP_SECONDS) is None
     assert received == expected
 
 
-def test_block_without_values(japc: Mock) -> None:
-    japc.subscribeParam.mock_values = []
+def test_block_without_values() -> None:
+    japc = MockJapc([])
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
-        assert stream.pop_or_wait(2 * MockSubscription.TIME_STEP_SECONDS) is None
+        assert stream.pop_or_wait(2 * MockJapc.TIME_STEP_SECONDS) is None
 
 
-def test_raise_if_not_monitoring(japc: Mock) -> None:
-    japc.subscribeParam.mock_values = []
+def test_raise_if_not_monitoring() -> None:
+    japc = MockJapc([])
     stream = japc_utils.subscribe_stream(japc, "")
     with pytest.raises(japc_utils.StreamError):
         stream.pop_or_wait()
-        assert stream.pop_or_wait(MockSubscription.TIME_STEP_SECONDS) is None
+        assert stream.pop_or_wait(MockJapc.TIME_STEP_SECONDS) is None
 
 
-def test_queue_maxlen_is_one(japc: Mock) -> None:
+def test_queue_maxlen_is_one() -> None:
     sent_values = [Mock() for _ in range(3)]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
-        japc.subscribeParam.thread.join()
+        handle = extract_mock_handle(stream)
+        assert handle.thread is not None
+        handle.thread.join()
         all_available = [value for value, _header in iter(stream.pop_if_ready, None)]
     assert all_available == sent_values[-1:]
 
 
-def test_queue_without_maxlen(japc: Mock) -> None:
+def test_queue_without_maxlen() -> None:
     sent_values = [Mock() for _ in range(5)]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "", maxlen=None)
     with stream:
-        japc.subscribeParam.thread.join()
+        handle = extract_mock_handle(stream)
+        assert handle.thread is not None
+        handle.thread.join()
         all_available = [value for value, _header in iter(stream.pop_if_ready, None)]
     assert all_available == sent_values
 
 
-def test_pop_if_ready_doesnt_block(japc: Mock) -> None:
+def test_pop_if_ready_doesnt_block() -> None:
     sent_values = [Mock() for _ in range(2)]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "", maxlen=None)
     with stream:
         first, _ = stream.pop_or_wait()
@@ -171,40 +212,42 @@ def test_pop_if_ready_doesnt_block(japc: Mock) -> None:
     assert [first, second] == sent_values
 
 
-def test_locked_prevents_updates(japc: Mock) -> None:
+def test_locked_prevents_updates() -> None:
     sent_values = [Mock()]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         assert not stream.ready
         with stream.locked():
             # Wait long enough that the thread calls the subscription
             # handler. This blocks because we're holding the lock.
-            time.sleep(2 * MockSubscription.TIME_STEP_SECONDS)
+            time.sleep(2 * MockJapc.TIME_STEP_SECONDS)
             assert not stream.ready
         # Threading: Ensure that the thread has time to acquire the lock
         # and send its data.
-        time.sleep(MockSubscription.TIME_STEP_SECONDS)
+        time.sleep(MockJapc.TIME_STEP_SECONDS)
     assert stream.ready
 
 
-def test_clear(japc: Mock) -> None:
+def test_clear() -> None:
     sent_values = [Mock()]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         assert not stream.ready
         # Wait until the thread has sent its data.
-        japc.subscribeParam.thread.join()
+        handle = extract_mock_handle(stream)
+        assert handle.thread is not None
+        handle.thread.join()
     assert stream.ready
     assert [stream.oldest[0]] == [stream.newest[0]] == sent_values
     stream.clear()
     assert not stream.ready
 
 
-def test_wait_for_next_clears_queue(japc: Mock) -> None:
+def test_wait_for_next_clears_queue() -> None:
     sent_values = [Mock() for _ in range(5)]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     token = cancellation.Token()
     stream = japc_utils.subscribe_stream(japc, "", maxlen=3, token=token)
     with stream:
@@ -221,13 +264,15 @@ def test_wait_for_next_clears_queue(japc: Mock) -> None:
                 _ = stream.oldest
 
 
-def test_oldest_newest(japc: Mock) -> None:
+def test_oldest_newest() -> None:
     sent_values = [Mock(), Mock()]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "", maxlen=2)
     with stream:
         # Wait until the thread has sent its data.
-        japc.subscribeParam.thread.join()
+        handle = extract_mock_handle(stream)
+        assert handle.thread is not None
+        handle.thread.join()
     first = stream.oldest
     second = stream.newest
     assert [first[0], second[0]] == sent_values
@@ -238,9 +283,9 @@ def test_oldest_newest(japc: Mock) -> None:
     assert not stream.ready
 
 
-def test_exception(japc: Mock) -> None:
+def test_exception() -> None:
     sent_values = [Mock(), Mock(), ValueError()]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         received = []
@@ -251,9 +296,9 @@ def test_exception(japc: Mock) -> None:
     assert received == sent_values[:-1]
 
 
-def test_cancel(japc: Mock) -> None:
+def test_cancel() -> None:
     token = cancellation.Token(cancelled=True)
-    japc.subscribeParam.mock_values = [Mock()]
+    japc = MockJapc([Mock()])
     stream = japc_utils.subscribe_stream(japc, "", token=token)
     with pytest.raises(cancellation.CancelledError):
         with stream:
@@ -261,29 +306,33 @@ def test_cancel(japc: Mock) -> None:
     assert not stream.ready
 
 
-def test_cancel_preempts_ready(japc: Mock) -> None:
+def test_cancel_preempts_ready() -> None:
     token = cancellation.Token(cancelled=True)
-    japc.subscribeParam.mock_values = [Mock()]
+    japc = MockJapc([Mock()])
     stream = japc_utils.subscribe_stream(japc, "", token=token)
     with pytest.raises(cancellation.CancelledError):
         with stream:
-            japc.subscribeParam.thread.join()
+            handle = extract_mock_handle(stream)
+            assert handle.thread is not None
+            handle.thread.join()
             stream.pop_or_wait()
     assert stream.ready
 
 
-def test_cancel_breaks_deadlock(japc: Mock) -> None:
+def test_cancel_breaks_deadlock() -> None:
     sent_values = [Mock() for _ in range(3)]
-    japc.subscribeParam.mock_values = sent_values
+    japc = MockJapc(sent_values)
     source = cancellation.TokenSource()
+    stream = japc_utils.subscribe_stream(japc, "", token=source.token)
 
     def cancel_delayed() -> None:
-        japc.subscribeParam.thread.join()
+        handle = extract_mock_handle(stream)
+        assert handle.thread is not None
+        handle.thread.join()
         # Add some time to handle the last sent value.
-        time.sleep(MockSubscription.TIME_STEP_SECONDS)
+        time.sleep(MockJapc.TIME_STEP_SECONDS)
         source.cancel()
 
-    stream = japc_utils.subscribe_stream(japc, "", token=source.token)
     canceller = threading.Thread(target=cancel_delayed)
     with pytest.raises(cancellation.CancelledError):
         received_values = []
