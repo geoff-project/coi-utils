@@ -60,6 +60,7 @@ extensions = [
     "myst_parser",
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
+    "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
 ]
 
@@ -91,6 +92,22 @@ napoleon_type_aliases = {
 # -- Options for Graphviz ----------------------------------------------
 
 graphviz_output_format = "svg"
+
+# -- Options for Intersphinx -------------------------------------------
+
+ACC_PY_DOCS_ROOT = "https://acc-py.web.cern.ch/gitlab/"
+
+intersphinx_mapping = {
+    "std": ("https://docs.python.org/3", None),
+    "coi": (
+        ACC_PY_DOCS_ROOT + "be-op-ml-optimization/cernml-coi/docs/stable/",
+        None,
+    ),
+    "pyjapc": (
+        ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/",
+        None,
+    ),
+}
 
 # -- Options for Myst-Parser -------------------------------------------
 

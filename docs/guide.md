@@ -17,8 +17,9 @@ section](#introducing-parameter-streams).
 ### Motivation
 
 Imagine the following, trivial optimization problem. It talks to two imaginary
-devices via JAPC. We're deliberately ignoring all sorts of complicating
-factors, like normalization, configuration or other transformations:
+devices via {class}`~pyjapc:pyjapc.PyJapc`. We're deliberately ignoring all
+sorts of complicating factors, like normalization, configuration or other
+transformations:
 
 ```{code-block} python
 from cernml import coi
@@ -47,7 +48,7 @@ class ExampleEnv(coi.SingleOptimizable):
 ```
 
 This code is (hopefully!) simple enough to understand. However, GET requests
-via JAPC are typically considered expensive. In most cases, you actually want
+via JAPC are often considered expensive. In most cases, you actually want
 to use a SUBSCRIBE request instead. This would look somewhat like this:
 
 
@@ -118,12 +119,10 @@ number of problems:
 ### Synchronization
 
 For now, let us only focus on the last problem: Figuring out how long exactly
-to wait. Luckily, the Python standard library module
-[threading](https://docs.python.org/3/library/threading.html) provides multiple
-primitives for cross-thread synchronization. In our case, we want to wait on
-thread A for a condition to become true, and signal such from thread B. For
-this, we can use a [condition
-variable](https://docs.python.org/3/library/threading.html#condition-objects):
+to wait. Luckily, the Python standard library module {mod}`std:threading`
+provides multiple primitives for cross-thread synchronization. In our case, we
+want to wait on thread A for a condition to become true, and signal such from
+thread B. For this, we can use a {class}`~std:threading.Condition` variable:
 
 ```{code-block} python
 ---
@@ -240,7 +239,8 @@ class ExampleEnv(coi.SingleOptimizable):
 ```
 
 1. The {func}`~cernml.japc_utils.subscribe_stream()` call closely mirrors
-   `subscribeParam()`, but does not require callback functions.
+   {meth}`~pyjapc:pyjapc.PyJapc.subscribeParam()`, but does not require
+   callback functions.
 2. We still need to start and stop monitoring. In constrast to to PyJapc,
    parameter streams use `snake_case`-style method names.
 3. A single call to {meth}`~cernml.japc_utils.ParamStream.wait_for_next()`
@@ -248,10 +248,10 @@ class ExampleEnv(coi.SingleOptimizable):
    for the next acquisition to arrive. Note that parameter streams always
    return the JAPC header.
 
-There are also methods to support other workflows. For example,
-{meth}`~cernml.japc_utils.ParamStream.pop_or_wait()` makes use of the internal
-queue. This ensures that you won't miss a value that arrives while other Python
-code is running:
+There are also methods to support other workflows, such as
+{meth}`~cernml.japc_utils.ParamStream.pop_or_wait()`,
+{meth}`~cernml.japc_utils.ParamStream.pop_if_ready()` and
+{meth}`~cernml.japc_utils.ParamStream.clear()`:
 
 ```{code-block} python
 from matplotlib.figure
@@ -300,8 +300,9 @@ However, one problem remains: This implementation of
 persists. If this is a long time, the host application never regains control
 and its user has no possibility to interrupt and cancel the operation.
 
-This is the problem that cooperative cancellation aims to solve. We can request
-a cancellation token from the host application and use it to check whether the
+This is the problem that cooperative
+{mod}`~coi:cernml.coi.unstable.cancellation` aims to solve. We can request a
+cancellation token from the host application and use it to check whether the
 user has cancelled our optimization. Parameter streams have full support for
 cancellation tokens:
 
@@ -349,26 +350,45 @@ class ExampleEnv(coi.SingleOptimizable):
 ```
 
 Some notes as usual:
-1. By adding `'cern.cancellable'` to our metadata, we signal to the host
-   application that we would like to receive a cancellation token.
+1. By adding {attr}`'cern.cancellable' <coi:cernml.coi.Problem.metadata>` to
+   our metadata, we signal to the host application that we would like to
+   receive a cancellation token.
 2. The only thing that is *strictly* necessary is that you pass the
    cancellation token to {func}`~cernml.japc_utils.subscribe_stream()`.
    Everything else is handled for us from here.
 3. If (and only if) you have given a token to the stream, it will wait on
    *both* a new acquisition or a cancellation. If the former happens, we
    receive the new value and return. If the latter happens, the usual
-   `CancelledError` is raised.
+   {exc}`~coi:cernml.coi.unstable.cancellation.CancelledError` is raised.
 4. Since cancellation is *cooperative*, we should cooperate with our host. By
-   calling `complete_cancellation()`, we let it know that we understood the
-   request and brought ourselves into a clean state. This way, the host can
-   reuse our object – for example to reset `SOME.DIPOLE` back to its original
-   state.
+   calling
+   {meth}`~coi:cernml.coi.unstable.cancellation.Token.complete_cancellation()`,
+   we let it know that we understood the request and brought ourselves into a
+   clean state. This way, the host can reuse our object – for example to reset
+   `SOME.DIPOLE` back to its original state.
 
 ## Communicating with the LSA Database
 
-- how to import
-- common use case
-- incorporator
+In the general case, full interaction with the LSA database is already
+supported through the [Pjlsa](https://gitlab.cern.ch/scripting-tools/pjlsa/)
+package. However, this package exposes the full Java API. This gives the user
+full flexibility, but also makes it difficult to solve certain common problems
+without writing many lines of code.
+
+This package wraps Pjlsa and provides a simple, Pythonic wrapper that solves
+80% of all use cases. It makes no claim to being complete and contributions are
+welcome.
+
+### Importing an LSA-Dependent Package
+
+The {mod}`~cernml.lsa_utils` package directly imports Java packages via the
+JPype import system. It does not set up the JVM for you, so you have to start
+the JVM before importing the package. (In this regard, {mod}`~cernml.lsa_utils`
+itself behaves as if it were a Java package.)
+
+### Usage Examples
+
+### The Incorporator Class
 
 ## Normalizing Parameters
 
