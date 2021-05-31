@@ -1,8 +1,10 @@
 # Managing PyJapc Subscriptions
 
+```{note}
 [Usage examples](#introducing-parameter-streams) of {mod}`~cernml.japc_utils`'s
 parameter streams follow a bit further below. This section begins by motivating
 their creation.
+```
 
 ## Motivation
 
