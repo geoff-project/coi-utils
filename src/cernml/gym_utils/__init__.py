@@ -11,13 +11,15 @@ class Scaler:
         space: The box to use as a base space. This must be *bounded*,
             i.e. all elements of *space.low* and *space.high* must be
             finite.
+        symmetric: If passed and False, scale values into the normalized
+            box [0; 1]. By default, the normalized box is [−1; +1].
 
     Raises:
         TypeError: if the given space cannot be used for scaling.
 
     In this context, *scaling* uses linear interpolation to bring an
-    array from some finite box *B* into the symmetric normalized box
-    [−1, +1]::
+    array from some finite box *B* into a normalized box *B'*. This is
+    [−1, +1] by default::
 
         >>> scaler = Scaler(Box(5, 10, shape=(3,)))
         >>> scaler.scale([5, 7.5, 10])
@@ -78,24 +80,40 @@ class Scaler:
         True
         >>> scaler.unscale(x).dtype == np.float32
         True
+
+    An asymmetric normalized space can be generated as well::
+
+        >>> scaler = Scaler(Box(-10, 10, (2,)), symmetric=False)
+        >>> scaler.scale([-10, 10])
+        array([0., 1.], dtype=float32)
+        >>> scaler.unscale([0, 1])
+        array([-10.,  10.], dtype=float32)
     """
 
-    def __init__(self, space: Box) -> None:
+    def __init__(self, space: Box, symmetric: bool = True) -> None:
         if not space.is_bounded():
             raise TypeError(f"space is not bounded: {space}")
         self._space = space
+        self._symmetric = symmetric
 
     def scale(self, unnormalized: np.ndarray) -> np.ndarray:
         """Rescale an array from [*low*, *high*] to [−1, +1]."""
         unnormalized = np.asanyarray(unnormalized, dtype=self._space.dtype)
         low, high = self._space.low, self._space.high
-        return 2.0 * ((unnormalized - low) / (high - low)) - 1.0
+        intermediary = (unnormalized - low) / (high - low)
+        return (2.0 * intermediary - 1.0) if self._symmetric else intermediary
 
     def unscale(self, normalized: np.ndarray) -> np.ndarray:
         """Rescale an array from [−1, +1] to [*low*, *high*]."""
         normalized = np.asanyarray(normalized, dtype=self._space.dtype)
         low, high = self._space.low, self._space.high
-        return low + (0.5 * (normalized + 1.0) * (high - low))
+        intermediary = 0.5 * (normalized + 1.0) if self._symmetric else normalized
+        return intermediary * (high - low) + low
+
+    @property
+    def symmetric(self) -> bool:
+        """True if the scaled space is symmetric, False otherwise."""
+        return self._symmetric
 
     @property
     def space(self) -> Box:
@@ -118,30 +136,35 @@ class Scaler:
 
         Example:
 
-            >>> scaler = Scaler(Box(5, 8, shape=(3,)))
-            >>> scaler.space
-            Box(5.0, 8.0, (3,), float32)
-            >>> scaler.scaled_space
+            >>> box = Box(5, 8, shape=(3,))
+            >>> Scaler(box).scaled_space
             Box(-1.0, 1.0, (3,), float32)
-            >>> scaler.space.dtype == scaler.scaled_space.dtype
-            True
-            >>> scaler.space.shape == scaler.scaled_space.shape
-            True
+            >>> Scaler(box, symmetric=False).scaled_space
+            Box(0.0, 1.0, (3,), float32)
         """
-        return Box(-1, 1, shape=self.space.shape, dtype=self.space.dtype)
+        return Box(
+            -1 if self._symmetric else 0,
+            1,
+            shape=self.space.shape,
+            dtype=self.space.dtype,
+        )
 
 
-def scale_from_box(space: Box, unnormalized: np.ndarray) -> np.ndarray:
-    """Rescale an array from [*low*, *high*] to [−1, +1].
+def scale_from_box(
+    space: Box, unnormalized: np.ndarray, *, symmetric: bool = True
+) -> np.ndarray:
+    """Normalize an array into [−1; +1] or [0; 1].
 
     This is a convenience wrapper around :meth:`Scaler.scale()`.
     """
-    return Scaler(space).scale(unnormalized)
+    return Scaler(space, symmetric=symmetric).scale(unnormalized)
 
 
-def unscale_into_box(space: Box, normalized: np.ndarray) -> np.ndarray:
-    """Rescale an array from [−1, +1] to [*low*, *high*].
+def unscale_into_box(
+    space: Box, normalized: np.ndarray, *, symmetric: bool = True
+) -> np.ndarray:
+    """Denormalize an array from [−1; +1] or [0; 1].
 
     This is a convenience wrapper around :meth:`Scaler.unscale()`.
     """
-    return Scaler(space).unscale(normalized)
+    return Scaler(space, symmetric=symmetric).unscale(normalized)
