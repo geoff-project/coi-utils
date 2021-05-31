@@ -16,8 +16,8 @@ include = '\.pyi?$'
 profile = 'black'
 
 [tool.pytest.ini_options]
-addopts = '--doctest-modules --ignore=src/cernml/lsa_utils/'
-testpaths = ['tests', 'src']
+addopts = '--doctest-modules --doctest-glob=*.md --ignore=src/cernml/lsa_utils/'
+testpaths = ['tests', 'src', 'docs']
 
 [tool.pylint.FORMAT]
 ignore-long-lines = '<?https?://\S+>?$'
