@@ -79,9 +79,7 @@ exclude_patterns = [
 # -- Options for Autodoc -----------------------------------------------
 
 autodoc_member_order = "bysource"
-autodoc_type_aliases = {
-    "Figure": "Figure",
-}
+autodoc_type_aliases = {}
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False

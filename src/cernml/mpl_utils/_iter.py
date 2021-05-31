@@ -6,13 +6,13 @@ import typing as t
 
 from matplotlib.figure import Figure
 
-MaybeTitledFigure = t.Union["Figure", t.Tuple[str, "Figure"]]
+MaybeTitledFigure = t.Union[Figure, t.Tuple[str, Figure]]
 """Helper annotation for :class:`MatplotlibFigures`."""
 
 MatplotlibFigures = t.Union[
-    "Figure",
+    Figure,
     t.Iterable["MaybeTitledFigure"],
-    t.Mapping[str, "Figure"],
+    t.Mapping[str, Figure],
 ]
 """Type of the return value of render mode ``"matplotlib_figures"``."""
 
@@ -32,8 +32,8 @@ def iter_matplotlib_figures(
             ``"matplotlib_figures"``.
 
     Yields:
-        A tuple ``(title, figure)`` for every item in ``figures``. If a
-        figure doesn't have a title, the empty string is used.
+        A 2-tuple of a title and a figure for every item in *figures*.
+        If a figure doesn't have a title, the empty string is used.
 
     Examples:
 

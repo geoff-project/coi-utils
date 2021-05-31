@@ -14,11 +14,11 @@ if t.TYPE_CHECKING:
     # pylint: disable = unused-import
     from ._iter import MatplotlibFigures
 
-RenderGenerator = t.Generator[None, "Figure", t.NoReturn]
+RenderGenerator = t.Generator[None, Figure, t.NoReturn]
 
 RenderCallback = t.Union[
-    t.Callable[["Figure"], None],
-    t.Callable[["Figure"], "RenderGenerator"],
+    t.Callable[[Figure], None],
+    t.Callable[[Figure], "RenderGenerator"],
 ]
 
 
@@ -69,7 +69,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
             value of ``renderer.update("matplotlib_figures")``. Unused
             in other render modes. In particular, this does *not* add a
             title to the figure's contents. For this, consider using
-            :meth:`Figure.suptitle()` instead.
+            :meth:`~mpl:matplotlib.figure.Figure.suptitle()` instead.
 
     This is another abstract base class. There are three typical use
     cases:
@@ -236,8 +236,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
 
     @staticmethod
     def from_callback(
-        func: RenderCallback,
-        title: t.Optional[str] = None,
+        func: "RenderCallback", title: t.Optional[str] = None
     ) -> "FigureRenderer":
         """Create a renderer via a callback function or generator.
 
