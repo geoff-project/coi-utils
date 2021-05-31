@@ -100,6 +100,7 @@ intersphinx_mapping = {
     "pyjapc": (ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/", None),
     "jpype": ("https://jpype.readthedocs.io/en/latest/", None),
     "mpl": ("https://matplotlib.org/stable/", None),
+    "python": ("https://docs.python.org/3", None),
 }
 
 # -- Options for Myst-Parser -------------------------------------------

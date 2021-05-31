@@ -22,7 +22,7 @@ This repository can be found online on CERN's [Gitlab][].
 maxdepth: 2
 ---
 
-guide
-api
+guide/index.md
+api/index.md
 changelog
 ```
