@@ -491,20 +491,22 @@ There are two ways to use {mod}`~cernml.lsa_utils`. The simple one is by using
 the free functions that it provides:
 
 ```{code-block} python
->>> context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
->>> context
-'HIRADMAT_PILOT_Q20_2018_V1'
->>> xs, ys = lsa_utils.get_settings_function("logical.RDH.20207/J", context)
->>> type(xs), type(ys)
-(numpy.ndarray, numpy.ndarray)
->>> xs.shape == ys.shape
-True
->>> lsa_utils.get_cycle_type_attributes(context)["VE:Start flat top"]
-'6200'
->>> lsa_utils.incorporate_and_trim(
-...     "logical.RDH.20208/J", context, cycle_time=1440.0, value=0.0,
-...     relative=False,
-... )
+import numpy as np
+
+context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
+assert context == "HIRADMAT_PILOT_Q20_2018_V1"
+
+xs, ys = lsa_utils.get_settings_function("logical.RDH.20207/J", context)
+assert isinstance(xs, np.ndarray) and isinstance(ys, np.ndarray)
+assert xs.shape == ys.shape
+
+attrs = lsa_utils.get_cycle_type_attributes(context)["VE:Start flat top"]
+assert attrs["VE:Start flat top"] == "6200"
+
+lsa_utils.incorporate_and_trim(
+    "logical.RDH.20208/J", context, cycle_time=1440.0, value=0.0,
+    relative=False,
+)
 ```
 
 The slightly more complex one is to create an
@@ -514,18 +516,17 @@ function call. Thus, if you are going to make multiple calls using the same
 parameter and context, this is going to be slightly more efficient.
 
 ```{code-block} python
->>> inc = lsa_utils.Incorporator(
-...     "logical.RDH.20207/J",
-...     user="SPS.USER.HIRADMT1",
-... )
->>> inc.context
-'HIRADMAT_PILOT_Q20_2018_V1'
->>> xs, ys = inc.get_function()
->>> type(xs), type(ys)
-(numpy.ndarray, numpy.ndarray)
->>> xs.shape == ys.shape
-True
->>> inc.incorporate_and_trim(1440.0, 0.0, relative=False)
+inc = lsa_utils.Incorporator(
+    "logical.RDH.20207/J",
+    user="SPS.USER.HIRADMT1",
+)
+assert inc.context == "HIRADMAT_PILOT_Q20_2018_V1"
+
+xs, ys = inc.get_function()
+assert isinstance(xs, np.ndarray) and isinstance(ys, np.ndarray)
+assert xs.shape == ys.shape
+
+inc.incorporate_and_trim(1440.0, 0.0, relative=False)
 ```
 
 ## Normalizing Parameters
