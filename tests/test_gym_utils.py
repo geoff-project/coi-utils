@@ -28,7 +28,7 @@ class VerboseBox(Box):
         return f"Box({self.low}, {self.high}, {self.dtype})"
 
 
-@pytest.fixture(scope="module", params=np.random.uniform(-10, 10, size=(100, 2, 3)))
+@pytest.fixture(scope="module", params=np.random.uniform(-10, 10, size=(50, 2, 3)))
 def space(request: t.Any) -> Box:
     edges = np.asarray(request.param, dtype=np.float32)
     edges.sort(axis=0)
