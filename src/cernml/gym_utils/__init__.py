@@ -83,19 +83,52 @@ class Scaler:
     def __init__(self, space: Box) -> None:
         if not space.is_bounded():
             raise TypeError(f"space is not bounded: {space}")
-        self.space = space
+        self._space = space
 
     def scale(self, unnormalized: np.ndarray) -> np.ndarray:
         """Rescale an array from [*low*, *high*] to [−1, +1]."""
-        unnormalized = np.asanyarray(unnormalized, dtype=self.space.dtype)
-        low, high = self.space.low, self.space.high
+        unnormalized = np.asanyarray(unnormalized, dtype=self._space.dtype)
+        low, high = self._space.low, self._space.high
         return 2.0 * ((unnormalized - low) / (high - low)) - 1.0
 
     def unscale(self, normalized: np.ndarray) -> np.ndarray:
         """Rescale an array from [−1, +1] to [*low*, *high*]."""
-        normalized = np.asanyarray(normalized, dtype=self.space.dtype)
-        low, high = self.space.low, self.space.high
+        normalized = np.asanyarray(normalized, dtype=self._space.dtype)
+        low, high = self._space.low, self._space.high
         return low + (0.5 * (normalized + 1.0) * (high - low))
+
+    @property
+    def space(self) -> Box:
+        """The box originally passed to this scaler.
+
+        Example:
+
+            >>> box = Box(-3, 3, (3,))
+            >>> scaler = Scaler(box)
+            >>> scaler.space == box
+            True
+            >>> scaler.space.dtype == box.dtype
+            True
+        """
+        return self._space
+
+    @property
+    def scaled_space(self) -> Box:
+        """A normalized space with the same shape as :attr:`space`.
+
+        Example:
+
+            >>> scaler = Scaler(Box(5, 8, shape=(3,)))
+            >>> scaler.space
+            Box(5.0, 8.0, (3,), float32)
+            >>> scaler.scaled_space
+            Box(-1.0, 1.0, (3,), float32)
+            >>> scaler.space.dtype == scaler.scaled_space.dtype
+            True
+            >>> scaler.space.shape == scaler.scaled_space.shape
+            True
+        """
+        return Box(-1, 1, shape=self.space.shape, dtype=self.space.dtype)
 
 
 def scale_from_box(space: Box, unnormalized: np.ndarray) -> np.ndarray:
