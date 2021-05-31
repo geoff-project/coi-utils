@@ -98,18 +98,10 @@ graphviz_output_format = "svg"
 ACC_PY_DOCS_ROOT = "https://acc-py.web.cern.ch/gitlab/"
 
 intersphinx_mapping = {
-    "coi": (
-        ACC_PY_DOCS_ROOT + "be-op-ml-optimization/cernml-coi/docs/stable/",
-        None,
-    ),
-    "pyjapc": (
-        ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/",
-        None,
-    ),
-    "jpype": (
-        "https://jpype.readthedocs.io/en/latest/",
-        None,
-    ),
+    "coi": (ACC_PY_DOCS_ROOT + "be-op-ml-optimization/cernml-coi/docs/stable/", None),
+    "pyjapc": (ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/", None),
+    "jpype": ("https://jpype.readthedocs.io/en/latest/", None),
+    "mpl": ("https://matplotlib.org/stable/", None),
 }
 
 # -- Options for Myst-Parser -------------------------------------------
