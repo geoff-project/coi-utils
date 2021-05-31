@@ -2,7 +2,7 @@
 
 """Module for helper functions to communicate with LSA."""
 
-from typing import Tuple, cast
+from typing import Dict, Tuple, cast
 
 import numpy as np
 
@@ -14,6 +14,7 @@ try:
     import java.util
     from cern.lsa.client import (
         ContextService,
+        GenerationService,
         ParameterService,
         ServiceLocator,
         SettingService,
@@ -22,8 +23,9 @@ try:
 except ImportError as exc:
     raise ImportError("import this package in `with LSAClient().java_api()`") from exc
 
-parameter_service = ServiceLocator.getService(ParameterService)
 context_service = ServiceLocator.getService(ContextService)
+generation_service = ServiceLocator.getService(GenerationService)
+parameter_service = ServiceLocator.getService(ParameterService)
 setting_service = ServiceLocator.getService(SettingService)
 trim_service = ServiceLocator.getService(TrimService)
 
@@ -188,6 +190,17 @@ def get_context_by_user(user: str) -> str:
     except java.lang.IllegalArgumentException:  # type: ignore
         raise NotFound(user) from None
     return cycle.getName()
+
+
+def get_cycle_type_attributes(context: str) -> Dict[str, str]:
+    """Look up the cycle type attributes associated with a context."""
+    cycle = context_service.findStandAloneCycle(context)
+    if cycle is None:
+        raise NotFound(context)
+    cycle_type = generation_service.findCycleType(cycle.getTypeName())
+    if cycle_type is None:
+        raise NotFound(cycle.getTypeName())
+    return {attr.getName(): attr.getValue() for attr in cycle_type.getAttributes()}
 
 
 def incorporate_and_trim(

@@ -499,6 +499,8 @@ the free functions that it provides:
 (numpy.ndarray, numpy.ndarray)
 >>> xs.shape == ys.shape
 True
+>>> lsa_utils.get_cycle_type_attributes(context)["VE:Start flat top"]
+'6200'
 >>> lsa_utils.incorporate_and_trim(
 ...     "logical.RDH.20208/J", context, cycle_time=1440.0, value=0.0,
 ...     relative=False,

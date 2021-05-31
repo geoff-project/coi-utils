@@ -7,7 +7,7 @@ import machinery in order to provide Java packages as regular imports.
 Consequently, some care must be taken when importing this package, or
 any package that depends on it.
 
-Pjlsa provides a class :class:`LSAClient` which allows hooking into the
+Pjlsa provides a class :class:`LSAClient`, which allows hooking into the
 Python import machinery. It is considered best practice to instantiate
 this class once and only once at the outermost scope of execution. This
 means that any package that is meant to be imported by other Python code
@@ -35,6 +35,7 @@ from ._impl import (
     Incorporator,
     NotFound,
     get_context_by_user,
+    get_cycle_type_attributes,
     get_settings_function,
     incorporate_and_trim,
 )
