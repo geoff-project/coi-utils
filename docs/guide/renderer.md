@@ -61,9 +61,8 @@ the caller. When the caller later resumes the generator, it continues execution
 from the previous yield point. This makes it easy to express the init–update
 pattern.
 
-The following example uses
-{meth}`~cernml.mpl_utils.FigureRenderer.from_callback()` to convert a
-{term}`generator` into a concrete {class}`~cernml.mpl_utils.FigureRenderer`.
+The following example uses {func}`~cernml.mpl_utils.make_renderer()` to convert
+a {term}`generator` into a concrete {class}`~cernml.mpl_utils.FigureRenderer`.
 The renderer creates a figure with a single {class}`~mpl:matplotlib.axes.Axes`
 and two graphs:
 
@@ -80,7 +79,7 @@ emphasize-lines: 15,33,77
 ---
 >>> import numpy as np
 >>> from cernml import coi
->>> from cernml.mpl_utils import FigureRenderer
+>>> from cernml.mpl_utils import make_renderer
 >>> from gym.spaces import Box
 >>>
 >>> class MyProblem(coi.SingleOptimizable):
@@ -92,7 +91,7 @@ emphasize-lines: 15,33,77
 ...
 ...     def __init__(self):
 ...         self._last_readings = None
-...         self._renderer = FigureRenderer.from_callback(self._iter_updates)
+...         self._renderer = make_renderer(self._iter_updates)
 ...         self.response = np.random.uniform(size=(10, 4))
 ...
 ...     def get_initial_params(self):
