@@ -69,7 +69,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
             value of ``renderer.update("matplotlib_figures")``. Unused
             in other render modes. In particular, this does *not* add a
             title to the figure's contents. For this, consider using
-            :meth:`~mpl:matplotlib.figure.Figure.suptitle()` instead.
+            :meth:`~matplotlib.figure.Figure.suptitle()` instead.
 
     This is another abstract base class. There are three typical use
     cases:
@@ -250,7 +250,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
                 render mode ``"matplotlib_figures"``.
 
         Returns:
-            An unspecified subclass of `FigureRenderer`.
+            An unspecified subclass of :class:`FigureRenderer`.
         """
         return _FigureFuncRenderer(func, title)
 

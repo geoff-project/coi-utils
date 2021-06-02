@@ -1,9 +1,10 @@
-"""Convenience wrappers around the PyJapc API.
+"""Convenience wrappers around the :class:`~pyjapc.PyJapc` API.
 
 Most importantly, this package provides *parameter streams*, an
 abstraction on top of subscription handles. They pass an internal
-callback to PyJapc and expose methods to wait until the next value has
-arrived. Parameter streams are created via :func:`subscribe_stream()`.
+callback to :class:`~pyjapc.PyJapc` and expose methods to wait until the
+next value has arrived. Parameter streams are created via
+:func:`subscribe_stream()`.
 """
 
 import abc
@@ -17,8 +18,8 @@ from collections import deque
 
 if t.TYPE_CHECKING:
     # pylint: disable=import-error, unused-import
-    from cernml.coi.unstable import cancellation
-    from pyjapc import PyJapc
+    import cernml.coi.cancellation
+    import pyjapc
 
 LOG = logging.getLogger(__name__)
 
@@ -78,8 +79,8 @@ def _unwrap_event(event: _Event) -> _Item:
 
 
 @contextlib.contextmanager
-def subscriptions(japc: "PyJapc") -> t.Iterator["PyJapc"]:
-    """Return a context manager for :class:`PyJapc`.
+def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
+    """Return a context manager for :class:`~pyjapc.PyJapc`.
 
     The context manager starts all subscriptions when entering its
     context and stops them when leaving it. It is neither reentrant nor
@@ -132,8 +133,8 @@ def monitoring(handle: T) -> t.Iterator[T]:
 class _BaseStream(metaclass=abc.ABCMeta):
     """A synchronized PyJapc subscription handle.
 
-    Do not instantiate this class yourself. Use :func:`subscribe_stream`
-    instead.
+    Do not instantiate this class yourself. Use
+    :func:`subscribe_stream()` instead.
 
     This class contains the common logic of :class:`ParamStream` and
     :class:`ParamGroupStream`. The subclasses only contain thin wrapper
@@ -146,10 +147,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     def __init__(
         self,
-        japc: "PyJapc",
+        japc: "pyjapc.PyJapc",
         name: t.Union[str, t.Iterable[str]],
         *,
-        token: t.Optional["cancellation.Token"],
+        token: t.Optional["cernml.coi.cancellation.Token"],
         maxlen: t.Optional[int],
         **kwargs: t.Any,
     ) -> None:
@@ -175,12 +176,13 @@ class _BaseStream(metaclass=abc.ABCMeta):
         self.stop_monitoring()
 
     @property
-    def token(self) -> t.Optional["cancellation.Token"]:
+    def token(self) -> t.Optional["cernml.coi.cancellation.Token"]:
         """The stream's cancellation token, if any.
 
         While the stream is inactive (``self.monitoring is False``), the
-        token may be replaced. This may be useful to restart the stream
-        after a cancellation.
+        token may be replaced with another
+        :class:`~cernml.coi.cancellation.Token`. This may be useful to
+        restart the stream after a cancellation.
 
         Raises:
             StreamError: If attempting to set the token while the stream
@@ -191,7 +193,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         return self._token
 
     @token.setter
-    def token(self, token: t.Optional["cancellation.Token"]) -> None:
+    def token(self, token: t.Optional["cernml.coi.cancellation.Token"]) -> None:
         if self.monitoring:
             raise StreamError("cannot change cancellation token while monitoring")
         # See comment in __init__(). We need to keep token and condition
@@ -311,9 +313,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
             a new value has arrived.
 
         Raises:
-            CancelledError: if a :class:`cancellation.Token` has been
-                passed to :func:`subscribe_stream()` and the token has
-                been cancelled.
+            ~cernml.coi.cancellation.CancelledError: if a
+                :class:`~cernml.coi.cancellation.Token` has been passed
+                to :func:`subscribe_stream()` and the token has been
+                cancelled.
             JavaException: if an exception occurred on the Java side
                 while receiving this value.
             StreamError: if the queue is empty, the subscription is not
@@ -375,9 +378,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
             elapses before a new value has arrived.
 
         Raises:
-            CancelledError: if a :class:`cancellation.Token` has been
-                passed to :func:`subscribe_stream()` and the token has
-                been cancelled.
+            ~cernml.coi.cancellation.CancelledError: if a
+                :class:`~cernml.coi.cancellation.Token` has been passed
+                to :func:`subscribe_stream()` and the token has been
+                cancelled.
             JavaException: if an exception occurred on the Java side
                 while receiving this value.
             StreamError: if the subscription is not active and no
@@ -429,16 +433,16 @@ class _BaseStream(metaclass=abc.ABCMeta):
 class ParamStream(_BaseStream):
     """A synchronized handle to a one-parameter PyJapc subscription.
 
-    Typically you use :func:`subscribe_stream` to instantiate this
+    Typically you use :func:`subscribe_stream()` to instantiate this
     class.
     """
 
     def __init__(
         self,
-        japc: "PyJapc",
+        japc: "pyjapc.PyJapc",
         name: str,
         *,
-        token: t.Optional["cancellation.Token"],
+        token: t.Optional["cernml.coi.cancellation.Token"],
         maxlen: t.Optional[int],
         **kwargs: t.Any,
     ) -> None:
@@ -507,16 +511,16 @@ class ParamStream(_BaseStream):
 class ParamGroupStream(_BaseStream):
     """A synchronized handle to a multi-parameter PyJapc subscription.
 
-    Typically you use :func:`subscribe_stream` to instantiate this
+    Typically you use :func:`subscribe_stream()` to instantiate this
     class.
     """
 
     def __init__(
         self,
-        japc: "PyJapc",
+        japc: "pyjapc.PyJapc",
         name: t.Iterable[str],
         *,
-        token: t.Optional["cancellation.Token"],
+        token: t.Optional["cernml.coi.cancellation.Token"],
         maxlen: t.Optional[int],
         **kwargs: t.Any,
     ) -> None:
@@ -588,10 +592,10 @@ class ParamGroupStream(_BaseStream):
 
 @t.overload
 def subscribe_stream(
-    japc: "PyJapc",
+    japc: "pyjapc.PyJapc",
     name_or_names: str,
     *,
-    token: t.Optional["cancellation.Token"] = ...,
+    token: t.Optional["cernml.coi.cancellation.Token"] = ...,
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
@@ -607,10 +611,10 @@ def subscribe_stream(
 # never be fixable.
 @t.overload
 def subscribe_stream(
-    japc: "PyJapc",
+    japc: "pyjapc.PyJapc",
     name_or_names: t.List[str],
     *,
-    token: t.Optional["cancellation.Token"] = ...,
+    token: t.Optional["cernml.coi.cancellation.Token"] = ...,
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
@@ -620,10 +624,10 @@ def subscribe_stream(
 
 
 def subscribe_stream(
-    japc: "PyJapc",
+    japc: "pyjapc.PyJapc",
     name_or_names: t.Union[str, t.List[str]],
     *,
-    token: t.Optional["cancellation.Token"] = None,
+    token: t.Optional["cernml.coi.cancellation.Token"] = None,
     maxlen: t.Optional[int] = 1,
     convert_to_python: bool = True,
     selector: t.Optional[str] = None,
@@ -638,24 +642,25 @@ def subscribe_stream(
     risk of losing values.
 
     Args:
-        japc: The :class:`PyJapc` object on which to subscribe.
+        japc: The :class:`~pyjapc.PyJapc` object on which to subscribe.
         name_or_names: The parameter(s) to which to subscribe. Pass a
             single string to subscribe to a parameter, a list of strings
             to subscribe to a parameter group.
-        token: If passed, the stream will hold onto this token and
-            watch it. In this case, :meth:`pop_or_wait()` can get
-            cancelled through the token.
+        token: If passed, the stream will hold onto this
+            :class:`~cernml.coi.cancellation.Token` and watch it. In
+            this case, :meth:`pop_or_wait()` can get cancelled through
+            the token.
         maxlen: The maximum length of the stream's internal queue. The
-            default is ``1``, i.e. only the most recent value is
-            retained. If None, there is no limit and the queue might
-            grow beyond all bounds if not emptied regularly.
+            default is 1, i.e. only the most recent value is retained.
+            If None, there is no limit and the queue might grow beyond
+            all bounds if not emptied regularly.
         convert_to_python: If passed and False, return raw Java objects.
             By default, JAPC attempts to convert Java objects to Python
             objects.
-        selector: If passed, use this instead of ``japc``'s default
-            timing selector.
-        data_filter: If passed, use this instead of ``japc``'s default
-            data filter.
+        selector: If passed, use this instead of the default timing
+            selector of *japc*.
+        data_filter: If passed, use this instead of the default data
+            filter of *japc*.
 
     Returns:
         A :class:`ParamStream` for a single parameter and a
@@ -672,7 +677,7 @@ def subscribe_stream(
     reusable, but not re-entrant. This means the *same* stream may be
     used in subsequent :keyword:`with` blocks, but not in nested ones.
 
-        >>> def run_analysis(japc: "PyJapc"):
+        >>> def run_analysis(japc: "PyJapc") -> None:
         ...     stream = subscribe_stream(japc, "device/property#field")
         ...     with stream:
         ...         values_and_headers = [

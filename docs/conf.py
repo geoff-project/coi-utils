@@ -11,7 +11,6 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------
 
-import datetime
 import pathlib
 import sys
 from importlib.machinery import ModuleSpec
@@ -87,6 +86,38 @@ napoleon_type_aliases = {
     "Problem": "cernml.coi._problem.Problem",
 }
 
+
+def setup(app):  # type: ignore
+    """Sphinx setup hook."""
+
+    def _deduce_public_module_name(name):  # type: ignore
+        if name.startswith("cernml.coi._"):
+            return "cernml.coi"
+        if name.startswith("cernml.mpl_utils._"):
+            return "cernml.mpl_utils"
+        if name == "gym.core":
+            return "gym"
+        if name.startswith("gym.spaces."):
+            return "gym.spaces"
+        return name
+
+    def _hide_class_module(class_):  # type: ignore
+        old_name = getattr(class_, "__module__", "")
+        if not old_name:
+            return
+        new_name = _deduce_public_module_name(old_name)
+        if new_name != old_name:
+            class_.__module__ = new_name
+
+    def _hide_private_modules(_app, obj, _bound_method):  # type: ignore
+        if isinstance(obj, type):
+            _hide_class_module(obj)
+            for base in getattr(obj, "__bases__", []):
+                _hide_class_module(base)
+
+    app.connect("autodoc-before-process-signature", _hide_private_modules)
+
+
 # -- Options for Graphviz ----------------------------------------------
 
 graphviz_output_format = "svg"
@@ -97,9 +128,10 @@ ACC_PY_DOCS_ROOT = "https://acc-py.web.cern.ch/gitlab/"
 
 intersphinx_mapping = {
     "coi": (ACC_PY_DOCS_ROOT + "be-op-ml-optimization/cernml-coi/docs/stable/", None),
-    "pyjapc": (ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/", None),
     "jpype": ("https://jpype.readthedocs.io/en/latest/", None),
     "mpl": ("https://matplotlib.org/stable/", None),
+    "np": ("https://numpy.org/doc/stable/", None),
+    "pyjapc": (ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/", None),
     "python": ("https://docs.python.org/3", None),
 }
 
