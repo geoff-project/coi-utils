@@ -10,6 +10,10 @@ package will also work with version 0.6.1, but may break with version 0.7.0.
 
 No changes yet!
 
+## v0.2.1
+
+- FIX: Mark {mod}`~cernml.lsa_utils` as type-annotated.
+
 ## v0.2.0
 
 - BREAKING: rename {class}`~cernml.japc_utils.ParamStream` and {class}`~cernml.japc_utils.ParamGroupStream` methods: `wait_next()` becomes {meth}`~cernml.japc_utils.ParamStream.pop_or_wait()`, `next_if_ready()` becomes {meth}`~cernml.japc_utils.ParamStream.pop_if_ready()`.
