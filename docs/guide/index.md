@@ -12,6 +12,7 @@ from cernml import japc_utils, lsa_utils, gym_utils, mpl_utils
 maxdepth: 2
 ---
 
+install
 japc_utils
 lsa_utils
 gym_utils

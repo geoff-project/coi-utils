@@ -12,6 +12,7 @@ No changes yet!
 
 ## v0.2.1
 
+- ADD: {doc}`Installation guide <guide/install>`.
 - FIX: Mark {mod}`~cernml.lsa_utils` as type-annotated.
 - FIX: Include `pjlsa` dependency in extra `all`.
 
