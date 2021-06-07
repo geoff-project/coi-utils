@@ -13,6 +13,7 @@ No changes yet!
 ## v0.2.1
 
 - FIX: Mark {mod}`~cernml.lsa_utils` as type-annotated.
+- FIX: Include `pjlsa` dependency in extra `all`.
 
 ## v0.2.0
 
