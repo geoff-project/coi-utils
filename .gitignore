@@ -1,6 +1,3 @@
-# Automatically generated files.
-cernml/coi/_version.py
-
 # Caches and build directories.
 __pycache__
 build/
