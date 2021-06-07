@@ -15,6 +15,7 @@ No changes yet!
 - ADD: {doc}`Installation guide <guide/install>`.
 - FIX: Mark {mod}`~cernml.lsa_utils` as type-annotated.
 - FIX: Include `pjlsa` dependency in extra `all`.
+- FIX: Overly loose dependency on {doc}`cernml-coi <coi:index>`.
 
 ## v0.2.0
 
