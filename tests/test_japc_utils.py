@@ -11,7 +11,7 @@ import typing as t
 from unittest.mock import ANY, Mock
 
 import pytest
-from cernml.coi.unstable import cancellation
+from cernml.coi import cancellation
 
 from cernml import japc_utils
 
