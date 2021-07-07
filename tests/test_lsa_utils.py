@@ -54,3 +54,14 @@ def test_get_function_bad_context() -> None:
             parameter="logical.RDH.20207/K",
             context="bad_context",
         )
+
+
+def test_incorporate_out_of_range() -> None:
+    with pytest.raises(lsa_utils.NotFound, match="beam process for t_cycle=0.0 ms"):
+        lsa_utils.incorporate_and_trim(
+            "ETL.GSBHN10/KICK",
+            "Pb54_2BP_2021_06_09_EARLY_2400ms_V1",
+            0.0,
+            0.0,
+            relative=False,
+        )

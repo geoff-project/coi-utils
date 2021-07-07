@@ -163,13 +163,17 @@ class Incorporator:
         return lsa_settings.IncorporationSetting(setting, beam_process_time)
 
     def _get_beam_process_at(self, cycle_time: float) -> lsa_settings.BeamProcess:
-        # There are cases where this returns more than one particle
-        # transfer. However, those cases are irrelevant for function
-        # optimization.
-        (transfer,) = self._parameter.getParticleTransfers()
-        return lsa_settings.Contexts.getFunctionBeamProcessAt(
-            self._cycle, transfer, cycle_time
-        )
+        # If there are multiple particle transfers, find the first one
+        # that returns a beam process at the given time. Since we are
+        # dealing with functions, the beam processes of different
+        # particle transfers cannot overlap.
+        for transfer in self._parameter.getParticleTransfers():
+            beam_process = lsa_settings.Contexts.getFunctionBeamProcessAt(
+                self._cycle, transfer, cycle_time
+            )
+            if beam_process is not None:
+                return beam_process
+        raise NotFound(f"beam process for t_cycle={cycle_time} ms")
 
 
 def get_settings_function(
