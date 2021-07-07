@@ -10,14 +10,15 @@
 import numpy as np
 import pytest
 
-pjlsa = pytest.importorskip('pjlsa')
+pjlsa = pytest.importorskip("pjlsa")
 with pjlsa.LSAClient(server="next").java_api():
     from cernml import lsa_utils
 
 
 def _is_sorted(array: np.ndarray) -> bool:
     assert np.ndim(array) == 1
-    return np.all(array[:-1] < array[1:])
+    # Convert numpy._bool to built-in bool.
+    return bool(np.all(array[:-1] < array[1:]))
 
 
 def test_get_user() -> None:
