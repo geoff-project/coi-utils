@@ -10,6 +10,11 @@ package will also work with version 0.6.1, but may break with version 0.7.0.
 
 No changes yet!
 
+## v0.2.2
+
+- FIX: Properly handle multiple particle transfers in
+  {func}`cernml.lsa_utils.incorporate_and_trim()`.
+
 ## v0.2.1
 
 - ADD: {doc}`Installation guide <guide/install>`.
