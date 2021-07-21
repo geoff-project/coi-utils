@@ -8,7 +8,7 @@ package will also work with version 0.6.1, but may break with version 0.7.0.
 
 ## Unreleased
 
-No changes yet!
+- Add optional parameter *description* to {func}`~cernml.lsa_utils.incorporate_and_trim()`.
 
 ## v0.2.2
 

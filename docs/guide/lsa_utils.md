@@ -77,6 +77,7 @@ assert attrs["VE:Start flat top"] == "6200"
 lsa_utils.incorporate_and_trim(
     "logical.RDH.20208/J", context, cycle_time=1440.0, value=0.0,
     relative=False,
+    description="Usage example of cernml.lsa_utls",
 )
 ```
 
@@ -97,5 +98,7 @@ xs, ys = inc.get_function()
 assert isinstance(xs, np.ndarray) and isinstance(ys, np.ndarray)
 assert xs.shape == ys.shape
 
-inc.incorporate_and_trim(1440.0, 0.0, relative=False)
+inc.incorporate_and_trim(
+    1440.0, 0.0, relative=False, description="Usage example"
+)
 ```

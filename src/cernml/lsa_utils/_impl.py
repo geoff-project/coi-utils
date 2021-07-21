@@ -2,7 +2,7 @@
 
 """Module for helper functions to communicate with LSA."""
 
-from typing import Dict, Tuple, cast
+import typing as t
 
 import numpy as np
 
@@ -28,6 +28,8 @@ generation_service = ServiceLocator.getService(GenerationService)
 parameter_service = ServiceLocator.getService(ParameterService)
 setting_service = ServiceLocator.getService(SettingService)
 trim_service = ServiceLocator.getService(TrimService)
+
+DEFAULT_TRIM_DESCRIPTION = "Via COI"
 
 
 class NotFound(Exception):
@@ -94,13 +96,13 @@ class Incorporator:
     @property
     def user(self) -> str:
         """The name of the current user."""
-        return cast(lsa_spi.SubContextImpl, self._cycle).getUser()
+        return t.cast(lsa_spi.SubContextImpl, self._cycle).getUser()
 
     @user.setter
     def user(self, name: str) -> None:
         self._cycle = context_service.findStandAloneContextByUser(name)
 
-    def get_function(self) -> Tuple[np.ndarray, np.ndarray]:
+    def get_function(self) -> t.Tuple[np.ndarray, np.ndarray]:
         """Query the function for the current context and parameter.
 
         This returns the function as a 2-tuple of times and values, each
@@ -114,7 +116,12 @@ class Incorporator:
         return np.array(function.toXArray()), np.array(function.toYArray())
 
     def incorporate_and_trim(
-        self, cycle_time: float, value: float, *, relative: bool
+        self,
+        cycle_time: float,
+        value: float,
+        *,
+        relative: bool,
+        description: t.Optional[str] = None,
     ) -> None:
         """Modify the function at a point and commit the change.
 
@@ -136,6 +143,9 @@ class Incorporator:
                 function at the given time. If False, the correction is
                 set to *value*, overwriting the previous correction at
                 the given time.
+            description: The description to appear in LSA's trim
+                history. If not passed, an implementation-defined string
+                will be used.
         """
         # For the user's convenience, convert Numpy's floats into Python
         # floats, lest Java throws an exception due to ambiguous
@@ -146,6 +156,9 @@ class Incorporator:
         trim_service.incorporate(
             lsa_settings.IncorporationRequest.builder()
             .setContext(self._cycle)
+            .setDescription(
+                description if description is not None else DEFAULT_TRIM_DESCRIPTION
+            )
             .setRelative(relative)
             .addIncorporationSetting(setting)
             .build()
@@ -178,7 +191,7 @@ class Incorporator:
 
 def get_settings_function(
     parameter: str, context: str
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> t.Tuple[np.ndarray, np.ndarray]:
     """Query the settings function for a given parameter and context.
 
     This returns the function as a 2-tuple of times and values, each an
@@ -196,7 +209,7 @@ def get_context_by_user(user: str) -> str:
     return cycle.getName()
 
 
-def get_cycle_type_attributes(context: str) -> Dict[str, str]:
+def get_cycle_type_attributes(context: str) -> t.Dict[str, str]:
     """Look up the cycle type attributes associated with a context."""
     cycle = context_service.findStandAloneCycle(context)
     if cycle is None:
@@ -214,6 +227,7 @@ def incorporate_and_trim(
     value: float,
     *,
     relative: bool,
+    description: t.Optional[str] = None,
 ) -> None:
     """Modify the function at a point and commit the change.
 
@@ -238,7 +252,9 @@ def incorporate_and_trim(
             function at the given time. If False, the correction is set
             to *value*, overwriting the previous correction at the given
             time.
+        description: The description to appear in LSA's trim history. If
+            not passed, an implementation-defined string will be used.
     """
     Incorporator(parameter_name, context=context).incorporate_and_trim(
-        cycle_time, value, relative=relative
+        cycle_time, value, relative=relative, description=description
     )
