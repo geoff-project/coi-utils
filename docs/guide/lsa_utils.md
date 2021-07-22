@@ -102,3 +102,91 @@ inc.incorporate_and_trim(
     1440.0, 0.0, relative=False, description="Usage example"
 )
 ```
+
+## Incorporation Ranges
+
+In order to modify a function via Python, at least one *incorporation range*
+must be defined for it. Incorporation ranges define how a modification of the
+function is incorporated into its overall shape and serve to preserve certain
+properties of continuity, flatness, etc.
+
+Incorporation ranges are defined for each beam process, parameter and
+(optionally) parameter group. One simple way to figure out the beam processes
+for a given context by hand, you can open the LSA App Suite, start settings
+management, select the desired context and enable "Show Sub Contexts".
+
+![Screenshot of the LSA App Suite that visualizes how to see find the beam
+processes for a given context.](./incorporation-settings.png)
+
+To create an incorporation range, you stay within the LSA App Suite and start
+the Incorporation Ranges app under the category "Contexts". There, you can pick
+the beam process, parameter and parameter group. If a rule should apply to
+multiple similar parameters, you can set the parameter group to "all".
+
+![Screenshot of the LSA App Suite that shows the incorporation rules
+manager.](./incorporation-rules.png)
+
+Each incorporation range has a *start* and *end* as well as a *forward rule*
+and a *backward rule*. The *start* and *end* determine the time interval within
+the beam process for which the range is valid. They're measured in milliseconds
+from the start of the beam process. By clicking the drop-down button, you can
+also enter special constants that refer to the start and end of the entire beam
+process.
+
+It is not possible to define incorporation ranges that span multiple beam
+processes. It is also not *advisable* to modify a function close to the start
+or the end of the beam process. Generally, the incorporation rules will only be
+applied up to the beam process edge linear interpolation will occur up to the
+closest point in the next beam process, wherever that point may be.
+
+The forward and backward rules define how a modification at a single point is
+propagated into the range. Most rules take an additional time parameter.
+Generally, they define how smoothly a change is incorporated. As for *start*
+and *end*, the parameter may be set to certain constants such as "start of beam
+process" or "start of incorporation range".
+
+The most important rules are given below. In the app, you can also click the
+question mark icon to get more help on how they work.
+
+`CONSTANTIR`
+: All points in the current beam process are set to the same value. This
+ignores the rule parameter as well as the length of the incorporation range
+(except to check whether the rule may be applied at all).
+
+`DELTAIR`
+: The selected point is set to the desired value. In addition, an interval
+whose length is given by the rule parameter is raised or lowered by the same
+amount. The shape of the function within this interval is preserved. Note that
+this interval is unrelated to the incorporation range. Outside of this
+interval, no further continuity constraints are applied  – the function is
+simply linearly interpolated to the next point, wherever that may be.
+
+`CONSTANT_DECAY_IR`
+: The selected point is set to the desired value. In the interval whose length
+is given by the rule parameter, the delta that was necessary to achieve this
+change is linearly decreased to zero. The shape of the function within this
+interval is honored.
+
+`TRIANGLEIR`
+: The selected point is set to the desired value. The function is linearly
+interpolated over an interval whose length is given by the rule parameter. The
+function is flattened over the given interval. This is the main difference
+between this rule and `CONSTANT_DECAY_IR`.
+
+Note that the incorporation range has no effect on how these rules behave; it
+only determines the time interval for which they are valid. For example, you
+can declare an incorporation range from 400 to 700 ms where both rules are
+`CONSTANT_DECAY_IR` with a parameter of 40 ms. In this case:
+1. Incorporating a change at 400 ms will modify the function in the interval
+   from 360 to 440 ms by linearly decreasing the delta to zero.
+2. Incorporating a change at 600 ms will modify the interval from 560 to 640
+   ms. This does not overlap with the previous change, but uses the same rule
+   and leads to the same triangular shape.
+3. Incorporating a change at 650 ms will overlap with cause an overlap with the
+   previous interval. This will honor the previously falling slop, but add its
+   own changes on top.
+4. An attempt to incorporate a change at 710 ms will fail, as it is outside of
+   the incorporation range.
+
+![Result of the above incorporations into a constant
+function.](./incorporation-result.png)
