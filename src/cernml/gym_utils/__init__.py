@@ -138,9 +138,9 @@ class Scaler:
 
             >>> box = Box(5, 8, shape=(3,))
             >>> Scaler(box).scaled_space
-            Box(-1.0, 1.0, (3,), float32)
+            Box([-1. -1. -1.], [1. 1. 1.], (3,), float32)
             >>> Scaler(box, symmetric=False).scaled_space
-            Box(0.0, 1.0, (3,), float32)
+            Box([0. 0. 0.], [1. 1. 1.], (3,), float32)
         """
         return Box(
             -1 if self._symmetric else 0,
