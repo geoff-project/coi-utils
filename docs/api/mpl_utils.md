@@ -14,7 +14,7 @@
         :members:
     .. autoclass:: FigureRenderer
         :show-inheritance:
-        :members: from_callback, _init_figure, _update_figure
+        :members: close, from_callback, _init_figure, _update_figure
     .. autoclass:: RendererGroup
         :show-inheritance: tuple
     .. autodecorator:: render_generator

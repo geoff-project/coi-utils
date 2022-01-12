@@ -189,6 +189,21 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         self.figure: t.Optional[Figure] = None
         self._title = title
 
+    def close(self) -> None:
+        """Close the figure managed by this renderer.
+
+        This only does anything if the figure has been created with
+        render mode ``"human"``.
+        """
+        # Do not call ``pyplot.close(None)`` -- that closes the current
+        # figure, as returned by ``pyplot.gcf()``, which might be
+        # completely unrelated to us.
+        # On the other hand, it's safe to close a figure that is not
+        # managed by pyplot. This case is caught internally and nothing
+        # happens.
+        if self.figure is not None:
+            pyplot.close(self.figure)
+
     def update(self, mode: str) -> t.Optional["MatplotlibFigures"]:
         try:
             figure = self.figure
