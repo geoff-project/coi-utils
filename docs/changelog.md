@@ -8,6 +8,10 @@ package will also work with version 0.6.1, but may break with version 0.7.0.
 
 ## Unreleased
 
+No changes yet!
+
+## v0.2.4
+
 - Add {meth}`~cernml.mpl_utils.FigureRenderer.close()` to {class}`~cernml.mpl_utils.FigureRenderer`.
 
 ## v0.2.3
