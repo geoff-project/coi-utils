@@ -452,11 +452,10 @@ class ParamStream(_BaseStream):
         return f"<{type(self).__name__}({self.parameter_name!r})>"
 
     def __repr__(self) -> str:
-        return "<{typename}(<PyJapc>, {name!r}, {token!r}, {maxlen!r})>".format(
-            typename=type(self).__name__,
-            name=self.parameter_name,
-            token=self.token,
-            maxlen=self._queue.maxlen,
+        return (
+            f"<{type(self).__name__}(<PyJapc>, "
+            f"{self.parameter_name!r}, {self.token!r}, "
+            f"{self._queue.maxlen!r})>"
         )
 
     @property
@@ -530,11 +529,10 @@ class ParamGroupStream(_BaseStream):
         return f"<{type(self).__name__} of {len(self.parameter_names)} parameters>"
 
     def __repr__(self) -> str:
-        return "<{typename}(<PyJapc>, {names!r}, {token!r}, {maxlen!r})>".format(
-            typename=type(self).__name__,
-            names=self.parameter_names,
-            token=self.token,
-            maxlen=self._queue.maxlen,
+        return (
+            f"<{type(self).__name__}(<PyJapc>, "
+            f"{self.parameter_names!r}, {self.token!r}, "
+            f"{self._queue.maxlen!r})>"
         )
 
     @property
