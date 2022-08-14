@@ -32,9 +32,8 @@ up.
 """
 
 try:
-    from ._incorporator import (
-        Incorporator,
-        NotFound,
+    from ._incorporator import Incorporator, NotFound
+    from ._utils import (
         get_context_by_user,
         get_cycle_type_attributes,
         get_settings_function,
