@@ -78,8 +78,8 @@ class Incorporator:
         self._cycle = _services.context.findStandAloneCycle(name)
 
     @property
-    def user(self) -> str:
-        """The name of the current user."""
+    def user(self) -> t.Optional[str]:
+        """The name of the current user, or None if the context is unmapped."""
         return t.cast(lsa_spi.SubContextImpl, self._cycle).getUser()
 
     @user.setter
