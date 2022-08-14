@@ -28,3 +28,7 @@ score = false
 
 [tool.pylint.'MESSAGES CONTROL']
 disable = ['similarities']
+
+[tool.pylint.MAIN]
+# Ignore Java packages imported via JPype as if they really existed.
+ignored-modules = ['java', 'cern']

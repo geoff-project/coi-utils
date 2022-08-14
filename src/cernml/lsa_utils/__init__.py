@@ -31,11 +31,14 @@ up.
 .. _`JPype`: https://github.com/jpype-project/jpype
 """
 
-from ._impl import (
-    Incorporator,
-    NotFound,
-    get_context_by_user,
-    get_cycle_type_attributes,
-    get_settings_function,
-    incorporate_and_trim,
-)
+try:
+    from ._incorporator import (
+        Incorporator,
+        NotFound,
+        get_context_by_user,
+        get_cycle_type_attributes,
+        get_settings_function,
+        incorporate_and_trim,
+    )
+except ImportError as exc:
+    raise ImportError("import this package in `with LSAClient().java_api()`") from exc

@@ -1,33 +1,17 @@
-#!/usr/bin/env python
+"""Provide the :class:`Incorporator` class and related items."""
 
-"""Module for helper functions to communicate with LSA."""
+from __future__ import annotations
 
 import typing as t
 
+import cern.accsoft.commons.value as acc_value
+import cern.lsa.domain.settings as lsa_settings
+import cern.lsa.domain.settings.spi as lsa_spi
+import java.lang
+import java.util
 import numpy as np
 
-try:
-    import cern.accsoft.commons.value as acc_value
-    import cern.lsa.domain.settings as lsa_settings
-    import cern.lsa.domain.settings.spi as lsa_spi
-    import java.lang
-    import java.util
-    from cern.lsa.client import (
-        ContextService,
-        GenerationService,
-        ParameterService,
-        ServiceLocator,
-        SettingService,
-        TrimService,
-    )
-except ImportError as exc:
-    raise ImportError("import this package in `with LSAClient().java_api()`") from exc
-
-context_service = ServiceLocator.getService(ContextService)
-generation_service = ServiceLocator.getService(GenerationService)
-parameter_service = ServiceLocator.getService(ParameterService)
-setting_service = ServiceLocator.getService(SettingService)
-trim_service = ServiceLocator.getService(TrimService)
+from . import _services
 
 DEFAULT_TRIM_DESCRIPTION = "Via COI"
 
@@ -57,7 +41,7 @@ class Incorporator:
     def __init__(
         self, parameter: str, *, context: str = None, user: str = None
     ) -> None:
-        self._parameter = parameter_service.findParameterByName(parameter)
+        self._parameter = _services.parameter.findParameterByName(parameter)
         if not self._parameter:
             raise NotFound(parameter)
         self._cycle: lsa_settings.StandAloneContext
@@ -65,11 +49,11 @@ class Incorporator:
         if context and user:
             raise TypeError("conflicting arguments: `context` and `user`")
         elif context:
-            self._cycle = context_service.findStandAloneCycle(context)
+            self._cycle = _services.context.findStandAloneCycle(context)
             if not self._cycle:
                 raise NotFound(context)
         elif user:
-            self._cycle = context_service.findStandAloneContextByUser(user)
+            self._cycle = _services.context.findStandAloneContextByUser(user)
             if not self._cycle:
                 raise NotFound(user)
         else:
@@ -82,7 +66,7 @@ class Incorporator:
 
     @parameter.setter
     def parameter(self, name: str) -> None:
-        self._parameter = parameter_service.findParameterByName(name)
+        self._parameter = _services.parameter.findParameterByName(name)
 
     @property
     def context(self) -> str:
@@ -91,7 +75,7 @@ class Incorporator:
 
     @context.setter
     def context(self, name: str) -> None:
-        self._cycle = context_service.findStandAloneCycle(name)
+        self._cycle = _services.context.findStandAloneCycle(name)
 
     @property
     def user(self) -> str:
@@ -100,7 +84,7 @@ class Incorporator:
 
     @user.setter
     def user(self, name: str) -> None:
-        self._cycle = context_service.findStandAloneContextByUser(name)
+        self._cycle = _services.context.findStandAloneContextByUser(name)
 
     def get_function(self) -> t.Tuple[np.ndarray, np.ndarray]:
         """Query the function for the current context and parameter.
@@ -111,7 +95,7 @@ class Incorporator:
         request = lsa_settings.ContextSettingsRequest.byStandAloneContextAndParameters(
             self._cycle, java.util.Collections.singleton(self._parameter)
         )
-        settings = setting_service.findContextSettings(request)
+        settings = _services.setting.findContextSettings(request)
         function = lsa_settings.Settings.getFunction(settings, self._parameter)
         return np.array(function.toXArray()), np.array(function.toYArray())
 
@@ -153,7 +137,7 @@ class Incorporator:
         if isinstance(value, np.floating):
             value = float(value)
         setting = self._build_incorporation_setting(cycle_time, value)
-        trim_service.incorporate(
+        _services.trim.incorporate(
             lsa_settings.IncorporationRequest.builder()
             .setContext(self._cycle)
             .setDescription(
@@ -203,7 +187,7 @@ def get_settings_function(
 def get_context_by_user(user: str) -> str:
     """Look up the name of the context that belongs to the user."""
     try:
-        cycle = context_service.findStandAloneContextByUser(user)
+        cycle = _services.context.findStandAloneContextByUser(user)
     except java.lang.IllegalArgumentException:  # type: ignore
         raise NotFound(user) from None
     return cycle.getName()
@@ -211,10 +195,10 @@ def get_context_by_user(user: str) -> str:
 
 def get_cycle_type_attributes(context: str) -> t.Dict[str, str]:
     """Look up the cycle type attributes associated with a context."""
-    cycle = context_service.findStandAloneCycle(context)
+    cycle = _services.context.findStandAloneCycle(context)
     if cycle is None:
         raise NotFound(context)
-    cycle_type = generation_service.findCycleType(cycle.getTypeName())
+    cycle_type = _services.generation.findCycleType(cycle.getTypeName())
     if cycle_type is None:
         raise NotFound(cycle.getTypeName())
     return {attr.getName(): attr.getValue() for attr in cycle_type.getAttributes()}
