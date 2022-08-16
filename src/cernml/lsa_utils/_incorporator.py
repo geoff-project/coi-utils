@@ -1,4 +1,4 @@
-"""Provide the :class:`Incorporator` class and related items."""
+"""Provide :class:`Incorporator` and :class:`IncorporatorGroup` and related items."""
 
 from __future__ import annotations
 

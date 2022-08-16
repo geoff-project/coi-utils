@@ -41,6 +41,7 @@ def get_cycle_type_attributes(context: str) -> t.Dict[str, str]:
     return {attr.getName(): attr.getValue() for attr in cycle_type.getAttributes()}
 
 
+@t.overload
 def incorporate_and_trim(
     parameter_name: str,
     context: str,
@@ -50,7 +51,32 @@ def incorporate_and_trim(
     relative: bool,
     description: t.Optional[str] = None,
 ) -> None:
-    """Modify the function at a point and commit the change.
+    ...  # pragma: no cover
+
+
+@t.overload
+def incorporate_and_trim(
+    parameter_name: t.List[str],
+    context: str,
+    cycle_time: float,
+    value: t.Union[np.ndarray, t.Sequence[float]],
+    *,
+    relative: bool,
+    description: t.Optional[str] = None,
+) -> None:
+    ...  # pragma: no cover
+
+
+def incorporate_and_trim(
+    parameter_name: t.Union[str, t.List[str]],
+    context: str,
+    cycle_time: float,
+    value: t.Union[float, np.ndarray, t.Sequence[float]],
+    *,
+    relative: bool,
+    description: t.Optional[str] = None,
+) -> None:
+    """Modify a function or functions at a point and commit the change.
 
     This assumes that the parameter is a scalar function. It modifies
     the its *correction* at a given point in time and submits this
@@ -58,7 +84,8 @@ def incorporate_and_trim(
 
     Args:
         parameter_name: The name of the parameter whose function is to
-            be modified.
+            be modified. This may be a list of names to trim several
+            functions at once.
         context: The context in which the parameter is modified. In
             cycling machines like the SPS, this is the cycle; in
             cycle-less machines like the LHC, this is the beam process.
@@ -68,7 +95,9 @@ def incorporate_and_trim(
             incorporation rule in the LSA database.
         value: The correction value to be transmitted. How this value is
             incorporated depends on the  keyword-only argument
-            *relative*.
+            *relative*. If *parameter_name* is a string, this is a
+            single float. If *parameter_name* is a list of strings, this
+            should be an array or list of the same length.
         relative: If True, *value* is added to the correction of the
             function at the given time. If False, the correction is set
             to *value*, overwriting the previous correction at the given
@@ -76,6 +105,15 @@ def incorporate_and_trim(
         description: The description to appear in LSA's trim history. If
             not passed, an implementation-defined string will be used.
     """
-    _incorporator.Incorporator(parameter_name, context=context).incorporate_and_trim(
-        cycle_time, value, relative=relative, description=description
-    )
+    if isinstance(parameter_name, str):
+        _incorporator.Incorporator(
+            parameter_name, context=context
+        ).incorporate_and_trim(
+            cycle_time, t.cast(float, value), relative=relative, description=description
+        )
+    else:
+        _incorporator.IncorporatorGroup(
+            parameter_name, context=context
+        ).incorporate_and_trim(
+            cycle_time, value, relative=relative, description=description
+        )
