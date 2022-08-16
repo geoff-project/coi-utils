@@ -56,7 +56,10 @@ class Incorporator:
 
     @parameter.setter
     def parameter(self, name: str) -> None:
-        self._parameter = _services.parameter.findParameterByName(name)
+        parameter = _services.parameter.findParameterByName(name)
+        if not parameter:
+            raise NotFound(name)
+        self._parameter = parameter
 
     @property
     def context(self) -> str:
@@ -65,16 +68,24 @@ class Incorporator:
 
     @context.setter
     def context(self, name: str) -> None:
-        self._cycle = _services.context.findStandAloneCycle(name)
+        cycle = _services.context.findStandAloneCycle(name)
+        if not cycle:
+            raise NotFound(name)
+        self._cycle = cycle
 
     @property
     def user(self) -> t.Optional[str]:
         """The name of the current user, or None if the context is unmapped."""
-        return t.cast(lsa_spi.SubContextImpl, self._cycle).getUser()
+        return self._cycle.getUser()
 
     @user.setter
     def user(self, name: str) -> None:
-        self._cycle = _services.context.findStandAloneContextByUser(name)
+        try:
+            cycle = _services.context.findStandAloneContextByUser(name)
+        except java.lang.IllegalArgumentException:  # type: ignore
+            raise NotFound(name) from None
+        assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
+        self._cycle = cycle
 
     def get_function(self) -> t.Tuple[np.ndarray, np.ndarray]:
         """Query the function for the current context and parameter.
@@ -145,7 +156,7 @@ class Incorporator:
 
     @classmethod
     def _from_raw(
-        cls, parameter: lsa_settings.Parameter, context: lsa_settings.StandAloneContext
+        cls, parameter: lsa_settings.Parameter, context: lsa_settings.StandAloneCycle
     ) -> Incorporator:
         result = super().__new__(cls)
         result._parameter = parameter
@@ -211,9 +222,10 @@ class IncorporatorGroup:
 
     @user.setter
     def user(self, name: str) -> None:
-        cycle = _services.context.findStandAloneContextByUser(name)
-        if not cycle:
-            raise NotFound(name)
+        try:
+            cycle = _services.context.findStandAloneContextByUser(name)
+        except java.lang.IllegalArgumentException:  # type: ignore
+            raise NotFound(name) from None
         assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
         self._cycle = cycle
 
@@ -317,11 +329,12 @@ def _find_cycle(
     *, context: t.Optional[str], user: t.Optional[str]
 ) -> lsa_settings.StandAloneCycle:
     if context and user:
-        raise TypeError("conflicting arguments: `context` and `user`")
+        raise TypeError("conflicting arguments: 'context' and 'user'")
     if user:
-        cycle = _services.context.findStandAloneContextByUser(user)
-        if not cycle:
-            raise NotFound(user)
+        try:
+            cycle = _services.context.findStandAloneContextByUser(user)
+        except java.lang.IllegalArgumentException:  # type: ignore
+            raise NotFound(user) from None
         assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
         return cycle
     if context:
@@ -329,7 +342,7 @@ def _find_cycle(
         if not cycle:
             raise NotFound(context)
         return cycle
-    raise TypeError("missing keyword-only argument: 'context'")
+    raise TypeError("missing keyword-only argument: 'context' or 'user'")
 
 
 def _build_incorporation_setting(

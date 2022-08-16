@@ -32,12 +32,12 @@ up.
 """
 
 try:
-    from ._incorporator import Incorporator, NotFound
+    from ._incorporator import Incorporator, IncorporatorGroup, NotFound
     from ._utils import (
         get_context_by_user,
         get_cycle_type_attributes,
         get_settings_function,
         incorporate_and_trim,
     )
-except ImportError as exc:
+except ImportError as exc:  # pragma: no cover
     raise ImportError("import this package in `with LSAClient().java_api()`") from exc

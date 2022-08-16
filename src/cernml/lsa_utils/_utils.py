@@ -36,8 +36,8 @@ def get_cycle_type_attributes(context: str) -> t.Dict[str, str]:
     if cycle is None:
         raise _incorporator.NotFound(context)
     cycle_type = _services.generation.findCycleType(cycle.getTypeName())
-    if cycle_type is None:
-        raise _incorporator.NotFound(cycle.getTypeName())
+    # The cycle type must exist because we got the name from a cycle.
+    assert cycle_type is not None
     return {attr.getName(): attr.getValue() for attr in cycle_type.getAttributes()}
 
 

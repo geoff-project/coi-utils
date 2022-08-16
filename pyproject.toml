@@ -18,6 +18,7 @@ profile = 'black'
 [tool.pytest.ini_options]
 addopts = '--doctest-modules --doctest-glob=*.md --ignore=src/cernml/lsa_utils/'
 testpaths = ['tests', 'src', 'docs']
+asyncio_mode = 'strict'
 
 [tool.pylint.FORMAT]
 ignore-long-lines = '<?https?://\S+>?$'

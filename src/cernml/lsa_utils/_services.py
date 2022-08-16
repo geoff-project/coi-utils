@@ -13,7 +13,7 @@ from cern.lsa.client import (
     TrimService,
 )
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     from cern.lsa.client.common import (
         CommonContextService,
         CommonGenerationService,
