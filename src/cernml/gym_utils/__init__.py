@@ -112,7 +112,18 @@ class Scaler:
 
     @property
     def symmetric(self) -> bool:
-        """True if the scaled space is symmetric, False otherwise."""
+        """True if the scaled space is symmetric, False otherwise.
+
+        Example:
+
+            >>> box = Box(-4, 1, (2,))
+            >>> Scaler(box).symmetric
+            True
+            >>> Scaler(box, symmetric=False).symmetric
+            False
+            >>> Scaler(box, symmetric=False).scaled_space
+            Box([0. 0.], [1. 1.], (2,), float32)
+        """
         return self._symmetric
 
     @property
