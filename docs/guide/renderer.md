@@ -1,5 +1,7 @@
 # Keeping Rendering Logic Concise
 
+## Motivation
+
 The render mode {meth}`"matplotlib_figures" <coi:cernml.coi.Problem.render>`
 makes it possible to create {mod}`mpl:matplotlib` plots and have the host
 application embed them. Because optimization problems change on each iteration,
@@ -35,8 +37,6 @@ class MyProblem(SingleOptimizable):
         self._renderer: FigureRenderer = ...
         ...
 
-    ...
-
     def render(self, mode="str"):
         if mode in ["human", "matplotlib_figures"]:
             # This automatically creates the right kind of figure and
@@ -46,7 +46,11 @@ class MyProblem(SingleOptimizable):
         if mode == "ansi":
             return ...
         return super().render(mode)
+
+    ...
 ```
+
+## Generators
 
 While you can implement the interface of
 {class}`~cernml.mpl_utils.FigureRenderer` yourself (and that may make sense in
@@ -60,6 +64,8 @@ Whenever a generator hits a yield point, it suspends execution and returns to
 the caller. When the caller later resumes the generator, it continues execution
 from the previous yield point. This makes it easy to express the init–update
 pattern.
+
+## Example
 
 The following example uses {func}`~cernml.mpl_utils.make_renderer()` to convert
 a {term}`generator` into a concrete {class}`~cernml.mpl_utils.FigureRenderer`.
