@@ -10,7 +10,7 @@ from matplotlib.figure import Figure
 
 from ._iter import iter_matplotlib_figures
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     # pylint: disable = unused-import
     from ._iter import MatplotlibFigures
 
