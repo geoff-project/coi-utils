@@ -453,6 +453,8 @@ class render_generator(t.Generic[T]):
         >>> # This is not <bound method Problem.update_figure>!
         >>> problem.update_figure
         <bound method FigureRenderer.update of <...>>
+        >>> Problem.update_figure
+        <mpl_utils...render_generator object at ...>
     """
 
     # pylint: disable = too-few-public-methods
@@ -485,9 +487,21 @@ class render_generator(t.Generic[T]):
                 f"names ({self.attrname!r} and {name!r})"
             )
 
+    @t.overload
+    def __get__(self, instance: None, owner: t.Type[T]) -> render_generator[T]:
+        ...  # pragma: no cover
+
+    @t.overload
     def __get__(
-        self, instance: T, owner: t.Optional[t.Type[T]] = None
+        self, instance: T, owner: t.Type[T]
     ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]:
+        ...  # pragma: no cover
+
+    def __get__(
+        self, instance: t.Optional[T], owner: t.Type[T]
+    ) -> t.Union[
+        render_generator[T], t.Callable[[str], t.Optional["MatplotlibFigures"]]
+    ]:
         if instance is None:
             return self
         if self.attrname is None:
