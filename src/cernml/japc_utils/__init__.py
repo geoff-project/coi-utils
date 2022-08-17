@@ -16,7 +16,7 @@ import threading
 import typing as t
 from collections import deque
 
-if t.TYPE_CHECKING:
+if t.TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=import-error, unused-import
     import cernml.coi.cancellation
     import pyjapc
@@ -473,11 +473,11 @@ class ParamStream(_BaseStream):
 
     @t.overload
     def pop_or_wait(self) -> t.Tuple[object, Header]:
-        ...
+        ...  # pragma: no cover
 
     @t.overload
     def pop_or_wait(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
-        ...
+        ...  # pragma: no cover
 
     @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
     def pop_or_wait(
@@ -493,11 +493,11 @@ class ParamStream(_BaseStream):
 
     @t.overload
     def wait_for_next(self) -> t.Tuple[object, Header]:
-        ...
+        ...  # pragma: no cover
 
     @t.overload
     def wait_for_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
-        ...
+        ...  # pragma: no cover
 
     @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
     def wait_for_next(
@@ -550,13 +550,13 @@ class ParamGroupStream(_BaseStream):
 
     @t.overload
     def pop_or_wait(self) -> t.List[t.Tuple[object, Header]]:
-        ...
+        ...  # pragma: no cover
 
     @t.overload
     def pop_or_wait(
         self, timeout: float
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        ...
+        ...  # pragma: no cover
 
     @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
     def pop_or_wait(
@@ -572,13 +572,13 @@ class ParamGroupStream(_BaseStream):
 
     @t.overload
     def wait_for_next(self) -> t.List[t.Tuple[object, Header]]:
-        ...
+        ...  # pragma: no cover
 
     @t.overload
     def wait_for_next(
         self, timeout: float
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        ...
+        ...  # pragma: no cover
 
     @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
     def wait_for_next(
@@ -599,7 +599,7 @@ def subscribe_stream(
     selector: t.Optional[str] = ...,
     data_filter: t.Optional[str] = ...,
 ) -> ParamStream:
-    ...
+    ...  # pragma: no cover
 
 
 # Note: `name_or_names` is annotated as a list on purpose. The reason is
@@ -618,7 +618,7 @@ def subscribe_stream(
     selector: t.Optional[str] = ...,
     data_filter: t.Optional[str] = ...,
 ) -> ParamGroupStream:
-    ...
+    ...  # pragma: no cover
 
 
 def subscribe_stream(

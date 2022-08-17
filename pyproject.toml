@@ -28,7 +28,7 @@ reports = false
 score = false
 
 [tool.pylint.'MESSAGES CONTROL']
-disable = ['similarities']
+disable = ['similarities', 'unpacking-non-sequence', 'unsubscriptable-object']
 
 [tool.pylint.MAIN]
 # Ignore Java packages imported via JPype as if they really existed.
