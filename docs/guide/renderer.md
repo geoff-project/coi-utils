@@ -163,14 +163,14 @@ The following program shows the order in which these functions call each other:
 >>> problem = MyProblem()
 >>> x0 = problem.get_initial_params()
 get_initial_params()
->>> _fig = problem.render("human")
+>>> fig = problem.render("matplotlib_figures")
 initializing the figure
 render(no data)
 >>> for i in range(1, 4):
 ...     print(f"iteration #{i}")
 ...     x = problem.optimization_space.sample()
-...     _loss = problem.compute_single_objective(x)
-...     _fig = problem.render("matplotlib_figures")
+...     loss = problem.compute_single_objective(x)
+...     fig = problem.render("matplotlib_figures")
 iteration #1
 compute_single_objective()
 render(reset initial)
@@ -183,11 +183,11 @@ render(update current)
 >>> # Start from scratch, to show that it works.
 >>> x0 = problem.get_initial_params()
 get_initial_params()
->>> _fig = problem.render("matplotlib_figures")
+>>> fig = problem.render("matplotlib_figures")
 render(no data)
->>> _loss = problem.compute_single_objective(x0)
+>>> loss = problem.compute_single_objective(x0)
 compute_single_objective()
->>> _fig = problem.render("matplotlib_figures")
+>>> fig = problem.render("matplotlib_figures")
 render(reset initial)
 
 ```
