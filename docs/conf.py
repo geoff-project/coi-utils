@@ -78,7 +78,12 @@ exclude_patterns = [
 # -- Options for Autodoc -----------------------------------------------
 
 autodoc_member_order = "bysource"
-autodoc_type_aliases = {}
+autodoc_type_aliases = {
+    "MaybeTitledFigure": "~cernml.mpl_utils.MaybeTitledFigure",
+    "MatplotlibFigures": "~cernml.mpl_utils.MatplotlibFigures",
+    "RenderCallback": "~cernml.mpl_utils.RenderCallback",
+    "RenderGenerator": "~cernml.mpl_utils.RenderGenerator",
+}
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False

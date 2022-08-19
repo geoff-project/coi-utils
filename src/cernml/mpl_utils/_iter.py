@@ -27,9 +27,9 @@ def iter_matplotlib_figures(
     possible return types and produces one consistent iterator.
 
     Args:
-        figures: The result of calling
-            :meth:`~cernml.coi.Problem.render()` in the mode
-            ``"matplotlib_figures"``.
+        figures: The :class:`return value <MatplotlibFigures>` of
+            :meth:`render("matplotlib_figures")
+            <cernml.coi.Problem.render()>`.
 
     Yields:
         A 2-tuple of a title and a figure for every item in *figures*.

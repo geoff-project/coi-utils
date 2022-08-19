@@ -5,10 +5,6 @@
 
     .. autofunction:: iter_matplotlib_figures
     .. autofunction:: make_renderer
-    .. autoclass:: MatplotlibFigures
-    .. autoclass:: MaybeTitledFigure
-    .. autoclass:: RenderCallback
-    .. autoclass:: RenderGenerator
     .. autoclass:: Renderer
         :show-inheritance:
         :members:
@@ -18,4 +14,8 @@
     .. autoclass:: RendererGroup
         :show-inheritance: tuple
     .. autodecorator:: render_generator
+    .. autoclass:: MaybeTitledFigure
+    .. autoclass:: MatplotlibFigures
+    .. autoclass:: RenderGenerator
+    .. autoclass:: RenderCallback
 ```

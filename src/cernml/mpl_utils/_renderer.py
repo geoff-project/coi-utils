@@ -341,7 +341,7 @@ class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
 
 
 def make_renderer(
-    *funcs: t.Union[t.Mapping[str, "RenderCallback"], "RenderCallback"],
+    *funcs: t.Union[RenderCallback, t.Mapping[str, RenderCallback]],
     squeeze: bool = True,
 ) -> Renderer:
     """Build a renderer from one or more callbacks.
