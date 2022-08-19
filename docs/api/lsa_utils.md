@@ -9,5 +9,7 @@
     .. autofunction:: incorporate_and_trim
     .. autoclass:: Incorporator
         :members:
+    .. autoclass:: IncorporatorGroup
+        :members:
     .. autoexception:: NotFound
 ```

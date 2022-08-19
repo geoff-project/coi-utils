@@ -51,7 +51,7 @@ class Incorporator:
 
     @property
     def parameter(self) -> str:
-        """The name of the current context."""
+        """The name of the parameter."""
         return self._parameter.getName()
 
     @parameter.setter
@@ -165,15 +165,15 @@ class Incorporator:
 
 
 class IncorporatorGroup:
-    """Class that allows changing one function-type parameter.
+    """Class that allows changing several function-type parameters.
 
     This is the object-oriented alternative to the module-scope
     functions. It is slightly more reusable in that it allows caching
-    the lookup of parameter and cycle.
+    the lookup of parameters and cycle.
 
     Args:
-        parameter: The name of the parameter into which changes are to
-            be incorporated.
+        parameters: The names of the parameters into which changes are
+            to be incorporated.
         context: If passed, the context in which the parameter is
             modified. In cycling machines like the SPS, this is the
             cycle; in cycle-less machines like the LHC, this is the beam
@@ -200,7 +200,7 @@ class IncorporatorGroup:
 
     @property
     def parameters(self) -> t.Tuple[str, ...]:
-        """The name of the current context."""
+        """The names of the parameters."""
         return tuple(p.getName() for p in self._parameters)
 
     @property
@@ -230,7 +230,13 @@ class IncorporatorGroup:
         self._cycle = cycle
 
     def incorporators(self) -> t.Iterator[Incorporator]:
-        """Iterate over incorporators for each of the group's parameters."""
+        """Iterate over incorporators for each of the group's parameters.
+
+        Note:
+            The incorporators are created dynamically and have no notion
+            of equivalence. This means that ``list(self.incorporators())
+            == list(self.incorporators())`` is generally False.
+        """
         for parameter in self._parameters:
             # pylint: disable = protected-access
             yield Incorporator._from_raw(parameter, self._cycle)
@@ -239,7 +245,12 @@ class IncorporatorGroup:
         """Get an incorporator for a parameter in this group.
 
         Raises:
-            KeyError if no parameter in the group has the given name.
+            KeyError: if no parameter in the group has the given name.
+
+        Note:
+            The incorporators are created dynamically and have no notion
+            of equivalence. This means that ``self.get(name) ==
+            self.get(name)`` is generally False.
         """
         for param in self._parameters:
             if param.getName() == parameter:

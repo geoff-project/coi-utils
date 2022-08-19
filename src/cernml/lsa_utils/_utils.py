@@ -78,9 +78,10 @@ def incorporate_and_trim(
 ) -> None:
     """Modify a function or functions at a point and commit the change.
 
-    This assumes that the parameter is a scalar function. It modifies
-    the its *correction* at a given point in time and submits this
-    modification to the LSA database. The *target* remains unmodified.
+    This assumes that each parameter is a scalar function. It modifies
+    the functions' *correction* at a given point in time and submits
+    this modification to the LSA database. The *target* remains
+    unmodified.
 
     Args:
         parameter_name: The name of the parameter whose function is to

@@ -56,7 +56,7 @@ import cern.lsa.client
 import cernml.lsa_utils
 ```
 
-## Usage Examples
+## Changing a Single Parameter
 
 There are two ways to use {mod}`~cernml.lsa_utils`. The simple one is by using
 the free functions that it provides:
@@ -68,7 +68,8 @@ context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
 assert context == "HIRADMAT_PILOT_Q20_2018_V1"
 
 xs, ys = lsa_utils.get_settings_function("logical.RDH.20207/J", context)
-assert isinstance(xs, np.ndarray) and isinstance(ys, np.ndarray)
+assert isinstance(xs, np.ndarray)
+assert isinstance(ys, np.ndarray)
 assert xs.shape == ys.shape
 
 attrs = lsa_utils.get_cycle_type_attributes(context)["VE:Start flat top"]
@@ -77,7 +78,7 @@ assert attrs["VE:Start flat top"] == "6200"
 lsa_utils.incorporate_and_trim(
     "logical.RDH.20208/J", context, cycle_time=1440.0, value=0.0,
     relative=False,
-    description="Usage example of cernml.lsa_utls",
+    description="Usage example of cernml.lsa_utils",
 )
 ```
 
@@ -100,6 +101,76 @@ assert xs.shape == ys.shape
 
 inc.incorporate_and_trim(
     1440.0, 0.0, relative=False, description="Usage example"
+)
+```
+
+## Changing Multiple Parameters
+
+The {mod}`~cernml.lsa_utils` package also allows trimming several functions
+with a single trim, as long as they're modified in the same location. (This
+requirement may be relaxed in the future, if necessary.) Again, there are two
+ways to achieve this. The simple one is by using the same function
+{func}`~cernml.lsa_utils.incorporate_and_trim()` as for one parameter:
+
+```{code-block} python
+lsa_utils.incorporate_and_trim(
+    [
+        "logical.MDAH.2303/K",
+        "logical.MDAH.2307/K",
+        "logical.MDAV.2301.M/K",
+        "logical.MDAV.2305.M/K",
+    ],
+    context="SFT_PRO_MTE_L4780_2022_V1",
+    cycle_time=4460.0,
+    value=[0.1, -0.1, 0.0, 0.05],
+    relative=False,
+    description="Usage example of cernml.lsa_utils",
+)
+```
+
+The first parameter is a list of all functions that should be changed
+simultaneously, the second is the context to use. Then come the point to modify
+(measured in milliseconds since the start of cycle) and the value to
+incorporate. This may be anything that converts to a NumPy array of the correct
+size (including a single float). The remaining parameters are the same as
+before.
+
+For a more object-oriented interface, you can use
+{class}`~cernml.lsa_utils.IncorporatorGroup`:
+
+```{code-block} python
+group = lsa_utils.IncorporatorGroup(
+    [
+        "logical.MDAH.2303/K",
+        "logical.MDAH.2307/K",
+        "logical.MDAV.2301.M/K",
+        "logical.MDAV.2305.M/K",
+    ],
+    user="SPS.USER.HIRADMT1",
+)
+assert group.context == "HIRADMAT_PILOT_Q20_2018_V1"
+
+# Increase all parameters by 0.1:
+group.incorporate_and_trim(
+    4460.0, 0.1, relative=True, description="Usage example"
+)
+```
+
+The group also allows creating {class}`~cernml.lsa_utils.Incorporator`s for
+each parameter individually:
+
+```{code-block} python
+inc = group.get("logical.MDAH.2303/K")
+assert isinstance(inc, lsa_utils.Incorporator)
+
+parameters = tuple(
+    incorporator.parameters for incorporator in group.incorporators()
+)
+assert parameters == group.parameters == (
+    "logical.MDAH.2303/K",
+    "logical.MDAH.2307/K",
+    "logical.MDAV.2301.M/K",
+    "logical.MDAV.2305.M/K",
 )
 ```
 
