@@ -8,8 +8,17 @@ package will also work with version 0.6.1, but may break with version 0.7.0.
 
 ## Unreleased
 
-- ADD: Add install extra `doc_only` to build docs in a non-CERN environment. (This skips the PyJapc and PJLSA dependencies.)
-- Add {meth}`~cernml.mpl_utils.FigureRenderer.close()` to {class}`~cernml.mpl_utils.FigureRenderer`.
+No changes yet!
+
+## v0.2.5
+
+- ADD: Install extra `doc_only` to build docs in a non-CERN environment. (This skips the PyJapc and PJLSA dependencies.)
+- ADD: {meth}`cernml.mpl_utils.FigureRenderer.close()`.
+- ADD: {class}`cernml.lsa_utils.IncorporatorGroup`.
+- ADD: Ability to trim multiple functions with one call to
+  {func}`~cernml.lsa_utils.incorporate_and_trim()`.
+- FIX: Type annotation of {attr}`cernml.lsa_utils.Incorporator.user`.
+- FIX: Type annotation of {func}`cernml.mpl_utils.render_generator`.
 
 ## v0.2.4
 
