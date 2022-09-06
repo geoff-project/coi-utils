@@ -84,12 +84,12 @@ def test_multi_incorporate(monkeypatch: pytest.MonkeyPatch) -> None:
     trim = Mock()
     monkeypatch.setattr(lsa_utils._services, "trim", trim)
     lsa_utils.incorporate_and_trim(
-        (
+        [
             "logical.MDAH.2303/K",
             "logical.MDAH.2307/K",
             "logical.MDAV.2301.M/K",
             "logical.MDAV.2305.M/K",
-        ),
+        ],
         "SFT_PRO_MTE_L4780_2022_V1",
         4460.0,
         0.0,
