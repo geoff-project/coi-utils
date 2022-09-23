@@ -1,14 +1,18 @@
 include:
-  - project: acc-co/devops/python/acc-py-devtools
-    file: acc_py_devtools/templates/gitlab-ci/python.yml
+  - project: acc-co/devops/python/acc-py-gitlab-ci-templates
+    file: v2/python.gitlab-ci.yml
 
 variables:
   project_dir: src/cernml/
   project_name: cernml-coi-utils
-  acc_py_image: registry.cern.ch/acc/acc-py_cc7_openjdk11_ci:2020.11
+  ACC_PY_BASE_IMAGE_TAG: '2020.11'
+  ACC_PY_BASE_IMAGE_NAME: 'acc-py_cc7_openjdk11_ci'
   PY_VERSION: "3.7"
 
 # Build: Create a wheel to speed up installation.
+
+build_sdist:
+  extends: .acc_py_build_sdist
 
 build_wheel:
   extends:
@@ -17,44 +21,90 @@ build_wheel:
 # Test: Run linters and unit tests. Run tests both in-tree and out-of-tree.
 
 test_lint:
+  extends:
+    - .acc_py_run_on_manylinux_py_version
   stage: test
-  image: ${acc_py_image}
   before_script:
-    - python -m pip install -e '.[lint]'
+    - !reference [.acc_py_run_on_manylinux_py_version, before_script]
+    - python -m pip install
+      -e ${project_root}[lint]
   script:
     - cd ${project_root}
     - ./run_linters.sh ${project_dir}/*
 
 test_dev:
-  extends: .acc_py_dev_test
-  image: ${acc_py_image}
+  extends:
+    - .acc_py_dev_test
+  image: registry.cern.ch/acc/${ACC_PY_BASE_IMAGE_NAME}:${ACC_PY_BASE_IMAGE_TAG}
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  # Override `script` to change the precise pytest-cov arguments.
   script:
     - cd ${project_root}
-    - python -m pytest --cov=${project_dir} --junitxml=report.xml
+    - python -m pytest
+      --cov=${project_dir}
+      --cov-branch
+      --cov-report=term
+      --cov-report=html:coverage-html
+      --cov-report=xml:coverage-report.xml
+      --junitxml=junit-report.xml
 
-test_install:
-  extends: .acc_py_full_test
-  image: ${acc_py_image}
+test_wheel:
+  extends: .acc_py_wheel_test
+  # Override `script` to adjust the pytest call.
   script:
-    - pip install -e '.[test]'
     - cd ${project_root}/tests
-    - pytest
+    - python -m pytest
 
 # Docs: Build and publish docs, which has to import all packages.
 
 build_docs:
-  extends: .acc_py_build_docs
-  image: ${acc_py_image}
+  extends:
+    - .acc_py_build_docs
   before_script:
     - yum -y install graphviz curl
-
-build_docs_on_tag:
-  extends: .acc_py_build_docs_on_tag
-  image: ${acc_py_image}
-  before_script:
-    - yum -y install graphviz curl
+    - python -m pip install anybadge
+    - !reference [.acc_py_build_docs, before_script]
+  script:
+    - !reference [.acc_py_build_docs, script]
+    - sphinx_version="$(pip list | grep '^Sphinx\b' | awk '{print $2}')"
+    - mkdir -p badges
+    - anybadge
+      --overwrite
+      --label Documentation
+      --value "Sphinx ${sphinx_version}"
+      --color teal
+      --file badges/docs.svg
+  artifacts:
+    paths:
+      - docs/html
+      - badges
 
 # Deploy: Publish the wheel on acc-py-repo.cern.ch.
 
-release_wheel:
-  extends: .acc_py_release_wheel
+publish:
+  extends: .acc_py_publish
+
+build_docs_on_tag:
+  extends:
+    - .acc_py_build_docs_on_tag
+  before_script:
+    - yum -y install graphviz curl
+    - !reference [.acc_py_build_docs_on_tag, before_script]
+
+gitlab_release:
+  stage: deploy
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "running release_job"
+  release:
+    tag_name: '$CI_COMMIT_TAG'
+    name: 'Release $CI_COMMIT_TAG'
+    description: '$CI_COMMIT_TAG'
+    assets:
+      links:
+        - name: 'Documentation'
+          url: https://acc-py.web.cern.ch/gitlab/$CI_PROJECT_PATH/docs/$CI_COMMIT_TAG/
+        - name: 'Changelog'
+          url: https://acc-py.web.cern.ch/gitlab/$CI_PROJECT_PATH/docs/$CI_COMMIT_TAG/changelog.html
