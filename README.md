@@ -1,17 +1,19 @@
-Common Optimization Interfaces
-==============================
+Utilities for the Common Optimization Interfaces
+================================================
 
-CernML is the project of bringing numerical optimization, machine learning and
-reinforcement learning to the operation of the CERN accelerator complex.
+CERN ML is the project of bringing numerical optimization, machine learning and
+reinforcement learning to the operation of the CERN accelerator complex. [The
+COI][CernML-COI] are common interfaces that make it posisble to use numerical
+optimization and reinforcement learning on the same optimization problems.
 
-CernML-COI defines common interfaces that facilitate using numerical
-optimization and reinforcement learning (RL) on the same optimization problems.
-This makes it possible to unify both approaches into a generic optimization
-application in the CERN Control Center.
+This package provides utility functions and classes that make it easier to work
+with the COI. They encapsulate common use cases so that authors of optimization
+problems don't have to start from scratch. This prevents bugs and saves time.
 
 This repository can be found online on CERN's [Gitlab][].
 
-[Gitlab]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi/
+[Gitlab]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/
+[CernML-COI]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi/
 
 Table of Contents
 -----------------
@@ -21,114 +23,124 @@ Table of Contents
 Motivation
 ----------
 
-Several problems in accelerator control can be solved both using reinforcement
-learning (RL) and numerical optimization. However, both approaches usually
-slightly differ in their expected input and output:
+These utilities have been extracted from the COI so that they can evolve
+independently. This makes it possible to evolve them gradually as necessary
+while keeping the COI themselves stable.
 
-- Optimizers pick certain _points_ in the phase space of modifiable parameters
-  and evaluate the loss of these parameters. They minimize this loss through
-  multiple evaluations and ultimately yield the optimal parameters.
-- RL agents assume that the problem has a certain state, which usually contains
-  the values of all modifiable parameters. They receive an observation (which
-  is usually higher-dimensional than the loss) and calculate a _correction_ of
-  the parameters. This correction yields a certain reward to them. Their goal
-  is to optimize the parameters incrementally by optimzing their corrections
-  for maximal *cumulative* reward.
+The utilities are separated by the third-party packages that they enhance. This
+makes it possible to depend only on utilities only for the packages one is
+interested in, without installing any irrelevant ones.
 
-More informally, optimizers start from scratch each time they are applied and
-they yield a point in phase space. RL agents learn once, can be applied many
-times, and they yield a sequence of deltas in the phase space.
+Utilities should be simple, self-contained, and based on actual usage. [Merge
+requests][Gitlab-MRs] and [feature suggestions][Gitlab-Issues] are both
+welcome!
 
-Even more informally, on a given machine, an optimizer performs the state
-transition `machine.parameters = new_parameters`, whereas an RL agent performs
-the state transition `machine.parameters += corrections` iteratively.
+[Gitlab-MRs]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/-/merge_requests
+[Gitlab-Issues]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/-/issues
 
-This package provides interfaces to implement for problems that should be
-compatible both with numerical optimizers and RL agents. It is based on the
-[Gym][] environment API and enhances it with the `SingleOptimizable` interface.
+Installation
+------------
 
-In addition, the output and metadata of the environments is _restricted_ to
-make the behavior of environments more uniform and compatible to make them more
-easily visualizable and integrable into a generic machine-optimization
-application.
+In your project that already uses [CernML-COI][], go to `setup.cfg` or
+`setup.py` and add a dependency on `cernml-coi-utils`. Add the utilities that
+you're interested in as extras. Each extra is named after the third-party
+package that it depends on. You may also use the extra `all` to use all
+utilities.
 
-[Gym]: https://github.com/openai/gym/
-
-Quickstart
-----------
-
-Start a Python project. In your `setup.cfg` or `setup.py`, add dependencies on
-Gym and the COI. Make sure to pick a COI version that is supported by the
-application that will optimize your problem.
-
-```ini
+```config
 # setup.cfg
 [options]
 install_requires =
-    gym >= 0.11
-    cernml-coi >= 0.6.0
+    cernml-coi-utils[pyjapc,matplotlib] ~= 0.2.5
 ```
 
-Then, write a class that implements one or multiple of the optimization
-interfaces. Finally *register* it so that an application that imports your
-package may find it. (See the [Parabola example](/examples/parabola.py) for a
-more fully featured version of the code below.)
+Examples
+--------
+
+This section provides a minimal showcase. See [the documentation][acc-py-docs]
+for a more thorough introduction.
+
+[acc-py-docs]: https://acc-py.web.cern.ch/gitlab/be-op-ml-optimization/cernml-coi-utils/
+
+A PyJapc wrapper that facilities subscription handling:
 
 ```python
-# my_project/__init__.py
-import gym
-import numpy as np
-from cernml import coi
+from pyjapc import PyJapc
+from cernml import japc_utils
 
-class Parabola(coi.SingleOptimizable, gym.Env):
-    observation_space = gym.spaces.Box(-2.0, 2.0, shape=(2,))
-    action_space = gym.spaces.Box(-1.0, 1.0, shape=(2,))
-    optimization_space = gym.spaces.Box(-2.0, 2.0, shape=(2,))
-    metadata = {
-        "render.modes": [],
-        "cern.machine": coi.Machine.NO_MACHINE,
-    }
-
-    def __init__(self):
-        self.pos = np.zeros(2)
-        self._train = True
-
-    def reset(self):
-        self.pos = self.action_space.sample()
-        return self.pos.copy()
-
-    def step(self, action):
-        next_pos = self.pos + action
-        ob_space = self.observation_space
-        self.pos = np.clip(next_pos, ob_space.low, ob_space.high)
-        reward = -sum(self.pos ** 2)
-        done = (reward > -0.05) or next_pos not in ob_space
-        return self.pos.copy(), reward, done, {}
-
-    def get_initial_params(self):
-        return self.reset()
-
-    def compute_single_objective(self, params):
-        ob_space = self.observation_space
-        self.pos = np.clip(params, ob_space.low, ob_space.high)
-        loss = sum(self.pos ** 2)
-        return loss
-
-coi.register("Parabola-v0", entry_point=Parabola, max_episode_steps=10)
+japc = PyJapc("SPS.USER.ALL")
+stream = japc_utils.subscribe_stream(japc, "SOME.MONITOR/Acquisition")
+with stream:
+    while True:
+        data, header = stream.pop_or_wait()
+        print(header.cycle_stamp, "--", data)
 ```
 
-Any [*host application*][GeOFF] may then import your package and instantiate
-your optimization problem.
+A PJLSA wrapper that facilitates function incorporations:
 
 ```python
-import my_project
-from cernml import coi
+from pjlsa import LSAClient
 
-problem = coi.make("Parabola-v0")
-optimize_in_some_way(problem)
+lsa = LSAClient(server="NEXT")
+with lsa.java_api():
+    from cernml import lsa_utils
+
+    incorporator = lsa_utils.Incorporator("MAGNET/K", user="SPS.USER.MD1")
+    incorporator.incorporate_and_trim(
+        cycle_time=300.0,
+        value=1e-3,
+        relative=True,
+        description="Automatic trim from Python",
+    )
 ```
 
-[GeOFF]: https://gitlab.cern.ch/vkain/acc-app-optimisation
+A Gym space wrapper to automatically normalize parameters:
+
+```python
+import numpy
+from gym import spaces
+from cernml import gym_utils
+
+space = spaces.Dict({
+    "positions": spaces.Box(-30.0, 30.0, shape=(2,)),
+    "angles": spaces.Box(-2.0, 2.0, shape=(2,))
+})
+unnormalized = dict(positions=[30, 30], angles=[2, 2])
+
+scaler = gym_utils.Scaler(spaces.flatten_space(space))
+normalized = scaler.scale(spaces.flatten(space, unnormalized))
+assert numpy.array_equal(normalized, [1.0, 1.0, 1.0, 1.0])
+
+roundtrip = spaces.unflatten(space, scaler.unscale(normalized))
+assert roundtrip == unnormalized
+```
+
+Simplifying rendering in a Gym environment:
+
+```python
+import time
+import numpy
+from cernml import mpl_utils
+from matplotlib import pyplot
+
+points = []
+def iter_updates(figure):
+    axes = figure.subplot(111)
+    [line] = axes.plot(points)
+    while True:
+        yield
+        indices = numpy.arange(len(points))
+        line.set_data(indices, points)
+        axes.update_datalim()
+        axes.autoscale_view()
+
+renderer = mpl_utils.make_renderer(iter_updates)
+renderer.update("human")
+for _ in range(20):
+    pyplot.pause(0.5)
+    points.append(numpy.random.uniform())
+    renderer.update("human")
+```
 
 Stability
 ---------
@@ -145,14 +157,11 @@ change in any given release.
 Changelog
 ---------
 
-[See here](docs/changelog.md).
+[See here](https://acc-py.web.cern.ch/gitlab/be-op-ml-optimization/cernml-coi-utils/docs/stable/changelog.html).
 
 Documentation
 -------------
 
 Documentation is provided by the [Acc-Py documentation server][acc-py-docs],
-which is only available inside the CERN network. In addition, the
-[documentation source files](/docs/index.md) are quite readable. Finally, API
-documentation is provided through extensive Python docstrings.
-
-[acc-py-docs]: https://acc-py.web.cern.ch/gitlab/be-op-ml-optimization/cernml-coi/
+which is only available inside the CERN network. Additionally, the API
+is thoroughly documented with Python docstrings.
