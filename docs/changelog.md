@@ -55,6 +55,6 @@ No changes yet!
 ## v0.1.0
 
 Initial version. Code has been extracted from
-[cernml-coi](https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi/) and
-[cernml-coi-funcs](https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-funcs/).
+[cernml-coi](https://gitlab.cern.ch/geoff/cernml-coi/) and
+[cernml-coi-funcs](https://gitlab.cern.ch/geoff/cernml-coi-funcs/).
 Documentation has been adjusted.

@@ -12,8 +12,8 @@ problems don't have to start from scratch. This prevents bugs and saves time.
 
 This repository can be found online on CERN's [Gitlab][].
 
-[Gitlab]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/
-[CernML-COI]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi/
+[Gitlab]: https://gitlab.cern.ch/geoff/cernml-coi-utils/
+[CernML-COI]: https://gitlab.cern.ch/geoff/cernml-coi/
 
 Table of Contents
 -----------------
@@ -35,8 +35,8 @@ Utilities should be simple, self-contained, and based on actual usage. [Merge
 requests][Gitlab-MRs] and [feature suggestions][Gitlab-Issues] are both
 welcome!
 
-[Gitlab-MRs]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/-/merge_requests
-[Gitlab-Issues]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/-/issues
+[Gitlab-MRs]: https://gitlab.cern.ch/geoff/cernml-coi-utils/-/merge_requests
+[Gitlab-Issues]: https://gitlab.cern.ch/geoff/cernml-coi-utils/-/issues
 
 Installation
 ------------
@@ -60,7 +60,7 @@ Examples
 This section provides a minimal showcase. See [the documentation][acc-py-docs]
 for a more thorough introduction.
 
-[acc-py-docs]: https://acc-py.web.cern.ch/gitlab/be-op-ml-optimization/cernml-coi-utils/
+[acc-py-docs]: https://acc-py.web.cern.ch/gitlab/geoff/cernml-coi-utils/
 
 A PyJapc wrapper that facilities subscription handling:
 
@@ -157,7 +157,7 @@ change in any given release.
 Changelog
 ---------
 
-[See here](https://acc-py.web.cern.ch/gitlab/be-op-ml-optimization/cernml-coi-utils/docs/stable/changelog.html).
+[See here](https://acc-py.web.cern.ch/gitlab/geoff/cernml-coi-utils/docs/stable/changelog.html).
 
 Documentation
 -------------

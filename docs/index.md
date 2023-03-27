@@ -15,7 +15,7 @@ while keeping the COI themselves stable.
 
 This repository can be found online on CERN's [Gitlab][].
 
-[Gitlab]: https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi/
+[Gitlab]: https://gitlab.cern.ch/geoff/cernml-coi/
 
 ```{toctree}
 ---

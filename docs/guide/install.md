@@ -45,15 +45,13 @@ immediately in the installation.
 
 Finally, if none of the above work, you can also download a previously built
 distribution of this project and install it manually. On its
-[Gitlab](https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/) page,
-navigate through
-[Repository](https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/-/tree/master)
-to the
-[Tags](https://gitlab.cern.ch/be-op-ml-optimization/cernml-coi-utils/-/tags)
-page. On the latest tag, click the *Download* button (next to the green
-checkmark) and choose the *built\_wheel* artifacts. Download the zip file
-offered by the server and unpack it. Inside you find a wheel file (`*.whl`)
-that you can install via Pip:
+[Gitlab](https://gitlab.cern.ch/geoff/cernml-coi-utils/) page, navigate through
+[Repository](https://gitlab.cern.ch/geoff/cernml-coi-utils/-/tree/master) to
+the [Tags](https://gitlab.cern.ch/geoff/cernml-coi-utils/-/tags) page. On the
+latest tag, click the *Download* button (next to the green checkmark) and
+choose the *built\_wheel* artifacts. Download the zip file offered by the
+server and unpack it. Inside you find a wheel file (`*.whl`) that you can
+install via Pip:
 
 ```bash
 $ unzip artifacts.zip
