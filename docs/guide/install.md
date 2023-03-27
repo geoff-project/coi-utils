@@ -11,7 +11,7 @@ package repository. All you have to do is [set up your Acc-Py
 environment](https://wikis.cern.ch/display/ACCPY/Getting+started+with+Acc-Py)
 and invoke:
 
-```bash
+```shell-session
 $ pip install cernml-coi-utils[all]
 ```
 
@@ -19,7 +19,7 @@ which installs the utils and all their dependencies. If you only need specific
 utilities, you can specify their respective dependencies instead of "all". The
 above line is equivalent to:
 
-```bash
+```shell-session
 $ pip install cernml-coi-utils[matplotlib,pjlsa,pyjapc]
 ```
 
@@ -29,11 +29,11 @@ You can also install this project from source. This is the preferred method if
 you plan to hack on it. Clone the Git repository, enter its directory,  and
 tell Pip to install whatever is in the current directory:
 
-```bash
-git clone ... # URl of your choice: HTTPS, SSH or Kerberos authentication.
-cd awake
-pip install .[all]              # Install a copy.
-pip install --editable .[all]   # Install a symlink.
+```shell-session
+$ git clone ... # URl of your choice: HTTPS, SSH or Kerberos authentication.
+$ cd awake
+$ pip install .[all]              # Install a copy.
+$ pip install --editable .[all]   # Install a symlink.
 ```
 
 The `--editable` flag is a convenience feature for developers. This will skip
@@ -53,7 +53,7 @@ choose the *built\_wheel* artifacts. Download the zip file offered by the
 server and unpack it. Inside you find a wheel file (`*.whl`) that you can
 install via Pip:
 
-```bash
+```shell-session
 $ unzip artifacts.zip
 $ pip install ./wheelhouse/cern_awake_env-VERSION-py3-none-any.whl
 ```
