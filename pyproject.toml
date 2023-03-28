@@ -1,10 +1,81 @@
 [build-system]
 requires = [
-    'setuptools >= 42',
-    'setuptools-scm[toml] ~= 5.0',
+    'pip >= 22',
+    'setuptools >= 45',
+    'setuptools-scm[toml] ~= 7.0',
     'wheel',
 ]
 build-backend = 'setuptools.build_meta'
+
+[project]
+dynamic = ['version']
+name = 'cernml-coi-utils'
+authors = [
+    {name = 'Nico Madysa', email = 'nico.madysa@cern.ch'},
+]
+description = 'Utilities for the Common Optimization Interfaces'
+readme = 'README.md'
+license = {text='Other/Proprietary License'}
+dependencies = [
+    'cernml-coi >=0.7, <0.9',
+]
+classifiers = [
+    'Development Status :: 3 - Alpha',
+    'Environment :: Console',
+    'Intended Audience :: Science/Research',
+    'License :: Other/Proprietary License',
+    'Topic :: Scientific/Engineering :: Artificial Intelligence',
+    'Topic :: Scientific/Engineering :: Physics',
+    'Natural Language :: English',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 3.7',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3 :: Only',
+]
+
+[project.urls]
+gitlab = 'https://gitlab.cern.ch/geoff/cernml-coi-utils/'
+docs = 'https://acc-py.web.cern.ch/gitlab/geoff/cernml-coi-utils/'
+wiki = 'https://wikis.cern.ch/pages/viewpage.action?pageId=194741479'
+
+[project.optional-dependencies]
+matplotlib = [
+    'matplotlib ~= 3.0',
+]
+pyjapc = [
+    'pyjapc ~= 2.2',
+]
+pjlsa = [
+    'pjlsa ~= 0.2.0',
+]
+all = [
+    'cernml-coi-utils[matplotlib,pjlsa,pyjapc]',
+]
+doc_only = [
+    'importlib-metadata',
+    'sphinx',
+    'myst-parser',
+]
+doc = [
+    'cernml-coi-utils[all,doc_only]',
+]
+test = [
+    'cernml-coi-utils[all]',
+    'cernml-coi ~= 0.8',
+    'pytest',
+    'pytest-cov',
+]
+lint = [
+    'cernml-coi-utils[test]',
+    'black == 22.6.0',
+    'mypy == 0.961',
+    'pycodestyle == 2.8.0',
+    'pylint == 2.14.5',
+]
+
+[tool.setuptools]
+zip-safe = true
+package-data = {'*' = ['py.typed']}
 
 [tool.setuptools_scm]
 
@@ -20,16 +91,28 @@ addopts = '--doctest-modules --doctest-glob=*.md --ignore=src/cernml/lsa_utils/'
 testpaths = ['tests', 'src', 'docs']
 asyncio_mode = 'strict'
 
-[tool.pylint.FORMAT]
+[tool.pylint.format]
 ignore-long-lines = '<?https?://\S+>?$'
 
-[tool.pylint.REPORTS]
+[tool.pylint.reports]
 reports = false
 score = false
 
-[tool.pylint.'MESSAGES CONTROL']
-disable = ['similarities', 'unpacking-non-sequence', 'unsubscriptable-object']
+[tool.pylint.'messages control']
+disable = [
+    'not-an-iterable',
+    'similarities',
+    'unpacking-non-sequence',
+    'unsubscriptable-object',
+]
 
 [tool.pylint.MAIN]
 # Ignore Java packages imported via JPype as if they really existed.
 ignored-modules = ['java', 'cern']
+
+[tool.mypy]
+disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+module = ['scipy.*', 'gym.*', 'matplotlib.*', 'pyjapc.*', 'cern.*', 'java.*']
+ignore_missing_imports = true
