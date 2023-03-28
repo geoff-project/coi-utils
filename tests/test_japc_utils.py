@@ -114,7 +114,7 @@ class MockSubscriptionHandle:
         on_exception: t.Callable,
         mock_values: list,
         time_step: float,
-        **kwargs,
+        **kwargs: t.Any,
     ) -> None:
         self.thread: t.Optional[threading.Thread] = None
         self.name = name_or_names
@@ -238,12 +238,12 @@ def test_repr_multiple() -> None:
 def test_timing_selector_and_data_filter() -> None:
     data_filter = Mock()
     selector = Mock()
-    expected = dict(
-        timingSelectorOverride=selector,
-        dataFilterOverride=data_filter,
-        getHeader=True,
-        noPyConversion=False,
-    )
+    expected = {
+        "timingSelectorOverride": selector,
+        "dataFilterOverride": data_filter,
+        "getHeader": True,
+        "noPyConversion": False,
+    }
     stream = japc_utils.subscribe_stream(
         MockJapc([]), "", data_filter=data_filter, selector=selector
     )
@@ -272,7 +272,7 @@ def test_receive_group() -> None:
     with stream:
         data = stream.pop_or_wait()
         values, headers = zip(*data)
-    assert values == (sent_values["param_a"][0], sent_values["param_b"][0])
+    assert values == expected
     assert all(isinstance(h, japc_utils.Header) for h in headers), headers
 
 

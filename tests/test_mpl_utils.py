@@ -150,7 +150,6 @@ class TestRendererGroup:
 
 @pytest.mark.usefixtures("mpl_backend")
 class TestRenderGenerator:
-
     # pylint: disable = too-few-public-methods
 
     # This test class merely covers weird edge cases that shouldn't be

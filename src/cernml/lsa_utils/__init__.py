@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 """Utilities for communication with the LSA database.
 
-This package makes use of `Pjlsa`_. Pjlsa uses the `CommonBuild
-Dependency Manager`_ and transitively `JPype`_ to modify the Python
+This package makes use of `Pjlsa`_. Pjlsa uses the `CommonBuild`_
+Dependency Manager and transitively `JPype`_ to modify the Python
 import machinery in order to provide Java packages as regular imports.
 Consequently, some care must be taken when importing this package, or
 any package that depends on it.
+
+.. _Pjlsa: https://gitlab.cern.ch/scripting-tools/pjlsa
+.. _CommonBuild: https://gitlab.cern.ch/scripting-tools/cmmnbuild-dep-manager
+.. _JPype: https://github.com/jpype-project/jpype
 
 Pjlsa provides a class :class:`LSAClient`, which allows hooking into the
 Python import machinery. It is considered best practice to instantiate
@@ -25,10 +29,6 @@ Instead, such packages should simply import any Java packages they use,
 **assuming that they are already available**. It is then the task of the
 top-most Python script to import these packages with JPype properly set
 up.
-
-.. _`Pjlsa`: https://gitlab.cern.ch/scripting-tools/pjlsa
-.. _`CommonBuild Dependency Manager`: https://gitlab.cern.ch/scripting-tools/cmmnbuild-dep-manager
-.. _`JPype`: https://github.com/jpype-project/jpype
 """
 
 try:
@@ -41,3 +41,13 @@ try:
     )
 except ImportError as exc:  # pragma: no cover
     raise ImportError("import this package in `with LSAClient().java_api()`") from exc
+
+__all__ = [
+    "Incorporator",
+    "IncorporatorGroup",
+    "NotFound",
+    "get_context_by_user",
+    "get_cycle_type_attributes",
+    "get_settings_function",
+    "incorporate_and_trim",
+]

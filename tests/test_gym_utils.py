@@ -69,7 +69,7 @@ def test_reject_inf() -> None:
 
 def test_broadcast() -> None:
     space = Box(-2, 2, shape=(3, 3), dtype=float)
-    neg_ones, ones = scale_from_box(space, [space.low, space.high])
+    neg_ones, ones = scale_from_box(space, np.array([space.low, space.high]))
     assert np.allclose(neg_ones, -1, atol=1e-6)
     assert np.allclose(ones, 1, atol=1e-6)
 

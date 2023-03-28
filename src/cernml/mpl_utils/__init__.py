@@ -10,3 +10,16 @@ from ._renderer import (
     make_renderer,
     render_generator,
 )
+
+__all__ = [
+    "FigureRenderer",
+    "MatplotlibFigures",
+    "MaybeTitledFigure",
+    "RenderCallback",
+    "RenderGenerator",
+    "Renderer",
+    "RendererGroup",
+    "iter_matplotlib_figures",
+    "make_renderer",
+    "render_generator",
+]

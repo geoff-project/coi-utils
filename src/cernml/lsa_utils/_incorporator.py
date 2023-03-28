@@ -1,4 +1,4 @@
-"""Provide :class:`Incorporator` and :class:`IncorporatorGroup` and related items."""
+"""Provide :class:`Incorporator` and :class:`IncorporatorGroup`."""
 
 from __future__ import annotations
 
@@ -75,7 +75,7 @@ class Incorporator:
 
     @property
     def user(self) -> t.Optional[str]:
-        """The name of the current user, or None if the context is unmapped."""
+        """The user name, or None if the context is unmapped."""
         return self._cycle.getUser()
 
     @user.setter
@@ -217,7 +217,7 @@ class IncorporatorGroup:
 
     @property
     def user(self) -> t.Optional[str]:
-        """The name of the current user, or None if the context is unmapped."""
+        """The user name, or None if the context is unmapped."""
         return self._cycle.getUser()
 
     @user.setter
@@ -230,7 +230,7 @@ class IncorporatorGroup:
         self._cycle = cycle
 
     def incorporators(self) -> t.Iterator[Incorporator]:
-        """Iterate over incorporators for each of the group's parameters.
+        """Iterate over incorporators for each group parameter.
 
         Note:
             The incorporators are created dynamically and have no notion

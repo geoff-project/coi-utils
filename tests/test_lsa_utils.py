@@ -92,7 +92,7 @@ def test_multi_incorporate(monkeypatch: pytest.MonkeyPatch) -> None:
         ],
         "SFT_PRO_MTE_L4780_2022_V1",
         4460.0,
-        0.0,
+        np.zeros(4),
         relative=False,
         description="cernml.lsa_utils test suite",
     )
