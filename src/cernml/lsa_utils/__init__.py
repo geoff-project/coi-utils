@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Utilities for communication with the LSA database.
 
-This package makes use of `Pjlsa`_. Pjlsa uses the `CommonBuild`_
-Dependency Manager and transitively `JPype`_ to modify the Python
+This package makes use of `Pjlsa`_. Pjlsa uses the `CommonBuild
+Dependency Manager`_ and transitively `JPype`_ to modify the Python
 import machinery in order to provide Java packages as regular imports.
 Consequently, some care must be taken when importing this package, or
 any package that depends on it.
 
 .. _Pjlsa: https://gitlab.cern.ch/scripting-tools/pjlsa
-.. _CommonBuild: https://gitlab.cern.ch/scripting-tools/cmmnbuild-dep-manager
+.. _`CommonBuild Dependency Manager`:
+    https://gitlab.cern.ch/scripting-tools/cmmnbuild-dep-manager
 .. _JPype: https://github.com/jpype-project/jpype
 
 Pjlsa provides a class :class:`LSAClient`, which allows hooking into the

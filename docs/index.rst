@@ -1,4 +1,5 @@
-# Utilities for the Common Optimization Interfaces
+Utilities for the Common Optimization Interfaces
+================================================
 
 CERN ML is the project of bringing numerical optimization, machine learning and
 reinforcement learning to the operation of the CERN accelerator complex. The
@@ -13,16 +14,13 @@ These utilities have been extracted from the COI so that they can evolve
 independently. This makes it possible to evolve them gradually as necessary
 while keeping the COI themselves stable.
 
-This repository can be found online on CERN's [Gitlab][].
+This repository can be found online on CERN's `Gitlab`_.
 
-[Gitlab]: https://gitlab.cern.ch/geoff/cernml-coi/
+.. _Gitlab: https://gitlab.cern.ch/geoff/cernml-coi-utils/
 
-```{toctree}
----
-maxdepth: 2
----
+.. toctree::
+    :maxdepth: 2
 
-guide/index.md
-api/index.md
-changelog
-```
+    guide/index
+    api/index
+    changelog

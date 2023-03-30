@@ -12,15 +12,37 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 # -- Path setup --------------------------------------------------------
 
 import pathlib
+import re
 import sys
+import typing as t
+from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
+from types import FunctionType, ModuleType
 from unittest.mock import Mock
 
 import importlib_metadata
 
 
-class MockLoader:
-    def find_spec(self, fullname, path, target):
+class MockLoader(Loader, MetaPathFinder):
+    """An additional module loader to avoid Java-related errors.
+
+    We don't want to require a full Java Virtual Machine just to build
+    the docs, but without it, ``import cern, vaja`` deep in the LSA
+    utilities would fail.
+
+    To avoid this, we override the import mechanism and every time
+    someone tries to import one of these packages, we return a mock
+    object that will just return more mocks for every attribute.
+    """
+
+    # pylint: disable = unused-argument, missing-function-docstring
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: t.Optional[t.Sequence[str]],
+        target: t.Optional[ModuleType] = None,
+    ) -> t.Optional[ModuleSpec]:
         if (
             fullname in ["cern", "java"]
             or fullname.startswith("cern.")
@@ -29,10 +51,10 @@ class MockLoader:
             return ModuleSpec(fullname, self, is_package=True)
         return None
 
-    def create_module(self, spec):
+    def create_module(self, spec: ModuleSpec) -> t.Any:
         return Mock()
 
-    def exec_module(self, module):
+    def exec_module(self, module: ModuleType) -> None:
         pass
 
 
@@ -87,39 +109,89 @@ autodoc_type_aliases = {
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
-napoleon_type_aliases = {
-    "Problem": "cernml.coi._problem.Problem",
-}
+
+
+def _deduce_public_module_name(name: str) -> str:
+    """Return *name* with all private module names removed."""
+    if name.startswith("cernml.coi._"):
+        return "cernml.coi"
+    if name.startswith("cernml.mpl_utils._"):
+        return "cernml.mpl_utils"
+    if name == "gym.core":
+        return "gym"
+    if name.startswith("gym.spaces."):
+        return "gym.spaces"
+    return name
+
+
+def _hide_class_module(class_):  # type: ignore
+    """Hide private module names.
+
+    This compares each class's module of origin against a filter list in
+    :func:`_deduce_public_module_name()` and removes any modules that we
+    deem "private", nudging people towards using the public re-exports
+    instead.
+    """
+    old_name = getattr(class_, "__module__", "")
+    if not old_name:
+        return
+    new_name = _deduce_public_module_name(old_name)
+    if new_name != old_name:
+        class_.__module__ = new_name
+
+
+def _expand_typing_abbreviation(class_):  # type: ignore
+    """Fix broken expansion of generic decorator constructor arguments.
+
+    The :class:`@cern.mpl_utils.render_generator()` is a generic method
+    decorator that is actually a class, not a function itself. The
+    constructor contains a type variable *T*, non-class types
+    :data:`~typing.Callable` and a (fake-class) type alias
+    :class:`~cernml.mpl_utils.RenderGenerator`. Obviously, this throws
+    Autodoc for a loop.
+
+    If we didn't do anything, it would leave everything unexpanded. This
+    would correctly show "RenderGenerator" and link to its definition.
+    However, it would also leave "t.Callable" unexpanded and unable to
+    link to its definition.
+
+    We *could* just run the annotations through
+    :func:`~typing.get_type_hints()`. This would expand everything,
+    including RenderGenerator, making the type as an abbreviation
+    useless.
+
+    Instead, we manually expand the parts we want to expand (the typing
+    module and concrete class :class:`~matplotlib.figure.Figure`) and
+    leave the rest untouched.
+    """
+    # Don't use typing.get_type_hints, it expands *everything*.
+    annotations = getattr(class_.__init__, "__annotations__", None)
+    if not annotations:
+        return
+    # Expand `Figure` and `t` without expanding `RenderGenerator`.
+    expanded = {
+        name: re.sub(r"\bt\b", "typing", type_).replace(
+            "Figure", "~matplotlib.figure.Figure"
+        )
+        for name, type_ in annotations.items()
+    }
+    class_.__init__.__annotations__ = expanded
+
+
+def _hide_private_modules(_app, obj, _bound_method):  # type: ignore
+    if isinstance(obj, type):
+        for base in obj.__mro__:
+            _hide_class_module(base)
+        if issubclass(obj, t.Generic):
+            _expand_typing_abbreviation(obj)
+    if isinstance(obj, FunctionType):
+        if "gym_utils" in obj.__module__ or obj.__name__ == "make_renderer":
+            for annotated_type in t.get_type_hints(obj).values():
+                _hide_class_module(annotated_type)
 
 
 def setup(app):  # type: ignore
     """Sphinx setup hook."""
-
-    def _deduce_public_module_name(name):  # type: ignore
-        if name.startswith("cernml.coi._"):
-            return "cernml.coi"
-        if name.startswith("cernml.mpl_utils._"):
-            return "cernml.mpl_utils"
-        if name == "gym.core":
-            return "gym"
-        if name.startswith("gym.spaces."):
-            return "gym.spaces"
-        return name
-
-    def _hide_class_module(class_):  # type: ignore
-        old_name = getattr(class_, "__module__", "")
-        if not old_name:
-            return
-        new_name = _deduce_public_module_name(old_name)
-        if new_name != old_name:
-            class_.__module__ = new_name
-
-    def _hide_private_modules(_app, obj, _bound_method):  # type: ignore
-        if isinstance(obj, type):
-            _hide_class_module(obj)
-            for base in getattr(obj, "__bases__", []):
-                _hide_class_module(base)
-
     app.connect("autodoc-before-process-signature", _hide_private_modules)
 
 

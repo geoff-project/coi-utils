@@ -18,7 +18,7 @@ RenderGenerator = t.Generator[None, Figure, t.NoReturn]
 
 RenderCallback = t.Union[
     t.Callable[[Figure], None],
-    t.Callable[[Figure], "RenderGenerator"],
+    t.Callable[[Figure], RenderGenerator],
 ]
 
 

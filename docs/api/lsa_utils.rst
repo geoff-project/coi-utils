@@ -1,6 +1,6 @@
-# PJLSA Utilities
+PJLSA Utilities
+===============
 
-```{eval-rst}
 .. automodule:: cernml.lsa_utils
 
     .. autofunction:: get_context_by_user
@@ -12,4 +12,3 @@
     .. autoclass:: IncorporatorGroup
         :members:
     .. autoexception:: NotFound
-```

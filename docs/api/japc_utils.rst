@@ -1,6 +1,6 @@
-# PyJapc Utilities
+PyJapc Utilities
+================
 
-```{eval-rst}
 .. automodule:: cernml.japc_utils
 
     .. autofunction:: subscriptions
@@ -20,4 +20,3 @@
         :undoc-members:
     .. autoexception:: JavaException
     .. autoexception:: StreamError
-```

@@ -16,9 +16,10 @@ import threading
 import typing as t
 from collections import deque
 
+from cernml.coi import cancellation  # pylint: disable=unused-import
+
 if t.TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=import-error, unused-import
-    import cernml.coi.cancellation
     import pyjapc
 
 LOG = logging.getLogger(__name__)
@@ -150,7 +151,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         japc: "pyjapc.PyJapc",
         name: t.Union[str, t.Iterable[str]],
         *,
-        token: t.Optional["cernml.coi.cancellation.Token"],
+        token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
         **kwargs: t.Any,
     ) -> None:
@@ -176,7 +177,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         self.stop_monitoring()
 
     @property
-    def token(self) -> t.Optional["cernml.coi.cancellation.Token"]:
+    def token(self) -> t.Optional[cancellation.Token]:
         """The stream's cancellation token, if any.
 
         While the stream is inactive (``self.monitoring is False``), the
@@ -193,7 +194,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         return self._token
 
     @token.setter
-    def token(self, token: t.Optional["cernml.coi.cancellation.Token"]) -> None:
+    def token(self, token: t.Optional[cancellation.Token]) -> None:
         if self.monitoring:
             raise StreamError("cannot change cancellation token while monitoring")
         # See comment in __init__(). We need to keep token and condition
@@ -442,7 +443,7 @@ class ParamStream(_BaseStream):
         japc: "pyjapc.PyJapc",
         name: str,
         *,
-        token: t.Optional["cernml.coi.cancellation.Token"],
+        token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
         **kwargs: t.Any,
     ) -> None:
@@ -519,7 +520,7 @@ class ParamGroupStream(_BaseStream):
         japc: "pyjapc.PyJapc",
         name: t.Iterable[str],
         *,
-        token: t.Optional["cernml.coi.cancellation.Token"],
+        token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
         **kwargs: t.Any,
     ) -> None:
@@ -593,7 +594,7 @@ def subscribe_stream(
     japc: "pyjapc.PyJapc",
     name_or_names: str,
     *,
-    token: t.Optional["cernml.coi.cancellation.Token"] = ...,
+    token: t.Optional[cancellation.Token] = ...,
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
@@ -612,7 +613,7 @@ def subscribe_stream(
     japc: "pyjapc.PyJapc",
     name_or_names: t.List[str],
     *,
-    token: t.Optional["cernml.coi.cancellation.Token"] = ...,
+    token: t.Optional[cancellation.Token] = ...,
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
@@ -625,7 +626,7 @@ def subscribe_stream(
     japc: "pyjapc.PyJapc",
     name_or_names: t.Union[str, t.List[str]],
     *,
-    token: t.Optional["cernml.coi.cancellation.Token"] = None,
+    token: t.Optional[cancellation.Token] = None,
     maxlen: t.Optional[int] = 1,
     convert_to_python: bool = True,
     selector: t.Optional[str] = None,
@@ -646,8 +647,8 @@ def subscribe_stream(
             to subscribe to a parameter group.
         token: If passed, the stream will hold onto this
             :class:`~cernml.coi.cancellation.Token` and watch it. In
-            this case, :meth:`pop_or_wait()` can get cancelled through
-            the token.
+            this case, :meth:`~ParamStream.pop_or_wait()` can get
+            cancelled through the token.
         maxlen: The maximum length of the stream's internal queue. The
             default is 1, i.e. only the most recent value is retained.
             If None, there is no limit and the queue might grow beyond

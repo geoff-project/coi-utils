@@ -11,7 +11,7 @@ MaybeTitledFigure = t.Union[Figure, t.Tuple[str, Figure]]
 
 MatplotlibFigures = t.Union[
     Figure,
-    t.Iterable["MaybeTitledFigure"],
+    t.Iterable[MaybeTitledFigure],
     t.Mapping[str, Figure],
 ]
 """Type of the return value of render mode ``"matplotlib_figures"``."""
