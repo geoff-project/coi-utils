@@ -78,9 +78,7 @@ release = importlib_metadata.version(project)
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "myst_parser",
     "sphinx.ext.autodoc",
-    "sphinx.ext.graphviz",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
 ]
@@ -195,10 +193,6 @@ def setup(app):  # type: ignore
     app.connect("autodoc-before-process-signature", _hide_private_modules)
 
 
-# -- Options for Graphviz ----------------------------------------------
-
-graphviz_output_format = "svg"
-
 # -- Options for Intersphinx -------------------------------------------
 
 ACC_PY_DOCS_ROOT = "https://acc-py.web.cern.ch/gitlab/"
@@ -211,11 +205,6 @@ intersphinx_mapping = {
     "pyjapc": (ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/", None),
     "python": ("https://docs.python.org/3", None),
 }
-
-# -- Options for Myst-Parser -------------------------------------------
-
-myst_enable_extensions = ["deflist"]
-myst_heading_anchors = 3
 
 # -- Options for HTML output -------------------------------------------
 
