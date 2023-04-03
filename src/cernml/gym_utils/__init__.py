@@ -143,7 +143,7 @@ class Scaler:
 
     @property
     def scaled_space(self) -> Box:
-        """A normalized space with the same shape as :attr:`space`.
+        """A normalized space with the same shape as `space`.
 
         Example:
 
@@ -166,7 +166,7 @@ def scale_from_box(
 ) -> np.ndarray:
     """Normalize an array into [−1; +1] or [0; 1].
 
-    This is a convenience wrapper around :meth:`Scaler.scale()`.
+    This is a convenience wrapper around `Scaler.scale()`.
     """
     return Scaler(space, symmetric=symmetric).scale(unnormalized)
 
@@ -176,6 +176,6 @@ def unscale_into_box(
 ) -> np.ndarray:
     """Denormalize an array from [−1; +1] or [0; 1].
 
-    This is a convenience wrapper around :meth:`Scaler.unscale()`.
+    This is a convenience wrapper around `Scaler.unscale()`.
     """
     return Scaler(space, symmetric=symmetric).unscale(normalized)

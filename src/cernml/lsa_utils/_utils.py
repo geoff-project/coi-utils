@@ -1,4 +1,4 @@
-"""Functional interface for :class:`Incorporator`."""
+"""Functional interface for `Incorporator`."""
 
 from __future__ import annotations
 

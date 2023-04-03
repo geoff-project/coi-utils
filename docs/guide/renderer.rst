@@ -4,24 +4,24 @@ Keeping Rendering Logic Concise
 Motivation
 ----------
 
-The render mode :meth:`"matplotlib_figures" <coi:cernml.coi.Problem.render>`
-makes it possible to create :mod:`mpl:matplotlib` plots and have the host
-application embed them. Because optimization problems change on each iteration,
-these plots need to be updated regularly. Doing this correctly without paying
-the cost of clearing and completely redrawing the plot each time is
-complicated. This complexity tends to hide the basic logic that you might wish
-to express when creating a plot.
+The render mode `"matplotlib_figures" <coi:cernml.coi.Problem.render>` makes it
+possible to create `mpl:matplotlib` plots and have the host application embed
+them. Because optimization problems change on each iteration, these plots need
+to be updated regularly. Doing this correctly without paying the cost of
+clearing and completely redrawing the plot each time is complicated. This
+complexity tends to hide the basic logic that you might wish to express when
+creating a plot.
 
-In addition, the render mode :meth:`"human" <coi:cernml.coi.Problem.render>`
-also often uses Matplotlib, but in an interactive environment. Supporting both
+In addition, the render mode `"human" <coi:cernml.coi.Problem.render>` also
+often uses Matplotlib, but in an interactive environment. Supporting both
 render modes while writing the plotting logic only once again is tricky to get
 right.
 
-The :class:`~cernml.mpl_utils.FigureRenderer` class provides an interface that
+The `~cernml.mpl_utils.FigureRenderer` class provides an interface that
 separates plot *initialization* from plot *updating*. In addition, it contains
 logic to abstract away the difference between the two render modes. Once you
-hold a :class:`~cernml.mpl_utils.FigureRenderer` in your hand, the
-implementation of :meth:`~cernml.coi.Problem.render()` becomes trivial:
+hold a `~cernml.mpl_utils.FigureRenderer` in your hand, the implementation of
+:meth:`~cernml.coi.Problem.render()` becomes trivial:
 
 .. code-block:: python
     :emphasize-lines: 20
@@ -53,13 +53,12 @@ implementation of :meth:`~cernml.coi.Problem.render()` becomes trivial:
 Generators
 ----------
 
-While you can implement the interface of
-:class:`~cernml.mpl_utils.FigureRenderer` yourself (and that may make sense in
-particularly complicated cases), most cases are extremely simple: you create a
-plot once, then repeatedly update it with new data. For this case,
-:term:`generators <generator>` are particularly well suited. Generators are
-like regular functions, but contain :keyword:`yield` instead of
-:keyword:`return`.
+While you can implement the interface of `~cernml.mpl_utils.FigureRenderer`
+yourself (and that may make sense in particularly complicated cases), most
+cases are extremely simple: you create a plot once, then repeatedly update it
+with new data. For this case, :term:`generators <generator>` are particularly
+well suited. Generators are like regular functions, but contain
+:keyword:`yield` instead of :keyword:`return`.
 
 Whenever a generator hits a yield point, it suspends execution and returns to
 the caller. When the caller later resumes the generator, it continues execution
@@ -69,17 +68,17 @@ pattern.
 Example
 -------
 
-The following example uses :func:`~cernml.mpl_utils.make_renderer()` to convert
-a :term:`generator` into a concrete :class:`~cernml.mpl_utils.FigureRenderer`.
-The renderer creates a figure with a single :class:`~mpl:matplotlib.axes.Axes`
-and two graphs:
+The following example uses `~cernml.mpl_utils.make_renderer()` to convert a
+:term:`generator` into a concrete `~cernml.mpl_utils.FigureRenderer`. The
+renderer creates a figure with a single `~mpl:matplotlib.axes.Axes` and two
+graphs:
 
 1. the readings at the start of optimization;
 2. the current readings.
 
-It also contains a few :func:`print` calls to show the control flow. In
-production code, you would usually create a module-scope logger, as explained
-in `this Acc-Py tutorial`_.
+It also contains a few `print` calls to show the control flow. In production
+code, you would usually create a module-scope logger, as explained in `this
+Acc-Py tutorial`_.
 
 .. _`this Acc-Py tutorial`: https://wikis.cern.ch/display/ACCPY/Logging#Logging-Configuringaloggerinlibrarycode
 

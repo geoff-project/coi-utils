@@ -7,7 +7,7 @@ import typing as t
 from matplotlib.figure import Figure
 
 MaybeTitledFigure = t.Union[Figure, t.Tuple[str, Figure]]
-"""Helper annotation for :class:`MatplotlibFigures`."""
+"""Helper annotation for `MatplotlibFigures`."""
 
 MatplotlibFigures = t.Union[
     Figure,

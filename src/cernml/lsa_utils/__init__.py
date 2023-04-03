@@ -12,18 +12,18 @@ any package that depends on it.
     https://gitlab.cern.ch/scripting-tools/cmmnbuild-dep-manager
 .. _JPype: https://github.com/jpype-project/jpype
 
-Pjlsa provides a class :class:`LSAClient`, which allows hooking into the
+Pjlsa provides a class `LSAClient`, which allows hooking into the
 Python import machinery. It is considered best practice to instantiate
 this class once and only once at the outermost scope of execution. This
 means that any package that is meant to be imported by other Python code
-**must not, under any circumstances,** instantiate :class:`LSAClient`.
+**must not, under any circumstances,** instantiate `LSAClient`.
 
 Similarly, such packages must not make use of the following objects,
 which all are just different ways to invoke the same import hook:
 
-- the method :meth:`Manager.imports()` of the CommonBuild Dependency
+- the method `Manager.imports()` of the CommonBuild Dependency
   Manager;
-- the module :mod:`jpype.imports` of JPype, which executes code upon
+- the module `jpype.imports` of JPype, which executes code upon
   import.
 
 Instead, such packages should simply import any Java packages they use,

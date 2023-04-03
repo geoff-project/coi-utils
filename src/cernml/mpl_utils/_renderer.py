@@ -26,7 +26,7 @@ class Renderer(metaclass=abc.ABCMeta):
     """Interface for types that facilitate Matplotlib rendering.
 
     This is an abstract base class. You should use a concrete
-    implementation, e.g. :class:`FigureRenderer`.
+    implementation, e.g. `FigureRenderer`.
     """
 
     @staticmethod
@@ -74,10 +74,10 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     This is another abstract base class. There are three typical use
     cases:
 
-    1. You pass a generator to :meth:`from_callback()`. On the first
-       :meth:`update()` call, the generator is called to create an
+    1. You pass a generator to `from_callback()`. On the first
+       `~Renderer.update()` call, the generator is called to create an
        iterator. This iterator is polled on each
-       :meth:`~Renderer.update()` call::
+       `~Renderer.update()` call::
 
         >>> import numpy as np
         >>> class Problem:
@@ -113,9 +113,9 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         >>> fig = problem.render("matplotlib_figures")
         updated
 
-    2. You pass a function to :meth:`from_callback()`. This returns a
+    2. You pass a function to `from_callback()`. This returns a
        subclass that calls this function on each
-       :meth:`~Renderer.update()` call.
+       `~Renderer.update()` call.
 
         >>> import numpy as np
         >>> class Problem:
@@ -145,9 +145,9 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         >>> fig = problem.render("matplotlib_figures")
         redrawn
 
-    3. You inherit from this class and implement :meth:`_init_figure()`
-       and :meth:`_update_figure()`, which get called by
-       :meth:`~Renderer.update()` at the appropriate times.
+    3. You inherit from this class and implement `_init_figure()`
+       and `_update_figure()`, which get called by
+       `~Renderer.update()` at the appropriate times.
 
         >>> import numpy as np
         >>> class ProblemRenderer(FigureRenderer):
@@ -234,7 +234,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     def _init_figure(self, figure: Figure) -> None:
         """Initialize the figure.
 
-        This is called on the first call to :meth:`~Renderer.update()`,
+        This is called on the first call to `~Renderer.update()`,
         directly after instantiating the figure. It should create and
         fill items of the plot.
         """
@@ -243,9 +243,9 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     def _update_figure(self, figure: Figure) -> None:
         """Update the figure, reflecting any new data.
 
-        This is called on every subsequent :meth:`~Renderer.update()`
+        This is called on every subsequent `~Renderer.update()`
         (but not on the first one). It should recreate or update the
-        contents of the figure. Afterwards, :meth:`~Renderer.update()`
+        contents of the figure. Afterwards, `~Renderer.update()`
         will automatically display the figure to the user.
         """
 
@@ -258,20 +258,20 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         Args:
             func: Either a regular function or a generator. If the
                 former, it is called on every
-                :meth:`~Renderer.update()`. If the latter, it is called
+                `~Renderer.update()`. If the latter, it is called
                 once to create an iterator. The iterator is polled on
-                every :meth:`~Renderer.update()`.
+                every `~Renderer.update()`.
             title: If passed, a string to attach to the figure in the
                 render mode ``"matplotlib_figures"``.
 
         Returns:
-            An unspecified subclass of :class:`FigureRenderer`.
+            An unspecified subclass of `FigureRenderer`.
         """
         return _FigureFuncRenderer(func, title)
 
 
 class _FigureFuncRenderer(FigureRenderer):
-    """Return type of :meth:`FigureRenderer.from_callback()`."""
+    """Return type of `FigureRenderer.from_callback()`."""
 
     def __init__(
         self,
@@ -304,7 +304,7 @@ class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
     """A composite renderer that dispatches to multiple children.
 
     This is just a tuple of renderers that implements itself the
-    :class:`Renderer` interface. Calling :meth:`~Renderer.update()`
+    `Renderer` interface. Calling `~Renderer.update()`
     forwards the call to each child.
 
     Example::
@@ -347,7 +347,7 @@ def make_renderer(
     """Build a renderer from one or more callbacks.
 
     This is a convenience function that calls
-    :meth:`FigureRenderer.from_callback` on each passed callback. There
+    `FigureRenderer.from_callback` on each passed callback. There
     are three ways to calls this function:
 
     1. With a single callback function or generator::
@@ -375,7 +375,7 @@ def make_renderer(
         2
 
     If the optional argument *squeeze* is passed and False, the result
-    is always a :class:`RendererGroup` – even if only one callback is
+    is always a `RendererGroup` – even if only one callback is
     passed::
 
         >>> len(make_renderer(callback, squeeze=False))
@@ -401,15 +401,15 @@ T = t.TypeVar("T")  # pylint: disable=invalid-name
 
 
 class render_generator(t.Generic[T]):
-    """Decorator wrapper for :class:`FigureRenderer`.
+    """Decorator wrapper for `FigureRenderer`.
 
-    This is a wrapper around :meth:`FigureRenderer.from_callback()`. It
-    automatically manages a :class:`FigureRenderer` for you. Calling the
+    This is a wrapper around `FigureRenderer.from_callback()`. It
+    automatically manages a `FigureRenderer` for you. Calling the
     decorated method will call ``renderer.update()`` instead. This keeps
     your ``render()`` implementation short and avoids duplicate code in
     your plotting logic.
 
-    For a less magical interface, see the :class:`FigureRenderer` class
+    For a less magical interface, see the `FigureRenderer` class
     itself.
 
     Example::

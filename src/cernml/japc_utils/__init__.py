@@ -1,10 +1,10 @@
-"""Convenience wrappers around the :class:`~pyjapc.PyJapc` API.
+"""Convenience wrappers around the `~pyjapc.PyJapc` API.
 
 Most importantly, this package provides *parameter streams*, an
 abstraction on top of subscription handles. They pass an internal
-callback to :class:`~pyjapc.PyJapc` and expose methods to wait until the
+callback to `~pyjapc.PyJapc` and expose methods to wait until the
 next value has arrived. Parameter streams are created via
-:func:`subscribe_stream()`.
+`subscribe_stream()`.
 """
 
 import abc
@@ -81,7 +81,7 @@ def _unwrap_event(event: _Event) -> _Item:
 
 @contextlib.contextmanager
 def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
-    """Return a context manager for :class:`~pyjapc.PyJapc`.
+    """Return a context manager for `~pyjapc.PyJapc`.
 
     The context manager starts all subscriptions when entering its
     context and stops them when leaving it. It is neither reentrant nor
@@ -135,10 +135,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
     """A synchronized PyJapc subscription handle.
 
     Do not instantiate this class yourself. Use
-    :func:`subscribe_stream()` instead.
+    `subscribe_stream()` instead.
 
-    This class contains the common logic of :class:`ParamStream` and
-    :class:`ParamGroupStream`. The subclasses only contain thin wrapper
+    This class contains the common logic of `ParamStream` and
+    `ParamGroupStream`. The subclasses only contain thin wrapper
     methods that perform some type casting. The whole reason for this
     setup is to communicate via types whether a stream may return an
     object or a list of objects.
@@ -182,7 +182,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
         While the stream is inactive (``self.monitoring is False``), the
         token may be replaced with another
-        :class:`~cernml.coi.cancellation.Token`. This may be useful to
+        `~cernml.coi.cancellation.Token`. This may be useful to
         restart the stream after a cancellation.
 
         Raises:
@@ -231,7 +231,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         short periods of time; blocking the subscription handler for too
         long risks that data gets lost.
 
-        However, you *may* call :meth:`pop_or_wait()` while the stream
+        However, you *may* call `pop_or_wait()` while the stream
         is locked. It automatically releases the lock while waiting.
 
         The returned context manager is neither reentrant nor reusable
@@ -315,8 +315,8 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
         Raises:
             ~cernml.coi.cancellation.CancelledError: if a
-                :class:`~cernml.coi.cancellation.Token` has been passed
-                to :func:`subscribe_stream()` and the token has been
+                `~cernml.coi.cancellation.Token` has been passed
+                to `subscribe_stream()` and the token has been
                 cancelled.
             JavaException: if an exception occurred on the Java side
                 while receiving this value.
@@ -366,8 +366,8 @@ class _BaseStream(metaclass=abc.ABCMeta):
     def _wait_for_next(self, timeout: t.Optional[float] = None) -> t.Optional[_Item]:
         """Clear the queue and wait for a new item to arrive.
 
-        This is like calling :meth:`clear()` followed by
-        :meth:`pop_or_wait()`, but does not release the lock in-between.
+        This is like calling `clear()` followed by
+        `pop_or_wait()`, but does not release the lock in-between.
         In any case, the queue is empty after this call.
 
         Args:
@@ -380,8 +380,8 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
         Raises:
             ~cernml.coi.cancellation.CancelledError: if a
-                :class:`~cernml.coi.cancellation.Token` has been passed
-                to :func:`subscribe_stream()` and the token has been
+                `~cernml.coi.cancellation.Token` has been passed
+                to `subscribe_stream()` and the token has been
                 cancelled.
             JavaException: if an exception occurred on the Java side
                 while receiving this value.
@@ -434,7 +434,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 class ParamStream(_BaseStream):
     """A synchronized handle to a one-parameter PyJapc subscription.
 
-    Typically you use :func:`subscribe_stream()` to instantiate this
+    Typically you use `subscribe_stream()` to instantiate this
     class.
     """
 
@@ -511,7 +511,7 @@ class ParamStream(_BaseStream):
 class ParamGroupStream(_BaseStream):
     """A synchronized handle to a multi-parameter PyJapc subscription.
 
-    Typically you use :func:`subscribe_stream()` to instantiate this
+    Typically you use `subscribe_stream()` to instantiate this
     class.
     """
 
@@ -641,13 +641,13 @@ def subscribe_stream(
     risk of losing values.
 
     Args:
-        japc: The :class:`~pyjapc.PyJapc` object on which to subscribe.
+        japc: The `~pyjapc.PyJapc` object on which to subscribe.
         name_or_names: The parameter(s) to which to subscribe. Pass a
             single string to subscribe to a parameter, a list of strings
             to subscribe to a parameter group.
         token: If passed, the stream will hold onto this
-            :class:`~cernml.coi.cancellation.Token` and watch it. In
-            this case, :meth:`~ParamStream.pop_or_wait()` can get
+            `~cernml.coi.cancellation.Token` and watch it. In
+            this case, `~ParamStream.pop_or_wait()` can get
             cancelled through the token.
         maxlen: The maximum length of the stream's internal queue. The
             default is 1, i.e. only the most recent value is retained.
@@ -662,13 +662,13 @@ def subscribe_stream(
             filter of *japc*.
 
     Returns:
-        A :class:`ParamStream` for a single parameter and a
-        :class:`ParamGroupStream` for a parameter group.
+        A `ParamStream` for a single parameter and a
+        `ParamGroupStream` for a parameter group.
 
     Note:
         The synchronization happens purely on a threading level. No
         timestamps are inspected or acted upon. If you need to ensure
-        certain timing behavior, you must inspect the :class:`Header`
+        certain timing behavior, you must inspect the `Header`
         returned by the stream.
 
     The returned parameter streams are context managers. Entering their

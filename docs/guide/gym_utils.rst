@@ -4,27 +4,27 @@ Normalizing Parameters
 The COI have inherited a rich API to specify exactly the domain on which an
 optimization problem is specified and what bounds it has to respect.
 Nonetheless, for the time being, COI restricts the domains of optimization
-problems: :attr:`~coi:cernml.coi.SingleOptimizable.optimization_space`,
-:attr:`~coi:gym.Env.observation_space` and :attr:`~coi:gym.Env.action_space`
-all must have symmetric and normalized bounds, i.e. [−1; +1].
+problems: `~cernml.coi.SingleOptimizable.optimization_space`,
+`~gym.Env.observation_space` and `~gym.Env.action_space` all must have
+symmetric and normalized bounds, i.e. [−1; +1].
 
 Consequently, most optimization problems have to perform conversions from the
 *scaled* inputs of
-:meth:`~coi:cernml.coi.SingleOptimizable.compute_single_objective()` and
-:meth:`~coi:gym.Env.step()` (in [−1; +1]) to the *unscaled* inputs of the
-actual machines [x₁; x₂]. In addition, :meth:`~coi:gym.Env.step()` also has
-to convert from *unscaled* observations on the real machine to *scaled*
-observations in the range [−1; +1].
+:meth:`~cernml.coi.SingleOptimizable.compute_single_objective()` and
+:meth:`~gym.Env.step()` (in [−1; +1]) to the *unscaled* inputs of the actual
+machines [x₁; x₂]. In addition, :meth:`~gym.Env.step()` also has to convert
+from *unscaled* observations on the real machine to *scaled* observations in
+the range [−1; +1].
 
 This procedure is cumbersome and error-prone. It is easy to forget scaling or
 unscaling a value; or to scale or unscale it twice; or to use the wrong scaling
 factor; or to unscale a value that should have been scaled and vice versa.
 
-The :mod:`~cernml.gym_utils` package does not prevent any of these errors, but
-it hopefully makes them less likely. At its core, it provides a
-:class:`~cernml.gym_utils.Scaler` class that wraps around an *unscaled* space
-with arbitrary finite bounds. It provides methods to *scale* values from that
-space into a normalized space and to *unscale* them back.
+The `~cernml.gym_utils` package does not prevent any of these errors, but it
+hopefully makes them less likely. At its core, it provides a
+`~cernml.gym_utils.Scaler` class that wraps around an *unscaled* space with
+arbitrary finite bounds. It provides methods to *scale* values from that space
+into a normalized space and to *unscale* them back.
 
 Take this toy machine as an example:
 
@@ -52,8 +52,8 @@ Take this toy machine as an example:
     ...         print("acquired from machine:", readings)
     ...         return readings
 
-Using scalers in a :class:`~coi:cernml.coi.SingleOptimizable` to communicate
-with it might look like this:
+Using scalers in a `~cernml.coi.SingleOptimizable` to communicate with it might
+look like this:
 
 .. code-block:: python
 
@@ -109,7 +109,7 @@ unscaled ones:
     >>> loss
     1.0
 
-And using it in a :class:`~coi:gym.Env` might look like this:
+And using it in an `~gym.Env` might look like this:
 
 .. code-block:: python
 

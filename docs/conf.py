@@ -68,9 +68,8 @@ ROOTDIR = pathlib.Path(__file__).absolute().parent.parent
 project = "cernml-coi-utils"
 copyright = "2020–2021, BE-OP-SPS, CERN"
 author = "Nico Madysa"
-
 release = importlib_metadata.version(project)
-
+default_role = "py:obj"
 
 # -- General configuration ---------------------------------------------
 

@@ -4,15 +4,15 @@ Managing PyJapc Subscriptions
 .. note::
 
     `Usage examples <#introducing-parameter-streams>`__ of
-    :mod:`~cernml.japc_utils`'s parameter streams follow a bit further below.
-    This section begins by motivating their creation.
+    `~cernml.japc_utils`'s parameter streams follow a bit further below. This
+    section begins by motivating their creation.
 
 Motivation
 ----------
 
 Imagine the following, trivial optimization problem. It talks to two imaginary
-devices via :class:`~pyjapc:pyjapc.PyJapc`. We're deliberately ignoring all
-sorts of complicating factors, like normalization, configuration or other
+devices via `~pyjapc:pyjapc.PyJapc`. We're deliberately ignoring all sorts of
+complicating factors, like normalization, configuration or other
 transformations:
 
 .. code-block:: python
@@ -42,8 +42,8 @@ transformations:
         return self.japc.getParam("SOME.MONITOR/Acquisition")
 
 This code is (hopefully!) simple enough to understand. However, GET requests
-via JAPC are often considered expensive. In most cases, you actually want
-to use a SUBSCRIBE request instead. This would look somewhat like this:
+via JAPC are often considered expensive. In most cases, you actually want to
+use a SUBSCRIBE request instead. This would look somewhat like this:
 
 
 .. code-block:: python
@@ -113,10 +113,10 @@ Synchronization
 ---------------
 
 For now, let us only focus on the last problem: Figuring out how long exactly
-to wait. Luckily, the Python standard library module :mod:`threading` provides
+to wait. Luckily, the Python standard library module `threading` provides
 multiple primitives for cross-thread synchronization. In our case, we want to
 wait on thread A for a condition to become true, and signal such from thread B.
-For this, we can use a :class:`~threading.Condition` variable:
+For this, we can use a `~threading.Condition` variable:
 
 .. code-block:: python
     :emphasize-lines: 1,24,28-30,40-43
@@ -173,21 +173,21 @@ problem we want to express.
    inside :meth:`~cernml.coi.SingleOptimizable.compute_single_objective()` in
    any strange way.
 2. To receive a new value, we invalidate the old one (as before), and then
-   *wait* until a new value is there. In contrast to `time.sleep`, this uses
-   operating system functionality to wait exactly until the `notify()` call has
-   passed.
+   *wait* until a new value is there. In contrast to :func:`time.sleep()`, this
+   uses operating system functionality to wait exactly until the
+   :meth:`~threading.Condition.notify()` call has passed.
 
 Introducing Parameter Streams
 -----------------------------
 
-The :mod:`~cernml.japc_utils` module provides *parameter streams*: Objects that
+The `~cernml.japc_utils` module provides *parameter streams*: Objects that
 wrap around all the code we had to write manually:
 
 - They wrap around a subscription handle and expose methods to start and stop
   monitoring it.
 - They contain a queue of received values so that you never miss any. By
   default, the queue has a maximum length of one. This is identical to our
-  holder variable `latest_value`.
+  holder variable ``latest_value``.
 - They manage a condition variable in order to synchronize with the
   subscription handler.
 - *In addition*, yhey install an error handler: Any JAPC error is caught and
@@ -231,24 +231,24 @@ Here is how much they simplify your code:
             value, header = self.stream.wait_for_next()  # See 3. and 4.
             return value
 
-1. The :func:`~cernml.japc_utils.subscribe_stream()` call closely mirrors
-   :meth:`~pyjapc:pyjapc.PyJapc.subscribeParam()`, but does not require
-   callback functions.
+1. The `~cernml.japc_utils.subscribe_stream()` call closely mirrors
+   :meth:`~pyjapc.PyJapc.subscribeParam()`, but does not require callback
+   functions.
 2. We still need to start and stop monitoring. In constrast to to PyJapc,
-   parameter streams use `snake_case`-style method names.
-3. A single call to :meth:`~cernml.japc_utils.ParamStream.wait_for_next()`
+   parameter streams use ``snake_case``-style method names.
+3. A single call to `~cernml.japc_utils.ParamStream.wait_for_next()`
    invalidates the queue, synchronizes with the subscription handler and waits
    for the next acquisition to arrive. Note that parameter streams always
    return the JAPC header.
-4. The `header` variable is an object of type
-   :class:`~cernml.japc_utils.Header`. It is mostly a regular dictionary (which
-   you would get from raw subscriptions with `getHeader=True`), but also
-   exposes its most common keys as attributes.
+4. The *header* variable is an object of type `~cernml.japc_utils.Header`. It
+   is mostly a regular dictionary (which you would get from raw subscriptions
+   with ``getHeader=True``), but also exposes its most common keys as
+   attributes.
 
 There are also methods to support other workflows, such as
-:meth:`~cernml.japc_utils.ParamStream.pop_or_wait()`,
-:meth:`~cernml.japc_utils.ParamStream.pop_if_ready()` and
-:meth:`~cernml.japc_utils.ParamStream.clear()`:
+`~cernml.japc_utils.ParamStream.pop_or_wait()`,
+`~cernml.japc_utils.ParamStream.pop_if_ready()` and
+`~cernml.japc_utils.ParamStream.clear()`:
 
 .. code-block:: python
 
@@ -294,14 +294,14 @@ streams make it easy to handle this case:
                 return value
 
 However, one problem remains: This implementation of
-:meth:`cernml.coi.SingleOptimizable.compute_single_objective()` will not return
-for as long as the device failure persists. If this is a long time, the host
-application never regains control and its user has no possibility to interrupt
-and cancel the operation.
+:meth:`~cernml.coi.SingleOptimizable.compute_single_objective()` will not
+return for as long as the device failure persists. If this is a long time, the
+host application never regains control and its user has no possibility to
+interrupt and cancel the operation.
 
-This is the problem that cooperative :mod:`~coi:cernml.coi.cancellation` aims
-to solve. We can request a cancellation token from the host application and use
-it to check whether the user has cancelled our optimization. Parameter streams
+This is the problem that cooperative `~coi:cernml.coi.cancellation` aims to
+solve. We can request a cancellation token from the host application and use it
+to check whether the user has cancelled our optimization. Parameter streams
 have full support for cancellation tokens:
 
 .. code-block:: python
@@ -347,21 +347,21 @@ have full support for cancellation tokens:
 
 Some notes as usual:
 
-1. By adding :attr:`'cern.cancellable' <coi:cernml.coi.Problem.metadata>` to
-   our metadata, we signal to the host application that we would like to
-   receive a cancellation token.
+1. By adding `'cern.cancellable' <coi:cernml.coi.Problem.metadata>` to our
+   metadata, we signal to the host application that we would like to receive a
+   cancellation token.
 2. The only thing that is *strictly* necessary is that you pass the
-   cancellation token to :func:`~cernml.japc_utils.subscribe_stream()`.
-   Everything else is handled for us from here.
+   cancellation token to `~cernml.japc_utils.subscribe_stream()`. Everything
+   else is handled for us from here.
 3. If (and only if) you have given a token to the stream, it will wait on
    *both* a new acquisition or a cancellation. If the former happens, we
    receive the new value and return. If the latter happens, the usual
-   :exc:`~coi:cernml.coi.cancellation.CancelledError` is raised.
+   `~coi:cernml.coi.cancellation.CancelledError` is raised.
 4. Since cancellation is *cooperative*, we should cooperate with our host. By
-   calling :meth:`~coi:cernml.coi.cancellation.Token.complete_cancellation()`,
-   we let it know that we understood the request and brought ourselves into a
+   calling :meth:`~cernml.coi.cancellation.Token.complete_cancellation()`, we
+   let it know that we understood the request and brought ourselves into a
    clean state. This way, the host can reuse our object – for example to reset
-   `SOME.DIPOLE` back to its original state.
+   SOME.DIPOLE back to its original state.
 
 Context Managers
 ----------------
@@ -377,17 +377,15 @@ also compatible with :keyword:`with` statements:
         value, header = stream.pop_or_wait()
     # stream.stop_monitoring() is called here.
 
-Here, :meth:`~cernml.japc_utils.ParamStream.start_monitoring()` is called upon
-entry into the block and
-:meth:`~cernml.japc_utils.ParamStream.stop_monitoring()` is called upon exit.
-The advantage of :keyword:`with` statements is that the exit handler is called
-even if the block is exited through an exception.
+Here, `~cernml.japc_utils.ParamStream.start_monitoring()` is called upon entry
+into the block and `~cernml.japc_utils.ParamStream.stop_monitoring()` is called
+upon exit. The advantage of :keyword:`with` statements is that the exit handler
+is called even if the block is exited through an exception.
 
 The package also provides two context managers –
-:func:`~cernml.japc_utils.subscriptions()` and
-:func:`~cernml.japc_utils.monitoring()` – to handle raw
-:class:`~pyjapc:pyjapc.PyJapc`. objects and subscription handles respectively
-in an analogous manner:
+`~cernml.japc_utils.subscriptions()` and `~cernml.japc_utils.monitoring()` – to
+handle raw `~pyjapc:pyjapc.PyJapc`. objects and subscription handles
+respectively in an analogous manner:
 
 .. code-block:: python
 
@@ -405,10 +403,10 @@ in an analogous manner:
 Parameter Group Streams
 -----------------------
 
-Much like :class:`~pyjapc:pyjapc.PyJapc` itself, parameter streams support
+Much like `~pyjapc:pyjapc.PyJapc` itself, parameter streams support
 subscriptions to multiple parameters at once. If you pass a list of strings to
-:func:`~cernml.japc_utils.subscribe_stream()`, it returns a
-:class:`~cernml.japc_utils.ParamGroupStream`:
+`~cernml.japc_utils.subscribe_stream()`, it returns a
+`~cernml.japc_utils.ParamGroupStream`:
 
 .. code-block:: python
 
@@ -418,4 +416,4 @@ subscriptions to multiple parameters at once. If you pass a list of strings to
         data, headers = zip(*data_and_headers)
 
 Note that the stream returns a list of value–header tuples. The last line in
-the above snippet uses :func:`zip` to unzip it into a tuple of two lists.
+the above snippet uses `zip` to unzip it into a tuple of two lists.

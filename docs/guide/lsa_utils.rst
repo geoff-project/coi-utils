@@ -15,12 +15,12 @@ welcome.
 Importing an LSA-Dependent Package
 ----------------------------------
 
-The :mod:`~cernml.lsa_utils` package directly imports Java packages via the
-JPype import system. It does not set up the JVM for you, so you have to start
-the JVM before importing the package. (In this regard, :mod:`~cernml.lsa_utils`
-itself behaves as if it were a Java package.)
+The `~cernml.lsa_utils` package directly imports Java packages via the JPype
+import system. It does not set up the JVM for you, so you have to start the JVM
+before importing the package. (In this regard, `~cernml.lsa_utils` itself
+behaves as if it were a Java package.)
 
-The cleanest way to import :mod:`~cernml.lsa_utils` is to use PJLSA's context
+The cleanest way to import `~cernml.lsa_utils` is to use PJLSA's context
 manager for enabling Java imports:
 
 .. code-block:: python
@@ -44,8 +44,7 @@ If you need Java imports enabled for a longer time, there are two options:
    and write your program logic in this inner module.
 
 If none of these solutions work for you, you may also use the
-:mod:`jpype:jpype.imports` module, which permanently modifies the import
-system:
+`jpype:jpype.imports` module, which permanently modifies the import system:
 
 .. code-block:: python
 
@@ -63,8 +62,8 @@ system:
 Changing a Single Parameter
 ---------------------------
 
-There are two ways to use :mod:`~cernml.lsa_utils`. The simple one is by using
-the free functions that it provides:
+There are two ways to use `~cernml.lsa_utils`. The simple one is by using the
+free functions that it provides:
 
 .. code-block:: python
 
@@ -87,11 +86,11 @@ the free functions that it provides:
         description="Usage example of cernml.lsa_utils",
     )
 
-The slightly more complex one is to create an
-:class:`~cernml.lsa_utils.Incorporator` and call the respective methods on it.
-This class avoids conversion from Python strings to LSA objects on every
-function call. Thus, if you are going to make multiple calls using the same
-parameter and context, this is going to be slightly more efficient.
+The slightly more complex one is to create an `~cernml.lsa_utils.Incorporator`
+and call the respective methods on it. This class avoids conversion from Python
+strings to LSA objects on every function call. Thus, if you are going to make
+multiple calls using the same parameter and context, this is going to be
+slightly more efficient.
 
 .. code-block:: python
 
@@ -112,11 +111,11 @@ parameter and context, this is going to be slightly more efficient.
 Changing Multiple Parameters
 ----------------------------
 
-The :mod:`~cernml.lsa_utils` package also allows trimming several functions
-with a single trim, as long as they're modified in the same location. (This
+The `~cernml.lsa_utils` package also allows trimming several functions with a
+single trim, as long as they're modified in the same location. (This
 requirement may be relaxed in the future, if necessary.) Again, there are two
 ways to achieve this. The simple one is by using the same function
-:func:`~cernml.lsa_utils.incorporate_and_trim()` as for one parameter:
+`~cernml.lsa_utils.incorporate_and_trim()` as for one parameter:
 
 .. code-block:: python
 
@@ -142,7 +141,7 @@ size (including a single float). The remaining parameters are the same as
 before.
 
 For a more object-oriented interface, you can use
-:class:`~cernml.lsa_utils.IncorporatorGroup`:
+`~cernml.lsa_utils.IncorporatorGroup`:
 
 .. code-block:: python
 
@@ -162,8 +161,8 @@ For a more object-oriented interface, you can use
         4460.0, 0.1, relative=True, description="Usage example"
     )
 
-The group also allows creating one :class:`~cernml.lsa_utils.Incorporator` for
-each parameter individually:
+The group also allows creating one `~cernml.lsa_utils.Incorporator` for each
+parameter individually:
 
 .. code-block:: python
 

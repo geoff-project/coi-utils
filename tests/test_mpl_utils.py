@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tests for :mod:`cernml.mpl_utils`."""
+"""Tests for `cernml.mpl_utils`."""
 
 # pylint: disable = missing-function-docstring
 # pylint: disable = missing-class-docstring

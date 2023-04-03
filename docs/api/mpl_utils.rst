@@ -17,32 +17,31 @@ Matplotlib Utilities
 
     ..
         Manual annotation of the type aliases; If we used any of the auto
-        directives, these would be annotated as `:py:data:` (by virtue of being
+        directives, these would be annotated as ``py:data`` (by virtue of being
         module-scope variables, not true classes). This, in turn, confuses the
-        autodoc signature handler, which expects to link to a `:py:class:`.
+        autodoc signature handler, which expects to link to a ``py:class``.
 
         Manually annotating these as classes is the easiest way to circumvent
         this mess.
 
     .. class:: cernml.mpl_utils.MatplotlibFigures
 
-        alias of :class:`~matplotlib.figure.Figure` |
-        :class:`~typing.Iterable`\[:class:`~cernml.mpl_utils.MaybeTitledFigure`] |
-        :class:`~typing.Mapping`\[:class:`str`, :class:`~matplotlib.figure.Figure`]
+        alias of `~matplotlib.figure.Figure` |
+        `~typing.Iterable`\[`~cernml.mpl_utils.MaybeTitledFigure`] |
+        `~typing.Mapping`\[`str`, `~matplotlib.figure.Figure`]
 
     .. class:: cernml.mpl_utils.MaybeTitledFigure
 
-        alias of :class:`~matplotlib.figure.Figure` |
-        :data:`~typing.Tuple`\[:class:`str`, :class:`~matplotlib.figure.Figure`]
+        alias of `~matplotlib.figure.Figure` |
+        `~typing.Tuple`\[`str`, `~matplotlib.figure.Figure`]
 
     .. class:: cernml.mpl_utils.RenderGenerator
 
-        alias of :class:`~typing.Generator`\[:data:`None`,
-        :class:`~matplotlib.figure.Figure`, :data:`~typing.NoReturn`]
+        alias of `~typing.Generator`\[`None`,
+        `~matplotlib.figure.Figure`, `~typing.NoReturn`]
 
     .. class:: cernml.mpl_utils.RenderCallback
 
-        alias of :data:`~typing.Callable`\[[:class:`~matplotlib.figure.Figure`],
-        :data:`None`] |
-        :data:`~typing.Callable`\[[:class:`~matplotlib.figure.Figure`],
-        :class:`~cernml.mpl_utils.RenderGenerator`]]
+        alias of `~typing.Callable`\[[`~matplotlib.figure.Figure`], `None`] |
+        `~typing.Callable`\[[`~matplotlib.figure.Figure`],
+        `~cernml.mpl_utils.RenderGenerator`]]

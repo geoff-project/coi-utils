@@ -45,7 +45,7 @@ def mock_header() -> japc_utils.Header:
 class MockJapc:
     """A minimal mock of PyJapc.
 
-    This only provides a :meth:`subscribeParam()` method that returns a
+    This only provides a `subscribeParam()` method that returns a
     mock handle. The values that are published by this mock handle are
     determined in the constructor.
 
@@ -95,7 +95,7 @@ class MockJapc:
 
 
 class MockSubscriptionHandle:
-    """Return value of :class:`MockJapc.subscribeParam()`.
+    """Return value of `MockJapc.subscribeParam()`.
 
     This is a mock of PyJapc subscription handles. It contains a list of
     arbitrary values. Whenever monitoring starts, it spins up a thread
@@ -103,7 +103,7 @@ class MockSubscriptionHandle:
     over this list, the thread ends and no further items are published.
     When monitoring is stopped and restarted, iteration starts from the
     beginning. The time between two item publications is at least
-    :attr:`time_step` seconds.
+    `time_step` seconds.
     """
 
     def __init__(

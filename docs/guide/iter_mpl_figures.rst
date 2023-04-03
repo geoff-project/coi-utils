@@ -1,15 +1,15 @@
 Receiving Figures from ``render()``
 ===================================
 
-The render mode :meth:`"matplotlib_figures" <coi:cernml.coi.Problem.render>`
-can return a variety of types:
+The render mode :meth:`"matplotlib_figures" <cernml.coi.Problem.render()>` can
+return a variety of types:
 
-- a single :class:`~mpl:matplotlib.figure.Figure`;
-- a mapping from :class:`str` to figures;
-- an iterable of bare figures or :class:`str`–figure tuples or both.
+- a single `~mpl:matplotlib.figure.Figure`;
+- a mapping from `str` to figures;
+- an iterable of bare figures or `str`–figure tuples or both.
 
-The function :func:`~cernml.mpl_utils.iter_matplotlib_figures()` condenses all
-of these options into a single iterator:
+The function `~cernml.mpl_utils.iter_matplotlib_figures()` condenses all of
+these options into a single iterator:
 
 .. code-block:: python
 
