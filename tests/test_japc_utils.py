@@ -266,7 +266,7 @@ def test_receive_group() -> None:
         "param_a": [Mock(name="value for param_a")],
         "param_b": [Mock(name="value for param_b")],
     }
-    expected = {key: values[0] for key, values in sent_values.items()}
+    expected = tuple(v[0] for v in sent_values.values())
     japc = MockJapc(sent_values)
     stream = japc_utils.subscribe_stream(japc, ["param_a", "param_b"])
     with stream:
