@@ -30,7 +30,7 @@ test_lint:
       -e ${project_root}[lint]
   script:
     - cd ${project_root}
-    - ./run_linters.sh ${project_dir}/*
+    - ./run_linters.sh
 
 test_dev:
   extends:
