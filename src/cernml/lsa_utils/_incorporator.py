@@ -44,9 +44,7 @@ class Incorporator:
         context: t.Optional[str] = None,
         user: t.Optional[str] = None,
     ) -> None:
-        self._parameter = _services.parameter.findParameterByName(parameter)
-        if not self._parameter:
-            raise NotFound(parameter)
+        self._parameter = find_parameter(parameter)
         self._cycle = find_cycle(context=context, user=user)
 
     @property
@@ -56,10 +54,7 @@ class Incorporator:
 
     @parameter.setter
     def parameter(self, name: str) -> None:
-        parameter = _services.parameter.findParameterByName(name)
-        if not parameter:
-            raise NotFound(name)
-        self._parameter = parameter
+        self._parameter = find_parameter(name)
 
     @property
     def context(self) -> str:
@@ -189,13 +184,7 @@ class IncorporatorGroup:
         context: t.Optional[str] = None,
         user: t.Optional[str] = None,
     ):
-        found_parameters = []
-        for name in parameters:
-            parameter = _services.parameter.findParameterByName(name)
-            if not parameter:
-                raise NotFound(name)
-            found_parameters.append(parameter)
-        self._parameters = tuple(found_parameters)
+        self._parameters = tuple(find_parameter(name) for name in parameters)
         self._cycle = find_cycle(context=context, user=user)
 
     @property
@@ -334,6 +323,17 @@ def _canonicalize_dict(
     if values:
         raise KeyError(f"superfluous key: {values.popitem()[0]}")
     return result
+
+
+def find_parameter(name: str) -> lsa_settings.Parameter:
+    """Look up a parameter by its name.
+
+    Raises `NotFound` if the parameter does not exist in the database.
+    """
+    parameter = _services.parameter.findParameterByName(name)
+    if not parameter:
+        raise NotFound(name)
+    return parameter
 
 
 def find_cycle(

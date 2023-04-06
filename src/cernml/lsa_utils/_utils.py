@@ -162,7 +162,7 @@ def trim_scalar_settings(
     for parameter_name, value in settings.items():
         scalar = java.lang.Object @ value  # type: ignore[operator]
         trim.addScalar(
-            _services.parameter.findParameterByName(parameter_name),
+            _incorporator.find_parameter(parameter_name),
             ValueFactory.createScalar(scalar),
         )
     trim.setRelative(relative)
