@@ -155,7 +155,7 @@ class TestRenderGenerator:
     # This test class merely covers weird edge cases that shouldn't be
     # enumerated in the doctest of mpl_utils.render_generator.
 
-    def test_good_double_asign(self) -> None:
+    def test_good_double_assign(self) -> None:
         class Container:
             @render_generator
             def first(self, _: mpl.figure.Figure) -> None:
@@ -163,7 +163,7 @@ class TestRenderGenerator:
 
         Container.first.__set_name__(Container, "first")  # pylint: disable=no-member
 
-    def test_bad_asign(self) -> None:
+    def test_bad_assign(self) -> None:
         class Container:
             first: t.Optional[render_generator] = None
 
@@ -171,7 +171,7 @@ class TestRenderGenerator:
         with pytest.raises(TypeError, match="__set_name__"):
             _ = Container().first
 
-    def test_bad_double_asign(self) -> None:
+    def test_bad_double_assign(self) -> None:
         with pytest.raises(RuntimeError) as exc:
 
             class Container:
