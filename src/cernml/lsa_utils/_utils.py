@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import typing as t
-from numbers import Real
 
 import java.lang
 import numpy as np
-from cern.accsoft.commons.value import ValueFactory
+from cern.accsoft.commons.value import Value, ValueFactory
 from cern.lsa.domain.settings import TrimRequest
 
 from . import _incorporator, _services
@@ -124,7 +123,7 @@ def incorporate_and_trim(
 
 
 def trim_scalar_settings(
-    settings: t.Dict[str, t.Union[Real, str]],
+    settings: t.Dict[str, t.Union[str, float, np.number, np.bool_, Value]],
     *,
     user: t.Optional[str] = None,
     context: t.Optional[str] = None,
@@ -137,13 +136,26 @@ def trim_scalar_settings(
     any of them fails, none are applied at all. The settings must be
     *scalars*, i.e. either numbers or enums or strings.
 
+    Note:
+        The supplied values are cast to the type expected by the
+        parameter. This can have a few surprising results:
+
+        - If the parameter expects an integer setting, floats are
+          accepted and silently truncated.
+        - If the parameter expects an enum, both strings and integers
+          are accepted. Strings are interpreted as the enum name,
+          integers as the enum ordinal.
+
+        If the parameter does not define a type, Python integers are
+        cast to :ref:`JLong <jpype:jlong>`, floats to :ref:`JDouble
+        <jpype:jdouble>` and strings to :ref:`JString <jpype:jstring>`.
+        Numpy scalars are also :ref:`cast appropriately
+        <jpype:userguide:numpy primitives>`.
+
     Args:
         settings: The settings to send to the database. This is a
-            mapping from parameter names to the new values. Python
-            integers are automatically converted to `~jpype.JLong`,
-            floats to `~jpype.JDouble`, strings to `~jpype.JString`.
-            NumPy single-precision floats `numpy.float32` are converted
-            to `~jpype.JFloat`.
+            mapping from parameter names to the new values. See also the
+            *relative* parameter.
         context: If passed, the context in which the parameters are
             modified. In cycling machines like the SPS, this is the
             cycle; in cycle-less machines like the LHC, this is the beam
@@ -155,16 +167,28 @@ def trim_scalar_settings(
             with the new one.
         description: The description to appear in LSA's trim history. If
             not passed, an implementation-defined string will be used.
+
+    Example:
+
+        >>> trim_scalar_settings(
+        ...     {
+        ...         'ER.GSECVGUN/Enable#enabled': True,
+        ...         'ER.KFH31/SettingA#batchNrA': 1,
+        ...         'ER.KFH31/SettingA#kickOnA': 'ON',
+        ...     },
+        ...     user='LEI.USER.NOMINAL',
+        ...     description='Demonstrate COI trims',
+        ... )
     """
     cycle = _incorporator.find_cycle(context=context, user=user)
     trim = TrimRequest.builder()
     trim.setContext(cycle)
-    for parameter_name, value in settings.items():
-        scalar = java.lang.Object @ value  # type: ignore[operator]
-        trim.addScalar(
-            _incorporator.find_parameter(parameter_name),
-            ValueFactory.createScalar(scalar),
+    for param_name, value in settings.items():
+        param = _incorporator.find_parameter(param_name)
+        scalar = ValueFactory.createScalar(
+            param.getValueType(), param.getValueDescriptor(), value
         )
+        trim.addScalar(param, scalar)
     trim.setRelative(relative)
     trim.setDescription(description or _incorporator.DEFAULT_TRIM_DESCRIPTION)
     _services.trim.trimSettings(trim.build())

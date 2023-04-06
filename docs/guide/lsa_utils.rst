@@ -59,11 +59,87 @@ If none of these solutions work for you, you may also use the
     import cern.lsa.client
     import cernml.lsa_utils
 
-Changing a Single Parameter
----------------------------
+Trimming One or Several Scalar Settings
+---------------------------------------
 
-There are two ways to use `~cernml.lsa_utils`. The simple one is by using the
-free functions that it provides:
+The function `~cernml.lsa_utils.trim_scalar_settings()` provides a convenient
+way to trim scalar settings in the LSA database. In the simplest case, you
+simply pass a mapping of parameter name to new value and the context to be
+modified:
+
+.. code-block:: python
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+        context="Pb54_2BP_2021_06_09_EARLY_2400ms_V1",
+    )
+
+If the context is mapped to a user, you can also specify the **user** instead
+of the context:
+
+.. code-block:: python
+    :emphasize-lines: 3
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+        user="LEI.USER.NOMINAL",
+    )
+
+If the mapping contains **multiple parameters**, they are changed
+*transactionally*: the trim only succeeds if all settings can be applied. If
+any one of them fails, the trim is rolled back and changes are applied at all.
+Furthermore, the entire trim occupies only one entry in the trim history.
+
+You can pass an additional *description* parameter to document your trim in the
+trim history:
+
+.. code-block:: python
+    :emphasize-lines: 4
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+        user="LEI.USER.NOMINAL",
+        description="Reset kick strength to known good value",
+    )
+
+If you pass a true value for the *relative* flag, all changes are applied on
+top of the current settings:
+
+.. code-block:: python
+    :emphasize-lines: 4
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": 0.1},
+        user="LEI.USER.NOMINAL",
+        relative=True,
+        description="Increase KFH31 kick strength slightly",
+    )
+
+All types of scalar settings are supported: integers, booleans and
+floating-point values – both the built-in Python types and NumPy variants – are
+automatically converted to Java objects. If you want to trim an enum setting,
+you can pass either an integer (which denotes the enum's ordinal number), or a
+string (which denotes its name):
+
+.. code-block:: python
+
+    # Instead of "ON" and "OFF", you could also pass 1 and 0 resp.
+    # for this particular enum.
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickOnA": "ON"},
+        user="LEI.USER.NOMINAL",
+    )
+
+Trimming a Single Function
+--------------------------
+
+Unless you want to pass an entire function object every time, trimming a
+function is slightly more complicated than trimming scalar settings. There are
+two ways to solve this task using `~cernml.lsa_utils`.
+
+The simple one is by using the free function
+`~cernml.lsa_utils.incorporate_and_trim()`. There are several other functions
+to make using it easier:
 
 .. code-block:: python
 
@@ -108,8 +184,8 @@ slightly more efficient.
         1440.0, 0.0, relative=False, description="Usage example"
     )
 
-Changing Multiple Parameters
-----------------------------
+Trimming Multiple Functions
+---------------------------
 
 The `~cernml.lsa_utils` package also allows trimming several functions with a
 single trim, as long as they're modified in the same location. (This

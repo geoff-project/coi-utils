@@ -23,6 +23,23 @@ from unittest.mock import Mock
 import importlib_metadata
 
 
+class MockModule(Mock):
+    """Mock that reproduces only its name under `repr()` and `str()`.
+
+    This class overrides the `__repr__()` method of
+    `~unittest.mock.Mock` to only show the mock name. We do this because
+    Sphinx Autodoc internally uses `repr()` to print types. Without this
+    override, any Java types produced by the `MockLoader` below would
+    appear as ``<Mock name='...', id='...'>`` in the docs.
+    """
+
+    def __str__(self) -> str:
+        return self._extract_mock_name()
+
+    def __repr__(self) -> str:
+        return self._extract_mock_name()
+
+
 class MockLoader(Loader, MetaPathFinder):
     """An additional module loader to avoid Java-related errors.
 
@@ -52,7 +69,7 @@ class MockLoader(Loader, MetaPathFinder):
         return None
 
     def create_module(self, spec: ModuleSpec) -> t.Any:
-        return Mock()
+        return MockModule(name=spec.name)
 
     def exec_module(self, module: ModuleType) -> None:
         pass

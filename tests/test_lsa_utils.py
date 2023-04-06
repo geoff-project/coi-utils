@@ -21,7 +21,7 @@ with pjlsa.LSAClient(server="next").java_api():
 
 def _is_sorted(array: np.ndarray) -> bool:
     assert np.ndim(array) == 1
-    # Convert numpy._bool to built-in bool.
+    # Convert numpy.bool_ to built-in bool.
     return bool(np.all(array[:-1] < array[1:]))
 
 
@@ -110,6 +110,18 @@ def test_incorporate_out_of_range() -> None:
             0.0,
             relative=False,
         )
+
+
+def test_trim_settings() -> None:
+    lsa_utils.trim_scalar_settings(
+        {
+            "ER.GSECVGUN/Enable#enabled": True,
+            "ER.KFH31/SettingA#batchNrA": 1,
+            "ER.KFH31/SettingA#kickOnA": "ON",
+            "ER.KFH31/SettingA#kickStrengthCcvA": 54.5,
+        },
+        user="LEI.USER.NOMINAL",
+    )
 
 
 def test_get_cycle_type_attributes() -> None:
