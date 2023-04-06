@@ -11,6 +11,7 @@ version 0.7.0.
 Unreleased
 ----------
 
+- FIX: Several broken links in the documentation.
 - OTHER: Switched project manifest from ``setup.cfg`` to ``pyproject.toml``.
 
 v0.2.5
