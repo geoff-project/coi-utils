@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import typing as t
+from numbers import Real
 
 import java.lang
 import numpy as np
+from cern.accsoft.commons.value import ValueFactory
+from cern.lsa.domain.settings import TrimRequest
 
 from . import _incorporator, _services
 
@@ -118,3 +121,50 @@ def incorporate_and_trim(
         ).incorporate_and_trim(
             cycle_time, value, relative=relative, description=description
         )
+
+
+def trim_scalar_settings(
+    settings: t.Dict[str, t.Union[Real, str]],
+    *,
+    user: t.Optional[str] = None,
+    context: t.Optional[str] = None,
+    relative: bool = False,
+    description: t.Optional[str] = None,
+) -> None:
+    """Trim multiple scalar settings at once.
+
+    This modifies multiple database settings in a single transaction. If
+    any of them fails, none are applied at all. The settings must be
+    *scalars*, i.e. either numbers or enums or strings.
+
+    Args:
+        settings: The settings to send to the database. This is a
+            mapping from parameter names to the new values. Python
+            integers are automatically converted to `~jpype.JLong`,
+            floats to `~jpype.JDouble`, strings to `~jpype.JString`.
+            NumPy single-precision floats `numpy.float32` are converted
+            to `~jpype.JFloat`.
+        context: If passed, the context in which the parameters are
+            modified. In cycling machines like the SPS, this is the
+            cycle; in cycle-less machines like the LHC, this is the beam
+            process. Must not be passed together with *user*.
+        user: If passed, the user for which the parameters are modified.
+            Must not be passed together with *context*.
+        relative: If True, each passed value is added to the value in
+            the database. The default is to overwrite the database value
+            with the new one.
+        description: The description to appear in LSA's trim history. If
+            not passed, an implementation-defined string will be used.
+    """
+    cycle = _incorporator.find_cycle(context=context, user=user)
+    trim = TrimRequest.builder()
+    trim.setContext(cycle)
+    for parameter_name, value in settings.items():
+        scalar = java.lang.Object @ value  # type: ignore[operator]
+        trim.addScalar(
+            _services.parameter.findParameterByName(parameter_name),
+            ValueFactory.createScalar(scalar),
+        )
+    trim.setRelative(relative)
+    trim.setDescription(description or _incorporator.DEFAULT_TRIM_DESCRIPTION)
+    _services.trim.trimSettings(trim.build())

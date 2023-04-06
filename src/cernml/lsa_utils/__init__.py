@@ -39,6 +39,7 @@ try:
         get_cycle_type_attributes,
         get_settings_function,
         incorporate_and_trim,
+        trim_scalar_settings,
     )
 except ImportError as exc:  # pragma: no cover
     raise ImportError("import this package in `with LSAClient().java_api()`") from exc
@@ -51,4 +52,5 @@ __all__ = [
     "get_cycle_type_attributes",
     "get_settings_function",
     "incorporate_and_trim",
+    "trim_scalar_settings",
 ]

@@ -47,7 +47,7 @@ class Incorporator:
         self._parameter = _services.parameter.findParameterByName(parameter)
         if not self._parameter:
             raise NotFound(parameter)
-        self._cycle = _find_cycle(context=context, user=user)
+        self._cycle = find_cycle(context=context, user=user)
 
     @property
     def parameter(self) -> str:
@@ -196,7 +196,7 @@ class IncorporatorGroup:
                 raise NotFound(name)
             found_parameters.append(parameter)
         self._parameters = tuple(found_parameters)
-        self._cycle = _find_cycle(context=context, user=user)
+        self._cycle = find_cycle(context=context, user=user)
 
     @property
     def parameters(self) -> t.Tuple[str, ...]:
@@ -336,9 +336,15 @@ def _canonicalize_dict(
     return result
 
 
-def _find_cycle(
-    *, context: t.Optional[str], user: t.Optional[str]
+def find_cycle(
+    *, context: t.Optional[str] = None, user: t.Optional[str] = None
 ) -> lsa_settings.StandAloneCycle:
+    """Resolve context/user strings to a LSA domain cycle.
+
+    You should pass either *context* or *user*. Passing both or neither
+    raises a `TypeError`. If the given user or context does not exist,
+    `NotFound` is raised.
+    """
     if context and user:
         raise TypeError("conflicting arguments: 'context' and 'user'")
     if user:
