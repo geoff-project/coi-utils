@@ -159,7 +159,7 @@ class TestRenderGenerator:
         class Container:
             @render_generator
             def first(self, _: mpl.figure.Figure) -> None:
-                pass
+                pass  # pragma: no cover
 
         Container.first.__set_name__(Container, "first")  # pylint: disable=no-member
 
@@ -178,7 +178,7 @@ class TestRenderGenerator:
                 # pylint: disable = unused-variable
                 @render_generator
                 def first(self, _: mpl.figure.Figure) -> None:
-                    pass
+                    pass  # pragma: no cover
 
                 second = first
 

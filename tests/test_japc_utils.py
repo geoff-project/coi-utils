@@ -135,28 +135,24 @@ class MockSubscriptionHandle:
         return bool(self.thread)
 
     def startMonitoring(self) -> None:
-        if self.thread:
-            return
+        assert not self.thread
         self.thread = threading.Thread(target=self._thread_func)
         self.thread.start()
 
     def stopMonitoring(self) -> None:
-        if not self.thread:
-            return
+        assert self.thread
         thread = self.thread
         self.thread = None
         thread.join()
 
     def getParameter(self) -> Mock:
-        if isinstance(self.name, str):
-            parameter = Mock()
-            parameter.getName.return_value = self.name
-            return parameter
-        raise AttributeError("getParameter")
+        assert isinstance(self.name, str), "getParameter"
+        parameter = Mock()
+        parameter.getName.return_value = self.name
+        return parameter
 
     def getParameterGroup(self) -> Mock:
-        if isinstance(self.name, str):
-            raise AttributeError("getParameter")
+        assert not isinstance(self.name, str), "getParameterGroup"
         parameter_group = Mock()
         parameter_group.getNames.return_value = list(self.name)
         return parameter_group

@@ -25,7 +25,7 @@ class VerboseBox(Box):
     """
 
     def __repr__(self) -> str:
-        return f"Box({self.low}, {self.high}, {self.dtype})"
+        return f"Box({self.low}, {self.high}, {self.dtype})"  # pragma: no cover
 
 
 @pytest.fixture(scope="module", params=np.random.uniform(-10, 10, size=(50, 2, 3)))
