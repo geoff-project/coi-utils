@@ -51,13 +51,13 @@ pjlsa = [
 all = [
     'cernml-coi-utils[matplotlib,pjlsa,pyjapc]',
 ]
-doc_only = [
+doc-only = [
     'importlib-metadata',
     'sphinx',
     'myst-parser',
 ]
 doc = [
-    'cernml-coi-utils[all,doc_only]',
+    'cernml-coi-utils[all,doc-only]',
 ]
 test = [
     'cernml-coi-utils[all]',
