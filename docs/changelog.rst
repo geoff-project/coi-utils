@@ -11,6 +11,11 @@ version 0.7.0.
 Unreleased
 ----------
 
+No changes yet!
+
+v0.2.6
+------
+
 - ADD: `~cernml.lsa_utils.trim_scalar_settings()`.
 - FIX: Several broken links in the documentation.
 - OTHER: Switched project manifest from ``setup.cfg`` to ``pyproject.toml``.
