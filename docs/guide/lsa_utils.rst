@@ -24,6 +24,7 @@ The cleanest way to import `~cernml.lsa_utils` is to use PJLSA's context
 manager for enabling Java imports:
 
 .. code-block:: python
+    :emphasize-lines: 4-5
 
     import pjlsa
 
@@ -47,6 +48,7 @@ If none of these solutions work for you, you may also use the
 `jpype:jpype.imports` module, which permanently modifies the import system:
 
 .. code-block:: python
+    :emphasize-lines: 5-6
 
     import pjlsa
 
@@ -148,12 +150,14 @@ to make using it easier:
     context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
     assert context == "HIRADMAT_PILOT_Q20_2018_V1"
 
-    xs, ys = lsa_utils.get_settings_function("logical.RDH.20207/J", context)
+    xs, ys = lsa_utils.get_settings_function(
+        "logical.RDH.20207/J", context
+    )
     assert isinstance(xs, np.ndarray)
     assert isinstance(ys, np.ndarray)
     assert xs.shape == ys.shape
 
-    attrs = lsa_utils.get_cycle_type_attributes(context)["VE:Start flat top"]
+    attrs = lsa_utils.get_cycle_type_attributes(context)
     assert attrs["VE:Start flat top"] == "6200"
 
     lsa_utils.incorporate_and_trim(
