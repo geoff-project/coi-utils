@@ -406,7 +406,67 @@ def make_renderer(
 T = t.TypeVar("T")  # pylint: disable=invalid-name
 
 
-class render_generator(t.Generic[T]):
+class _Decorator(t.Generic[T]):
+    # pylint: disable = too-few-public-methods
+    # pylint: disable = invalid-name
+
+    def __init__(
+        self,
+        func: t.Union[
+            t.Callable[[T, Figure], None],
+            t.Callable[[T, Figure], RenderGenerator],
+        ],
+    ) -> None:
+        self.func = func
+        self.__doc__ = func.__doc__
+        self.attrname: t.Optional[str] = None
+        self.renderer: t.Optional[_FigureFuncRenderer] = None
+
+    def _make_renderer(self, instance: T) -> _FigureFuncRenderer:
+        def iter_func_call(fig: Figure) -> t.Optional[RenderGenerator]:
+            return self.func(instance, fig)
+
+        return _FigureFuncRenderer(t.cast(RenderCallback, iter_func_call))
+
+    def __set_name__(self, owner: t.Type[T], name: str) -> None:
+        if self.attrname is None:
+            self.attrname = name
+        elif name != self.attrname:
+            raise TypeError(
+                f"cannot assign the samer renderer to two different "
+                f"names ({self.attrname!r} and {name!r})"
+            )
+
+    @t.overload
+    def __get__(self, instance: None, owner: t.Type[T]) -> _Decorator[T]:
+        ...  # pragma: no cover
+
+    @t.overload
+    def __get__(
+        self, instance: T, owner: t.Type[T]
+    ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]:
+        ...  # pragma: no cover
+
+    def __get__(
+        self, instance: t.Optional[T], owner: t.Type[T]
+    ) -> t.Union[_Decorator[T], t.Callable[[str], t.Optional["MatplotlibFigures"]]]:
+        if instance is None:
+            return self
+        if self.attrname is None:
+            raise TypeError(
+                "cannot use renderer instance without calling __set_name__ on it"
+            )
+        if self.renderer is None:
+            self.renderer = self._make_renderer(instance)
+        return self.renderer.update
+
+
+def render_generator(
+    func: t.Union[
+        t.Callable[[T, Figure], None],
+        t.Callable[[T, Figure], RenderGenerator],
+    ],
+) -> _Decorator:
     """Decorator wrapper for `FigureRenderer`.
 
     This is a wrapper around `FigureRenderer.from_callback()`. It
@@ -460,60 +520,6 @@ class render_generator(t.Generic[T]):
         >>> problem.update_figure
         <bound method FigureRenderer.update of <...>>
         >>> Problem.update_figure
-        <mpl_utils...render_generator object at ...>
+        <mpl_utils..._Decorator object at ...>
     """
-
-    # pylint: disable = too-few-public-methods
-    # pylint: disable = invalid-name
-
-    def __init__(
-        self,
-        func: t.Union[
-            t.Callable[[T, Figure], None],
-            t.Callable[[T, Figure], RenderGenerator],
-        ],
-    ) -> None:
-        self.func = func
-        self.__doc__ = func.__doc__
-        self.attrname: t.Optional[str] = None
-        self.renderer: t.Optional[_FigureFuncRenderer] = None
-
-    def _make_renderer(self, instance: T) -> _FigureFuncRenderer:
-        def iter_func_call(fig: Figure) -> t.Optional[RenderGenerator]:
-            return self.func(instance, fig)
-
-        return _FigureFuncRenderer(t.cast(RenderCallback, iter_func_call))
-
-    def __set_name__(self, owner: t.Type[T], name: str) -> None:
-        if self.attrname is None:
-            self.attrname = name
-        elif name != self.attrname:
-            raise TypeError(
-                f"cannot assign the samer renderer to two different "
-                f"names ({self.attrname!r} and {name!r})"
-            )
-
-    @t.overload
-    def __get__(self, instance: None, owner: t.Type[T]) -> render_generator[T]:
-        ...  # pragma: no cover
-
-    @t.overload
-    def __get__(
-        self, instance: T, owner: t.Type[T]
-    ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]:
-        ...  # pragma: no cover
-
-    def __get__(
-        self, instance: t.Optional[T], owner: t.Type[T]
-    ) -> t.Union[
-        render_generator[T], t.Callable[[str], t.Optional["MatplotlibFigures"]]
-    ]:
-        if instance is None:
-            return self
-        if self.attrname is None:
-            raise TypeError(
-                "cannot use renderer instance without calling __set_name__ on it"
-            )
-        if self.renderer is None:
-            self.renderer = self._make_renderer(instance)
-        return self.renderer.update
+    return _Decorator(func)

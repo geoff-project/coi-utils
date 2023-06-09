@@ -7,6 +7,8 @@
 # pylint: disable = import-outside-toplevel
 # pylint: disable = invalid-name
 # pylint: disable = redefined-builtin
+# pylint: disable = too-many-arguments
+# pylint: disable = unused-argument
 
 """Configuration file for the Sphinx documentation builder.
 
@@ -17,16 +19,32 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 # -- Path setup --------------------------------------------------------
 
+from __future__ import annotations
+
+import inspect
 import pathlib
-import re
 import sys
 import typing as t
+from importlib import import_module
 from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
-from types import FunctionType, ModuleType
+from types import ModuleType
 from unittest.mock import Mock
 
-import importlib_metadata
+from docutils import nodes
+from sphinx.ext import intersphinx
+
+try:
+    import importlib_metadata
+except ImportError:
+    # Starting with Python 3.10 (see pyproject.toml).
+    # pylint: disable = ungrouped-imports
+    import importlib.metadata as importlib_metadata  # type: ignore
+
+if t.TYPE_CHECKING:
+    # pylint: disable = unused-import
+    from sphinx.application import Sphinx
+    from sphinx.environment import BuildEnvironment
 
 
 class MockModule(Mock):
@@ -92,7 +110,6 @@ project = "cernml-coi-utils"
 copyright = "2020–2023 CERN, 2023 GSI Helmholtzzentrum für Schwerionenforschung"
 author = "Nico Madysa"
 release = importlib_metadata.version(project)
-default_role = "py:obj"
 
 # -- General configuration ---------------------------------------------
 
@@ -121,6 +138,8 @@ exclude_patterns = [
 # table of content of class API docs.
 toc_object_entries_show_parents = "hide"
 
+# Avoid role annotations as much as possible.
+default_role = "py:obj"
 
 # -- Options for Autodoc -----------------------------------------------
 
@@ -135,102 +154,23 @@ autodoc_type_aliases = {
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
 
-
-def _deduce_public_module_name(name: str) -> str:
-    """Return *name* with all private module names removed."""
-    if name.startswith("cernml.coi._"):
-        return "cernml.coi"
-    if name.startswith("cernml.mpl_utils._"):
-        return "cernml.mpl_utils"
-    if name == "gym.core":
-        return "gym"
-    if name.startswith("gym.spaces."):
-        return "gym.spaces"
-    return name
-
-
-def _hide_class_module(class_):  # type: ignore
-    """Hide private module names.
-
-    This compares each class's module of origin against a filter list in
-    :func:`_deduce_public_module_name()` and removes any modules that we
-    deem "private", nudging people towards using the public re-exports
-    instead.
-    """
-    old_name = getattr(class_, "__module__", "")
-    if not old_name:
-        return
-    new_name = _deduce_public_module_name(old_name)
-    if new_name != old_name:
-        class_.__module__ = new_name
-
-
-def _expand_typing_abbreviation(class_):  # type: ignore
-    """Fix broken expansion of generic decorator constructor arguments.
-
-    The :class:`@cern.mpl_utils.render_generator()` is a generic method
-    decorator that is actually a class, not a function itself. The
-    constructor contains a type variable *T*, non-class types
-    :data:`~typing.Callable` and a (fake-class) type alias
-    :class:`~cernml.mpl_utils.RenderGenerator`. Obviously, this throws
-    Autodoc for a loop.
-
-    If we didn't do anything, it would leave everything unexpanded. This
-    would correctly show "RenderGenerator" and link to its definition.
-    However, it would also leave "t.Callable" unexpanded and unable to
-    link to its definition.
-
-    We *could* just run the annotations through
-    :func:`~typing.get_type_hints()`. This would expand everything,
-    including RenderGenerator, making the type as an abbreviation
-    useless.
-
-    Instead, we manually expand the parts we want to expand (the typing
-    module and concrete class :class:`~matplotlib.figure.Figure`) and
-    leave the rest untouched.
-    """
-    # Don't use typing.get_type_hints, it expands *everything*.
-    annotations = getattr(class_.__init__, "__annotations__", None)
-    if not annotations:
-        return
-    # Expand `Figure` and `t` without expanding `RenderGenerator`.
-    expanded = {
-        name: re.sub(r"\bt\b", "typing", type_).replace(
-            "Figure", "~matplotlib.figure.Figure"
-        )
-        for name, type_ in annotations.items()
-    }
-    class_.__init__.__annotations__ = expanded
-
-
-def _hide_private_modules(_app, obj, _bound_method):  # type: ignore
-    if isinstance(obj, type):
-        for base in obj.__mro__:
-            _hide_class_module(base)
-        if issubclass(obj, t.Generic):
-            _expand_typing_abbreviation(obj)
-    if isinstance(obj, FunctionType):
-        if "gym_utils" in obj.__module__ or obj.__name__ == "make_renderer":
-            for annotated_type in t.get_type_hints(obj).values():
-                _hide_class_module(annotated_type)
-
-
-def setup(app):  # type: ignore
-    """Sphinx setup hook."""
-    app.connect("autodoc-before-process-signature", _hide_private_modules)
-
-
 # -- Options for Intersphinx -------------------------------------------
 
-ACC_PY_DOCS_ROOT = "https://acc-py.web.cern.ch/gitlab/"
+
+def acc_py_docs_link(repo: str) -> str:
+    """A URL pointing to the Acc-Py docs server."""
+    return f"https://acc-py.web.cern.ch/gitlab/{repo}/docs/stable/"
+
 
 intersphinx_mapping = {
-    "coi": (ACC_PY_DOCS_ROOT + "geoff/cernml-coi/docs/stable/", None),
+    "coi": (acc_py_docs_link("geoff/cernml-coi"), None),
+    "cmmnbuild": (acc_py_docs_link("scripting-tools/cmmnbuild-dep-manager"), None),
     "jpype": ("https://jpype.readthedocs.io/en/latest/", None),
     "mpl": ("https://matplotlib.org/stable/", None),
     "np": ("https://numpy.org/doc/stable/", None),
-    "pyjapc": (ACC_PY_DOCS_ROOT + "scripting-tools/pyjapc/docs/stable/", None),
+    "pyjapc": (acc_py_docs_link("scripting-tools/pyjapc"), None),
     "python": ("https://docs.python.org/3", None),
+    "std": ("https://docs.python.org/3/", None),
 }
 
 # -- Options for HTML output -------------------------------------------
@@ -243,3 +183,115 @@ html_theme = "sphinxdoc"
 # here, relative to this directory. They are copied after the builtin
 # static files, so a file named "default.css" will overwrite the builtin
 # "default.css". html_static_path = ["_static"]
+
+
+# -- Custom code -------------------------------------------------------
+
+
+def replace_modname(modname: str) -> None:
+    """Change the module that a list of objects publicly belongs to.
+
+    This package follows the pattern to have private modules called
+    :samp:`_{name}` that expose a number of classes and functions that
+    are meant for public use. The parent package then exposes these like
+    this::
+
+        from ._name import Thing
+
+    However, these objects then still expose the private module via
+    their ``__module__`` attribute::
+
+        assert Thing.__module__ == 'parent._name'
+
+    This function iterates through all exported members of the package
+    or module *modname* (as determined by either ``__all__`` or
+    `vars()`) and fixes each one's module of origin up to be the
+    *modname*. It does so recursively for all public attributes (i.e.
+    those whose name does not have a leading underscore).
+    """
+    todo: t.List[t.Any] = [import_module(modname)]
+    while todo:
+        parent = todo.pop()
+        for pubname in pubnames(parent):
+            obj = inspect.getattr_static(parent, pubname)
+            private_modname = getattr(obj, "__module__", "")
+            if private_modname and _is_true_prefix(modname, private_modname):
+                obj.__module__ = modname
+                todo.append(obj)
+
+
+def pubnames(obj: t.Any) -> t.Iterator[str]:
+    """Return an iterator over the public names in an object."""
+    return iter(
+        t.cast(t.List[str], getattr(obj, "__all__", None))
+        or (
+            name
+            for name, _ in inspect.getmembers_static(obj)
+            if not name.startswith("_")
+        )
+    )
+
+
+def _is_true_prefix(prefix: str, full: str) -> bool:
+    return full.startswith(prefix) and full != prefix
+
+
+# Do submodules first so that `coi.check()` is correctly assigned.
+replace_modname("cernml.gym_utils")
+replace_modname("cernml.japc_utils")
+replace_modname("cernml.lsa_utils")
+replace_modname("cernml.mpl_utils")
+
+
+def make_external_ref(
+    contnode: nodes.TextElement, uri: str, package: str
+) -> nodes.reference:
+    """Create a new reference node that wraps *contnode*."""
+    newnode = nodes.reference(
+        "", "", internal=False, refuri=uri, reftitle=f"(in {package!s})"
+    )
+    newnode.append(contnode)
+    return newnode
+
+
+def _fix_crossrefs(
+    app: Sphinx, env: BuildEnvironment, node: nodes.Inline, contnode: nodes.TextElement
+) -> t.Optional[nodes.Element]:
+    # Autodoc doesn't handle typing.TypeVar correctly.
+    if node["reftarget"].rpartition(".")[-1] == "T":
+        node["reftarget"] = "std:typing.TypeVar"
+        return intersphinx.missing_reference(app, env, node, contnode)
+    # Intersphinx cannot read the :canonical: attribute on the ..class
+    # directive for Box.
+    if node["reftarget"] == "gym.spaces.box.Box":
+        node["reftarget"] = "coi:gym.spaces.Box"
+        return intersphinx.missing_reference(app, env, node, contnode)
+    # Cross-link Java documentation.
+    if node["reftarget"] == "cern.accsoft.commons.value.Value":
+        return make_external_ref(
+            contnode,
+            uri="https://abwww.cern.ch/ap/dist/accsoft/commons/accsoft-commons-value/"
+            "PRO/build/docs/api/index.html?cern/accsoft/commons/value/Value.html",
+            package="accsoft-commons-value",
+        )
+    # No documentation exists for PJLsa, pick a related section of the
+    # README file.
+    if node["reftarget"] == "LSAClient":
+        return make_external_ref(
+            contnode,
+            uri="https://gitlab.cern.ch/scripting-tools/pjlsa#"
+            "low-level-access-to-the-java-lsa-api",
+            package="pjlsa",
+        )
+    return None
+
+
+def _fix_decorator_return_value(_app: Sphinx, obj: t.Any, _bound_method: bool) -> None:
+    if callable(obj) and obj.__name__ == "render_generator":
+        obj.__annotations__["return"] = "t.Callable[[str], MatplotlibFigures]"
+
+
+def setup(app: Sphinx) -> None:
+    """Set up hooks into Sphinx."""
+    app.connect("missing-reference", _fix_crossrefs)
+    app.connect("autodoc-before-process-signature", _fix_decorator_return_value)

@@ -23,13 +23,14 @@ this class once and only once at the outermost scope of execution. This
 means that any package that is meant to be imported by other Python code
 **must not, under any circumstances,** instantiate `LSAClient`.
 
-Similarly, such packages must not make use of the following objects,
-which all are just different ways to invoke the same import hook:
+Similarly, such packages must not make use of the following objects
+(which all are just different ways to invoke the same import hook):
 
-- the method `Manager.imports()` of the CommonBuild Dependency
-  Manager;
-- the module `jpype.imports` of JPype, which executes code upon
-  import.
+- the method
+  :meth:`Manager.imports()<cmmnbuild_dep_manager.Manager.imports()>` of
+  the :doc:`CommonBuild Dependency Manager <cmmnbuild:index>`;
+- the module `jpype.imports` of :doc:`JPype <jpype:index>`, which
+  executes code upon import.
 
 Instead, such packages should simply import any Java packages they use,
 **assuming that they are already available**. It is then the task of the

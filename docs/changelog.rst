@@ -19,6 +19,9 @@ Unreleased
 ----------
 
 - ADD: Support for Python 3.9 has been added.
+- FIX: Various dead links in the documentation. One minor consequence is that
+  `cernml.mpl_utils.render_generator` now is a function and no longer a type.
+  This should not have any impact on user code.
 - OTHER: Open-source this package by adding the appropriate license notices.
 
 v0.2.6

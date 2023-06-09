@@ -33,7 +33,8 @@ def iter_matplotlib_figures(
     possible return types and produces one consistent iterator.
 
     Args:
-        figures: The :class:`return value <MatplotlibFigures>` of
+        figures: The :obj:`return value
+            <cernml.mpl_utils.MatplotlibFigures>` of
             :meth:`render("matplotlib_figures")
             <cernml.coi.Problem.render()>`.
 
