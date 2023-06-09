@@ -11,9 +11,9 @@ include:
 variables:
   project_dir: src/cernml/
   project_name: cernml-coi-utils
-  ACC_PY_BASE_IMAGE_TAG: '2020.11'
+  ACC_PY_BASE_IMAGE_TAG: '2021.12'
   ACC_PY_BASE_IMAGE_NAME: 'acc-py_cc7_openjdk11_ci'
-  PY_VERSION: "3.7"
+  PY_VERSION: "3.9"
 
 # Build: Create a wheel to speed up installation.
 
@@ -29,18 +29,20 @@ build_wheel:
 test_lint:
   extends:
     - .acc_py_run_on_manylinux_py_version
-  stage: test
+    - .acc_py_run_on_all_currently_supported
   before_script:
     - !reference [.acc_py_run_on_manylinux_py_version, before_script]
     - python -m pip install
       -e ${project_root}[lint]
   script:
     - cd ${project_root}
-    - ./run_linters.sh
+    - ./run_linters.sh --print-versions
 
 test_dev:
   extends:
     - .acc_py_dev_test
+    - .acc_py_run_on_all_currently_supported
+  # Use AccPy image instead of ManyLinux.
   image: registry.cern.ch/acc/${ACC_PY_BASE_IMAGE_NAME}:${ACC_PY_BASE_IMAGE_TAG}
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   # Override `script` to change the precise pytest-cov arguments.
@@ -55,7 +57,9 @@ test_dev:
       --junitxml=junit-report.xml
 
 test_wheel:
-  extends: .acc_py_wheel_test
+  extends:
+    - .acc_py_wheel_test
+    - .acc_py_run_on_all_currently_supported
   # Override `script` to adjust the pytest call.
   script:
     - cd ${project_root}/tests
@@ -66,8 +70,9 @@ test_wheel:
 build_docs:
   extends:
     - .acc_py_build_docs
+  variables:
+    SPHINX_BUILD_ADDOPTS: "-n -W" # nitpicky mode, warnings are errors
   before_script:
-    - yum -y install graphviz curl
     - python -m pip install anybadge
     - !reference [.acc_py_build_docs, before_script]
   script:

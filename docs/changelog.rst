@@ -18,6 +18,7 @@ version 0.7.0.
 Unreleased
 ----------
 
+- ADD: Support for Python 3.9 has been added.
 - OTHER: Open-source this package by adding the appropriate license notices.
 
 v0.2.6
