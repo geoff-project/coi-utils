@@ -1,3 +1,9 @@
+# SPDX-FileCopyrightText: 2020-2023 CERN
+# SPDX-FileCopyrightText: 2023 GSI Helmholtzzentrum für Schwerionenforschung
+# SPDX-FileNotice: All rights not expressly granted are reserved.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
+
 [build-system]
 requires = [
     'pip >= 22',
@@ -15,7 +21,7 @@ authors = [
 ]
 description = 'Utilities for the Common Optimization Interfaces'
 readme = 'README.md'
-license = {text='Other/Proprietary License'}
+license = {file='COPYING'}
 dependencies = [
     'cernml-coi >=0.7, <0.9',
 ]
@@ -23,7 +29,6 @@ classifiers = [
     'Development Status :: 3 - Alpha',
     'Environment :: Console',
     'Intended Audience :: Science/Research',
-    'License :: Other/Proprietary License',
     'Topic :: Scientific/Engineering :: Artificial Intelligence',
     'Topic :: Scientific/Engineering :: Physics',
     'Natural Language :: English',

@@ -1,13 +1,19 @@
+# SPDX-FileCopyrightText: 2020-2023 CERN
+# SPDX-FileCopyrightText: 2023 GSI Helmholtzzentrum für Schwerionenforschung
+# SPDX-FileNotice: All rights not expressly granted are reserved.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
+
+# pylint: disable = import-outside-toplevel
+# pylint: disable = invalid-name
+# pylint: disable = redefined-builtin
+
 """Configuration file for the Sphinx documentation builder.
 
 This file only contains a selection of the most common options. For a
 full list see the documentation:
 https://www.sphinx-doc.org/en/master/usage/configuration.html
 """
-
-# pylint: disable = import-outside-toplevel
-# pylint: disable = invalid-name
-# pylint: disable = redefined-builtin
 
 # -- Path setup --------------------------------------------------------
 
@@ -83,7 +89,7 @@ ROOTDIR = pathlib.Path(__file__).absolute().parent.parent
 # -- Project information -----------------------------------------------
 
 project = "cernml-coi-utils"
-copyright = "2020–2021, BE-OP-SPS, CERN"
+copyright = "2020–2023 CERN, 2023 GSI Helmholtzzentrum für Schwerionenforschung"
 author = "Nico Madysa"
 release = importlib_metadata.version(project)
 default_role = "py:obj"

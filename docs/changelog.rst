@@ -1,3 +1,10 @@
+..
+    SPDX-FileCopyrightText: 2020-2023 CERN
+    SPDX-FileCopyrightText: 2023 GSI Helmholtzzentrum für Schwerionenforschung
+    SPDX-FileNotice: All rights not expressly granted are reserved.
+
+    SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
+
 Changelog
 =========
 
@@ -11,7 +18,7 @@ version 0.7.0.
 Unreleased
 ----------
 
-No changes yet!
+- OTHER: Open-source this package by adding the appropriate license notices.
 
 v0.2.6
 ------
@@ -58,7 +65,7 @@ v0.2.0
 ------
 
 - BREAKING: rename `~cernml.japc_utils.ParamStream` and `~cernml.japc_utils.ParamGroupStream` methods: ``wait_next()`` becomes `~cernml.japc_utils.ParamStream.pop_or_wait()`, ``next_if_ready()`` becomes `~cernml.japc_utils.ParamStream.pop_if_ready()`.
-- BREAKING: Refactor the renderer API: ``SimpleRenderer`` is replaced by `~cernml.mpl_utils.FigureRenderer`, which is an :term:`ABC <abstract base class>`. Replace ``from_generator()`` with `~cernml.mpl_utils.FigureRenderer.from_callback()`. 
+- BREAKING: Refactor the renderer API: ``SimpleRenderer`` is replaced by `~cernml.mpl_utils.FigureRenderer`, which is an :term:`ABC <abstract base class>`. Replace ``from_generator()`` with `~cernml.mpl_utils.FigureRenderer.from_callback()`.
 - ADD: Method `~cernml.japc_utils.ParamStream.wait_for_next()` to `~cernml.japc_utils.ParamStream` and `~cernml.japc_utils.ParamGroupStream`.
 - ADD: `~cernml.mpl_utils.make_renderer()` and `~cernml.mpl_utils.RendererGroup`.
 - ADD: `~cernml.lsa_utils.get_cycle_type_attributes()` from cernml-coi-funcs 0.2.2.
