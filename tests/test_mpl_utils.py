@@ -166,7 +166,8 @@ class TestRenderGenerator:
             def first(self, _: mpl.figure.Figure) -> None:
                 pass  # pragma: no cover
 
-        Container.first.__set_name__(Container, "first")  # pylint: disable=no-member
+        # pylint: disable = no-member
+        Container.first.__set_name__(Container, "first")
 
     def test_bad_assign(self) -> None:
         class Container:

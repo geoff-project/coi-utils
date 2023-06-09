@@ -26,6 +26,7 @@ from cernml.coi import cancellation  # pylint: disable=unused-import
 
 if t.TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=import-error, unused-import
+    import cern.japc.core
     import pyjapc
 
 LOG = logging.getLogger(__name__)
@@ -155,7 +156,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Union[str, t.Iterable[str]],
+        name: t.Union[str, t.List[str]],
         *,
         token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
@@ -402,9 +403,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
     def _on_value(
         self,
         names: _OneOrList[str],
-        values: _OneOrList[object],
-        headers: _OneOrList[dict],
+        values: t.Any,
+        headers: t.Optional[_OneOrList[dict]],
     ) -> None:
+        assert headers is not None, "we always pass getHeader=True"
         with self._condition:
             event: _Event
             if isinstance(names, str):
@@ -468,7 +470,8 @@ class ParamStream(_BaseStream):
     @property
     def parameter_name(self) -> str:
         """The name of the stream's underlying parameter."""
-        return self._handle.getParameter().getName()
+        handle = t.cast("cern.japc.core.SubscriptionHandle", self._handle)  # noqa: F821
+        return handle.getParameter().getName()
 
     @property
     def oldest(self) -> t.Tuple[object, Header]:
@@ -524,7 +527,7 @@ class ParamGroupStream(_BaseStream):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Iterable[str],
+        name: t.List[str],
         *,
         token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
@@ -545,7 +548,10 @@ class ParamGroupStream(_BaseStream):
     @property
     def parameter_names(self) -> t.List[str]:
         """A list with the names of all underlying parameters."""
-        return list(self._handle.getParameterGroup().getNames())
+        handle = t.cast(
+            "cern.japc.core.group.GroupSubscriptionHandle", self._handle  # noqa: F821
+        )
+        return list(handle.getParameterGroup().getNames())
 
     @property
     def oldest(self) -> t.List[t.Tuple[object, Header]]:

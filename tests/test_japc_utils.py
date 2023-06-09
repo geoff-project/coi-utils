@@ -23,6 +23,10 @@ from cernml.coi import cancellation
 
 from cernml import japc_utils
 
+if t.TYPE_CHECKING:  # pragma: no cover
+    # pylint: disable=import-error, unused-import
+    import pyjapc
+
 
 def test_monitoring() -> None:
     with japc_utils.monitoring(Mock()) as handle:
@@ -32,8 +36,8 @@ def test_monitoring() -> None:
 
 def test_subscriptions() -> None:
     with japc_utils.subscriptions(Mock()) as japc:
-        japc.startSubscriptions.assert_called_once_with()
-    japc.stopSubscriptions.assert_called_once_with()
+        t.cast(Mock, japc.startSubscriptions).assert_called_once_with()
+    t.cast(Mock, japc.stopSubscriptions).assert_called_once_with()
 
 
 def mock_header() -> japc_utils.Header:
@@ -49,7 +53,7 @@ def mock_header() -> japc_utils.Header:
 
 
 class MockJapc:
-    """A minimal mock of PyJapc.
+    """A minimal mock of PyJapc. Instantiate via `mock_japc()`.
 
     This only provides a `subscribeParam()` method that returns a
     mock handle. The values that are published by this mock handle are
@@ -188,6 +192,13 @@ class MockSubscriptionHandle:
         logging.info("terminating thread")
 
 
+def mock_japc(
+    mock_values: t.Union[list, t.Dict[str, list]],
+) -> "pyjapc.PyJapc":  # noqa: F821
+    """Create a `MockJapc` that behaves like a `PyJapc`."""
+    return t.cast("pyjapc.PyJapc", MockJapc(mock_values))  # noqa: F821
+
+
 def extract_mock_handle(
     stream: t.Union[japc_utils.ParamStream, japc_utils.ParamGroupStream]
 ) -> MockSubscriptionHandle:
@@ -207,13 +218,13 @@ def test_header() -> None:
 
 def test_str_single() -> None:
     name = "single_name"
-    stream = japc_utils.subscribe_stream(MockJapc([]), name)
+    stream = japc_utils.subscribe_stream(mock_japc([]), name)
     assert str(stream) == f"<ParamStream({name!r})>"
 
 
 def test_str_multiple() -> None:
     names = ["multiple", "names"]
-    stream = japc_utils.subscribe_stream(MockJapc([]), names)
+    stream = japc_utils.subscribe_stream(mock_japc([]), names)
     assert str(stream) == f"<ParamGroupStream of {len(names)} parameters>"
 
 
@@ -222,7 +233,9 @@ def test_repr_single() -> None:
     token = Mock()
     maxlen = 1357
     expected = f"<ParamStream(<PyJapc>, {name!r}, {token!r}, {maxlen!r})>"
-    stream = japc_utils.subscribe_stream(MockJapc([]), name, token=token, maxlen=maxlen)
+    stream = japc_utils.subscribe_stream(
+        mock_japc([]), name, token=token, maxlen=maxlen
+    )
     assert repr(stream) == expected
 
 
@@ -232,7 +245,7 @@ def test_repr_multiple() -> None:
     maxlen = 7531
     expected = f"<ParamGroupStream(<PyJapc>, {names!r}, {token!r}, {maxlen!r})>"
     stream = japc_utils.subscribe_stream(
-        MockJapc([]), names, token=token, maxlen=maxlen
+        mock_japc([]), names, token=token, maxlen=maxlen
     )
     assert repr(stream) == expected
 
@@ -247,7 +260,7 @@ def test_timing_selector_and_data_filter() -> None:
         "noPyConversion": False,
     }
     stream = japc_utils.subscribe_stream(
-        MockJapc([]), "", data_filter=data_filter, selector=selector
+        mock_japc([]), "", data_filter=data_filter, selector=selector
     )
     handle = extract_mock_handle(stream)
     assert handle.init_kwargs == expected
@@ -255,7 +268,7 @@ def test_timing_selector_and_data_filter() -> None:
 
 def test_receive_values() -> None:
     expected = [Mock(name=f"Sent #{i+1}") for i in range(3)]
-    japc = MockJapc(expected)
+    japc = mock_japc(expected)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         received = [stream.pop_or_wait()[0] for _ in range(3)]
@@ -269,7 +282,7 @@ def test_receive_group() -> None:
         "param_b": [Mock(name="value for param_b")],
     }
     expected = tuple(v[0] for v in sent_values.values())
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, ["param_a", "param_b"])
     with stream:
         data = stream.pop_or_wait()
@@ -279,14 +292,14 @@ def test_receive_group() -> None:
 
 
 def test_block_without_values() -> None:
-    japc = MockJapc([])
+    japc = mock_japc([])
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         assert stream.pop_or_wait(2 * MockJapc.TIME_STEP_SECONDS) is None
 
 
 def test_raise_if_not_monitoring() -> None:
-    japc = MockJapc([])
+    japc = mock_japc([])
     stream = japc_utils.subscribe_stream(japc, "")
     with pytest.raises(japc_utils.StreamError):
         stream.pop_or_wait()
@@ -295,7 +308,7 @@ def test_raise_if_not_monitoring() -> None:
 
 def test_queue_maxlen_is_one() -> None:
     sent_values = [Mock(name=f"Sent value #{i+1}") for i in range(3)]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         handle = extract_mock_handle(stream)
@@ -307,7 +320,7 @@ def test_queue_maxlen_is_one() -> None:
 
 def test_queue_without_maxlen() -> None:
     sent_values = [Mock(name=f"Sent value #{i+1}") for i in range(5)]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "", maxlen=None)
     with stream:
         handle = extract_mock_handle(stream)
@@ -319,7 +332,7 @@ def test_queue_without_maxlen() -> None:
 
 def test_pop_if_ready_doesnt_block() -> None:
     sent_values = [Mock() for _ in range(2)]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "", maxlen=None)
     with stream:
         first, _ = stream.pop_or_wait()
@@ -330,7 +343,7 @@ def test_pop_if_ready_doesnt_block() -> None:
 
 def test_locked_prevents_updates() -> None:
     sent_values = [Mock(name="Sent value")]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         assert not stream.ready
@@ -347,7 +360,7 @@ def test_locked_prevents_updates() -> None:
 
 def test_clear() -> None:
     sent_values = [Mock(name="Sent value")]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         assert not stream.ready
@@ -362,7 +375,7 @@ def test_clear() -> None:
 
 
 def test_stream_token() -> None:
-    japc = MockJapc([])
+    japc = mock_japc([])
     token = cancellation.Token()
     stream = japc_utils.subscribe_stream(japc, "", token=token)
     assert token is stream.token
@@ -386,7 +399,7 @@ def test_wait_for_next_clears_queue(name: t.Union[str, t.List[str]]) -> None:
     expected_return_values = [
         (v, ANY) if isinstance(name, str) else [(v, ANY)] for v in sent_values
     ]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     token = cancellation.Token()
     stream = japc_utils.subscribe_stream(japc, name, maxlen=3, token=token)
     with stream:
@@ -409,7 +422,7 @@ def test_oldest_newest(name: t.Union[str, t.List[str]]) -> None:
     expected_return_values = [
         (v, ANY) if isinstance(name, str) else [(v, ANY)] for v in sent_values
     ]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, name, maxlen=2)
     with stream:
         # Wait until the thread has sent its data.
@@ -428,7 +441,7 @@ def test_oldest_newest(name: t.Union[str, t.List[str]]) -> None:
 
 def test_exception() -> None:
     sent_values = [Mock(), Mock(), ValueError()]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         received = []
@@ -441,7 +454,7 @@ def test_exception() -> None:
 
 def test_cancel() -> None:
     token = cancellation.Token(cancelled=True)
-    japc = MockJapc([Mock()])
+    japc = mock_japc([Mock()])
     stream = japc_utils.subscribe_stream(japc, "", token=token)
     with pytest.raises(cancellation.CancelledError):
         with stream:
@@ -451,7 +464,7 @@ def test_cancel() -> None:
 
 def test_cancel_preempts_ready() -> None:
     token = cancellation.Token(cancelled=True)
-    japc = MockJapc([Mock()])
+    japc = mock_japc([Mock()])
     stream = japc_utils.subscribe_stream(japc, "", token=token)
     with pytest.raises(cancellation.CancelledError):
         with stream:
@@ -464,7 +477,7 @@ def test_cancel_preempts_ready() -> None:
 
 def test_cancel_breaks_deadlock() -> None:
     sent_values = [Mock() for _ in range(3)]
-    japc = MockJapc(sent_values)
+    japc = mock_japc(sent_values)
     source = cancellation.TokenSource()
     stream = japc_utils.subscribe_stream(japc, "", token=source.token)
 
