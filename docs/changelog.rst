@@ -12,11 +12,16 @@ This package uses a variant of `Semantic Versioning <https://semver.org/>`__
 that makes additional promises during the initial development (major version
 0): whenever breaking changes to the public API are published, the first
 non-zero version number will increase. For example, code that uses version
-0.6.0 if this package will also work with version 0.6.1, but may break with
-version 0.7.0.
+0.2.7 if this package will also work with version 0.2.8, but may break with
+version 0.3.0.
 
 Unreleased
 ----------
+
+No changes yet!
+
+v0.2.7
+------
 
 - ADD: Support for Python 3.9 has been added.
 - FIX: Various dead links in the documentation. One minor consequence is that
