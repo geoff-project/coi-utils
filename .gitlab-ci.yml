@@ -88,6 +88,9 @@ build_docs:
 
 # Deploy: Publish the wheel on acc-py-repo.cern.ch.
 
+publish:
+  extends: .acc_py_publish
+
 build_docs_on_tag:
   extends:
     - .acc_py_build_docs_on_tag
@@ -98,13 +101,8 @@ build_docs_on_tag:
     - yum -y install graphviz curl
     - !reference [.acc_py_build_docs_on_tag, before_script]
 
-publish:
-  extends: .acc_py_publish
-  needs: [build_docs_on_tag]
-
 gitlab_release:
   stage: deploy
-  needs: [build_docs_on_tag]
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   rules:
     - if: $CI_COMMIT_TAG
