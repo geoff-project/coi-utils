@@ -12,13 +12,17 @@ This package uses a variant of `Semantic Versioning <https://semver.org/>`__
 that makes additional promises during the initial development (major version
 0): whenever breaking changes to the public API are published, the first
 non-zero version number will increase. For example, code that uses version
-0.2.7 if this package will also work with version 0.2.8, but may break with
+0.2.8 if this package will also work with version 0.2.9, but may break with
 version 0.3.0.
 
 Unreleased
 ----------
 
 No changes yet!
+
+v0.2.8
+
+- FIX: Bad CI config that prevented the docs from being built.
 
 v0.2.7
 ------
