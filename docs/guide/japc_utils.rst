@@ -389,9 +389,9 @@ into the block and `~cernml.japc_utils.ParamStream.stop_monitoring()` is called
 upon exit. The advantage of :keyword:`with` statements is that the exit handler
 is called even if the block is exited through an exception.
 
-The package also provides two context managers –
-`~cernml.japc_utils.subscriptions()` and `~cernml.japc_utils.monitoring()` – to
-handle raw `~pyjapc:pyjapc.PyJapc`. objects and subscription handles
+The package provides two additional :term:`context managers <context manager>`:
+`~cernml.japc_utils.subscriptions()` and `~cernml.japc_utils.monitoring()`.
+They handle raw `~pyjapc:pyjapc.PyJapc` objects and subscription handles
 respectively in an analogous manner:
 
 .. code-block:: python
@@ -416,11 +416,17 @@ subscriptions to multiple parameters at once. If you pass a list of strings to
 `~cernml.japc_utils.ParamGroupStream`:
 
 .. code-block:: python
+    :emphasize-lines: 6
 
     stream = japc_utils.subscribe_stream(japc, ["PARAM1", "PARAM2"])
     with stream:
-        data_and_headers = stream.pop_or_wait()
-        data, headers = zip(*data_and_headers)
+        data_header_pairs = stream.pop_or_wait()
+        for data, header in data_header_pairs:
+            ...
+        all_data, headers = zip(*data_header_pairs)
+        for data in all_data:
+            ...
 
-Note that the stream returns a list of value–header tuples. The last line in
-the above snippet uses `zip` to unzip it into a tuple of two lists.
+Note that the stream returns a list of value–header tuples. The line
+highlighted in the above snippet uses `zip` to transpose it into a tuple of one
+value list and one header list.

@@ -88,7 +88,7 @@ def _unwrap_event(event: _Event) -> _Item:
 
 @contextlib.contextmanager
 def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
-    """Return a context manager for `~pyjapc.PyJapc`.
+    """Return a :term:`context manager` for `~pyjapc.PyJapc`.
 
     The context manager starts all subscriptions when entering its
     context and stops them when leaving it. It is neither reentrant nor
@@ -113,7 +113,7 @@ def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
 
 @contextlib.contextmanager
 def monitoring(handle: T) -> t.Iterator[T]:
-    """Return a context manager for JAPC subscription handles.
+    """Return a :term:`context manager` for JAPC subscription handles.
 
     The context manager starts monitoring the handle when entering its
     context and stops when leaving it. It is neither reentrant nor
@@ -229,7 +229,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     @contextlib.contextmanager
     def locked(self) -> t.Iterator[None]:
-        """Return a context manager that locks this stream.
+        """Return a :term:`context manager` that locks this stream.
 
         Locking the stream may prevent `TOC/TOU
         <https://en.wikipedia.org/wiki/Time-of-check_to_time-of-use>`_
@@ -683,10 +683,11 @@ def subscribe_stream(
         certain timing behavior, you must inspect the `Header`
         returned by the stream.
 
-    The returned parameter streams are context managers. Entering their
-    context starts monitoring their handle, exiting stops it. They are
-    reusable, but not re-entrant. This means the *same* stream may be
-    used in subsequent :keyword:`with` blocks, but not in nested ones.
+    The returned parameter streams are :term:`context managers <context
+    manager>`. Entering their context starts monitoring their handle,
+    exiting stops it. They are reusable, but not re-entrant. This means
+    the *same* stream may be used in subsequent :keyword:`with` blocks,
+    but not in nested ones.
 
         >>> def run_analysis(japc: "PyJapc") -> None:
         ...     stream = subscribe_stream(japc, "device/property#field")
