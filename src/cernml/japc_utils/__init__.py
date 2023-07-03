@@ -156,7 +156,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Union[str, t.List[str]],
+        name: t.Union[str, t.List[str], t.Tuple[str, ...]],
         *,
         token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
@@ -527,7 +527,7 @@ class ParamGroupStream(_BaseStream):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.List[str],
+        name: t.Union[t.List[str], t.Tuple[str, ...]],
         *,
         token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
@@ -623,7 +623,7 @@ def subscribe_stream(
 @t.overload
 def subscribe_stream(
     japc: "pyjapc.PyJapc",
-    name_or_names: t.List[str],
+    name_or_names: t.Union[t.List[str], t.Tuple[str, ...]],
     *,
     token: t.Optional[cancellation.Token] = ...,
     maxlen: t.Optional[int] = ...,
@@ -636,7 +636,7 @@ def subscribe_stream(
 
 def subscribe_stream(
     japc: "pyjapc.PyJapc",
-    name_or_names: t.Union[str, t.List[str]],
+    name_or_names: t.Union[str, t.List[str], t.Tuple[str, ...]],
     *,
     token: t.Optional[cancellation.Token] = None,
     maxlen: t.Optional[int] = 1,
