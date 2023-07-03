@@ -21,9 +21,14 @@ Unreleased
 - FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
 - FIX: Type annotations for *data_filter* parameter of
   `~cernml.japc_utils.subscribe_stream()`.
-- FIX: Add `~typing.Tuple`\ [`str`, ``...``] to type annotations for
+- FIX: Add `~typing.Tuple`\ [`str`, …] to type annotations for
   *name_or_names* parameter of `~cernml.japc_utils.subscribe_stream()` for
   consistency with `~pyjapc.PyJapc`.
+- FIX: Change the type of `ParamGroupStream.parameter_names
+  <cernml.japc_utils.ParamGroupStream.parameter_names>` from `~typing.List`\
+  [`str`] to `~typing.Tuple`\ [`str`, …] to prevent users from subtly broken
+  code like :samp:`stream.parameter_names.append({name})`. This is technically
+  a breaking change, but the impact is assumed to be negligible.
 
 v0.2.9
 ------

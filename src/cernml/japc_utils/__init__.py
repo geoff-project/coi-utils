@@ -541,17 +541,17 @@ class ParamGroupStream(_BaseStream):
     def __repr__(self) -> str:
         return (
             f"<{type(self).__name__}(<PyJapc>, "
-            f"{self.parameter_names!r}, {self.token!r}, "
+            f"{list(self.parameter_names)!r}, {self.token!r}, "
             f"{self._queue.maxlen!r})>"
         )
 
     @property
-    def parameter_names(self) -> t.List[str]:
+    def parameter_names(self) -> t.Tuple[str, ...]:
         """A list with the names of all underlying parameters."""
         handle = t.cast(
             "cern.japc.core.group.GroupSubscriptionHandle", self._handle  # noqa: F821
         )
-        return list(handle.getParameterGroup().getNames())
+        return tuple(handle.getParameterGroup().getNames())
 
     @property
     def oldest(self) -> t.List[t.Tuple[object, Header]]:
