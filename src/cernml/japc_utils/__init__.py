@@ -610,7 +610,7 @@ def subscribe_stream(
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
-    data_filter: t.Optional[str] = ...,
+    data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
 ) -> ParamStream:
     ...  # pragma: no cover
 
@@ -629,7 +629,7 @@ def subscribe_stream(
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
-    data_filter: t.Optional[str] = ...,
+    data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
 ) -> ParamGroupStream:
     ...  # pragma: no cover
 
@@ -642,7 +642,7 @@ def subscribe_stream(
     maxlen: t.Optional[int] = 1,
     convert_to_python: bool = True,
     selector: t.Optional[str] = None,
-    data_filter: t.Optional[str] = None,
+    data_filter: t.Optional[t.Dict[str, t.Any]] = None,
 ) -> t.Union[ParamStream, ParamGroupStream]:
     """Subscribe to a parameter and create a stream of its values.
 

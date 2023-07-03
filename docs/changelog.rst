@@ -19,6 +19,8 @@ Unreleased
 ----------
 
 - FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
+- FIX: Type annotations for *data_filter* parameter of
+  `~cernml.japc_utils.subscribe_stream()`.
 
 v0.2.9
 ------
