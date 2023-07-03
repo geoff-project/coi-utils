@@ -6,4 +6,4 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-sphinx-build docs/ -q docs/html "$@"
+sphinx-build docs/ -qn docs/html "$@"
