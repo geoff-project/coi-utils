@@ -18,7 +18,7 @@ version 0.3.0.
 Unreleased
 ----------
 
-No changes yet!
+- FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
 
 v0.2.9
 ------
