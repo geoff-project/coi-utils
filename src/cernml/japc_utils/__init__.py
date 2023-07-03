@@ -18,11 +18,17 @@ import contextlib
 import datetime
 import functools
 import logging
+import sys
 import threading
 import typing as t
 from collections import deque
 
 from cernml.coi import cancellation  # pylint: disable=unused-import
+
+if sys.version_info < (3, 9):  # pragma: no cover
+    from typing import ContextManager
+else:  # pragma: no cover
+    from contextlib import AbstractContextManager as ContextManager
 
 if t.TYPE_CHECKING:  # pragma: no cover
     # pylint: disable=import-error, unused-import
@@ -90,9 +96,10 @@ def _unwrap_event(event: _Event) -> _Item:
 def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
     """Return a :term:`context manager` for `~pyjapc.PyJapc`.
 
-    The context manager starts all subscriptions when entering its
-    context and stops them when leaving it. It is neither reentrant nor
-    reusable.
+    When entering this context, all subscriptions made through the given
+    `~pyjapc.PyJapc` object are started. When exiting, they are all
+    stopped. This is neither reentrant nor reusable: You should make a
+    new call for each :keyword:`with` statement.
 
     Usage:
 
@@ -111,13 +118,18 @@ def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
         japc.stopSubscriptions()
 
 
+# Fix up return type annotation for the docs.
+subscriptions.__annotations__["return"] = ContextManager["pyjapc.PyJapc"]
+
+
 @contextlib.contextmanager
 def monitoring(handle: T) -> t.Iterator[T]:
     """Return a :term:`context manager` for JAPC subscription handles.
 
-    The context manager starts monitoring the handle when entering its
-    context and stops when leaving it. It is neither reentrant nor
-    reusable.
+    When entering this context, the given subscription handle starts
+    monitoring. When exiting, it stops. This is neither reentrant nor
+    reusable: You should make a new call for each :keyword:`with`
+    statement.
 
     Usage:
 
@@ -136,6 +148,10 @@ def monitoring(handle: T) -> t.Iterator[T]:
         yield handle
     finally:
         t.cast(t.Any, handle).stopMonitoring()
+
+
+# Fix up return type annotation for the docs.
+monitoring.__annotations__["return"] = ContextManager[T]  # type: ignore # noqa
 
 
 class _BaseStream(metaclass=abc.ABCMeta):
