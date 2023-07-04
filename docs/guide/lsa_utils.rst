@@ -132,11 +132,15 @@ See also the section on :ref:`guide/lsa_utils:Relative Trims`.
 Trimming a Single Function
 --------------------------
 
+.. note::
+   Before trimming a function, you must define
+   :ref:`guide/lsa_utils:Incorporation Ranges` in the LSA App Suite.
+
 Unless you want to pass an entire function object every time, trimming a
 function is slightly more complicated than trimming scalar settings. There are
 two ways to solve this task using `~cernml.lsa_utils`.
 
-The simple one is by using the free function `incorporate_and_trim()`. There
+The simple way is by using the free function `incorporate_and_trim()`. There
 are several other functions to make using it easier:
 
 .. code-block:: python
@@ -190,6 +194,11 @@ efficient.
 
 Trimming Multiple Functions
 ---------------------------
+
+.. note::
+   As with trimming single functions, you must ensure that each function has
+   its :ref:`guide/lsa_utils:Incorporation Ranges` defined *before* sending any
+   trims.
 
 The `~cernml.lsa_utils` package also allows trimming several functions with a
 single trim, as long as they're modified in the same location. (This
@@ -306,6 +315,9 @@ management, select the desired context and enable "Show Sub Contexts".
 .. image:: incorporation-settings.png
     :alt: Screenshot of the LSA App Suite settings management.
 
+Creating Incorporation Ranges
++++++++++++++++++++++++++++++
+
 To create an incorporation range, you stay within the LSA App Suite and start
 the Incorporation Ranges app under the category "Contexts". There, you can pick
 the beam process, parameter and parameter group. If a rule should apply to
@@ -332,6 +344,9 @@ propagated into the range. Most rules take an additional time parameter.
 Generally, they define how smoothly a change is incorporated. As for *start*
 and *end*, the parameter may be set to certain constants such as "start of beam
 process" or "start of incorporation range".
+
+List of Incorporation Rules
++++++++++++++++++++++++++++
 
 The most important rules are given below. In the app, you can also click the
 question mark icon to get more help on how they work.
