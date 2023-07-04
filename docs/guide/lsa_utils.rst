@@ -95,11 +95,6 @@ of the context:
         user="LEI.USER.NOMINAL",
     )
 
-If the mapping contains **multiple parameters**, they are changed
-*transactionally*: the trim only succeeds if all settings can be applied. If
-any one of them fails, the trim is rolled back and changes are applied at all.
-Furthermore, the entire trim occupies only one entry in the trim history.
-
 You can pass an additional *description* parameter to document your trim in the
 trim history:
 
@@ -110,19 +105,6 @@ trim history:
         {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
         user="LEI.USER.NOMINAL",
         description="Reset kick strength to known good value",
-    )
-
-If you pass a true value for the *relative* flag, all changes are applied on
-top of the current settings:
-
-.. code-block:: python
-    :emphasize-lines: 4
-
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": 0.1},
-        user="LEI.USER.NOMINAL",
-        relative=True,
-        description="Increase KFH31 kick strength slightly",
     )
 
 All types of scalar settings are supported: integers, booleans and
@@ -139,6 +121,13 @@ string (which denotes its name):
         {"ER.KFH31/SettingA#kickOnA": "ON"},
         user="LEI.USER.NOMINAL",
     )
+
+If the mapping contains **multiple parameters**, they are changed
+*transactionally*: the trim only succeeds if all settings can be applied. If
+any one of them fails, the trim is rolled back and changes are applied at all.
+Furthermore, the entire trim occupies only one entry in the trim history.
+
+See also the section on :ref:`guide/lsa_utils:Relative Trims`.
 
 Trimming a Single Function
 --------------------------
@@ -172,6 +161,10 @@ are several other functions to make using it easier:
         relative=False,
         description="Usage example of cernml.lsa_utils",
     )
+
+Unlike with scalar settings, the *relative* parameter does not have a
+default value. You must always specify whether you want
+:ref:`guide/lsa_utils:Relative Trims` or not.
 
 The slightly more complex one is to create an `Incorporator` and call the
 respective methods on it. This class avoids conversion from Python strings to
@@ -263,6 +256,38 @@ individually:
         "logical.MDAH.2307/K",
         "logical.MDAV.2301.M/K",
         "logical.MDAV.2305.M/K",
+    )
+
+Relative Trims
+--------------
+
+By default, trims sent through `~cernml.lsa_utils` are *absolute*; that means
+that the value you pass is the value that is written to the database.
+
+You can also send *relative* trims, in which the value that you pass is added
+to the current value in the database. You do this by passing `True` to the
+*relative* parameter of any trim function.
+
+For example, the following call *increases* a magnet's kick strength by 0.1:
+
+.. code-block:: python
+    :emphasize-lines: 4
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": 0.1},
+        user="LEI.USER.NOMINAL",
+        relative=True,
+    )
+
+To decrease a parameter value, simply send a relative trim with a negative
+value:
+
+.. code-block:: python
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": -0.3},
+        user="LEI.USER.NOMINAL",
+        relative=True,
     )
 
 Incorporation Ranges
