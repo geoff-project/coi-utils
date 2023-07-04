@@ -127,7 +127,8 @@ If the mapping contains **multiple parameters**, they are changed
 any one of them fails, the trim is rolled back and changes are applied at all.
 Furthermore, the entire trim occupies only one entry in the trim history.
 
-See also the section on :ref:`guide/lsa_utils:Relative Trims`.
+See also the sections on :ref:`guide/lsa_utils:Relative Trims` and
+:ref:`guide/lsa_utils:Transient Trims`.
 
 Trimming a Single Function
 --------------------------
@@ -168,7 +169,8 @@ are several other functions to make using it easier:
 
 Unlike with scalar settings, the *relative* parameter does not have a
 default value. You must always specify whether you want
-:ref:`guide/lsa_utils:Relative Trims` or not.
+:ref:`guide/lsa_utils:Relative Trims` or not. :ref:`guide/lsa_utils:Transient
+Trims`, on the other hand, are still the default.
 
 The slightly more complex one is to create an `Incorporator` and call the
 respective methods on it. This class avoids conversion from Python strings to
@@ -267,6 +269,9 @@ individually:
         "logical.MDAV.2305.M/K",
     )
 
+See also the sections on :ref:`guide/lsa_utils:Relative Trims` and
+:ref:`guide/lsa_utils:Transient Trims`.
+
 Relative Trims
 --------------
 
@@ -298,6 +303,33 @@ value:
         user="LEI.USER.NOMINAL",
         relative=True,
     )
+
+Transient Trims
+---------------
+
+Trims that are sent through `~cernml.lsa_utils` are marked as *transient* by
+default. This means that the LSA server will delete them after a while to save
+bandwidth and keep the trim history manageable.
+
+The specifics may vary, but usually, they will be deleted if they no longer
+contain active or reference settings and are at least one week older than the
+latest trim of the respective context.
+
+To override this default and mark a trim as *permanent*, you can set the
+*transient* parameter to `False`:
+
+.. code-block:: python
+    :emphasize-lines: 4
+
+    lsa_utils.trim_scalar_settings(
+        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+        user="LEI.USER.NOMINAL",
+        transient=False,
+        description="Reset kick strength to known good value",
+    )
+
+Keep in mind that a meaningful description, while always important, is even
+*more* important for permanent trims.
 
 Incorporation Ranges
 --------------------

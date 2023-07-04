@@ -83,7 +83,7 @@ class Incorporator:
     def user(self, name: str) -> None:
         try:
             cycle = _services.context.findStandAloneContextByUser(name)
-        except java.lang.IllegalArgumentException:  # type: ignore
+        except java.lang.IllegalArgumentException:
             raise NotFound(name) from None
         assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
         self._cycle = cycle
@@ -107,6 +107,7 @@ class Incorporator:
         value: float,
         *,
         relative: bool,
+        transient: bool = True,
         description: t.Optional[str] = None,
     ) -> None:
         """Modify the function at a point and commit the change.
@@ -125,10 +126,14 @@ class Incorporator:
             value: The correction value to be transmitted. How this
                 value is incorporated depends on the  keyword-only
                 argument *relative*.
-            relative: If True, *value* is added to the correction of the
-                function at the given time. If False, the correction is
-                set to *value*, overwriting the previous correction at
-                the given time.
+            relative: If True, *value* is :ref:`added
+                <guide/lsa_utils:relative trims>` to the correction of
+                the function at the given time. If False, the correction
+                is set to *value*, overwriting the previous correction
+                at the given time.
+            transient: If True (the default), mark this trim as
+                :ref:`transient <guide/lsa_utils:transient trims>`. If
+                False, this is a permanent trim.
             description: The description to appear in LSA's trim
                 history. If not passed, an implementation-defined string
                 will be used.
@@ -144,7 +149,7 @@ class Incorporator:
             cycle_time=cycle_time,
             value=value,
         )
-        _services.trim.incorporate(
+        request_builder = (
             lsa_settings.IncorporationRequest.builder()
             .setContext(self._cycle)
             .setDescription(
@@ -152,8 +157,10 @@ class Incorporator:
             )
             .setRelative(relative)
             .addIncorporationSetting(setting)
-            .build()
         )
+        # Workaround for buggy return type annotation in PJLSA 0.2.18.
+        request_builder.setTransient(transient)
+        _services.trim.incorporate(request_builder.build())
 
     @classmethod
     def _from_raw(
@@ -219,7 +226,7 @@ class IncorporatorGroup:
     def user(self, name: str) -> None:
         try:
             cycle = _services.context.findStandAloneContextByUser(name)
-        except java.lang.IllegalArgumentException:  # type: ignore
+        except java.lang.IllegalArgumentException:
             raise NotFound(name) from None
         assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
         self._cycle = cycle
@@ -259,6 +266,7 @@ class IncorporatorGroup:
         values: t.Union[float, np.ndarray, t.Sequence[float], t.Mapping[str, float]],
         *,
         relative: bool,
+        transient: bool = True,
         description: t.Optional[str] = None,
     ) -> None:
         """Modify each function at a point and commit the change.
@@ -281,10 +289,14 @@ class IncorporatorGroup:
                 sequence of floats (one for each parameter), or a
                 mapping from parameter name to float (which must mention
                 each parameter once and have no superfluous items).
-            relative: If True, the *values* are added to the correction
-                of the respective functions at the given time. If False,
-                the corrections are set to th *values*, overwriting the
-                previous correction at the given time.
+            relative: If True, the *values* are :ref:`added
+                <guide/lsa_utils:relative trims>` to the correction of
+                the function at the given time. If False, the correction
+                is set to the *value*, overwriting the previous
+                correction at the given time.
+            transient: If True (the default), mark this trim as
+                :ref:`transient <guide/lsa_utils:transient trims>`. If
+                False, this is a permanent trim.
             description: The description to appear in LSA's trim
                 history. If not passed, an implementation-defined string
                 will be used.
@@ -298,6 +310,8 @@ class IncorporatorGroup:
             )
             .setRelative(relative)
         )
+        # Workaround for buggy return type annotation in PJLSA 0.2.18.
+        request_builder.setTransient(transient)
         for parameter, value in zip(self._parameters, values):
             if isinstance(value, np.floating):
                 value = float(value)
@@ -356,7 +370,7 @@ def find_cycle(
     if user:
         try:
             cycle = _services.context.findStandAloneContextByUser(user)
-        except java.lang.IllegalArgumentException:  # type: ignore
+        except java.lang.IllegalArgumentException:
             raise NotFound(user) from None
         assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
         return cycle

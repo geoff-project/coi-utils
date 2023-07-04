@@ -66,7 +66,11 @@ def test_get_function_bad_context() -> None:
         )
 
 
-def test_incorporate(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("transient", [False, True])
+@pytest.mark.parametrize("relative", [False, True])
+def test_incorporate(
+    monkeypatch: pytest.MonkeyPatch, relative: bool, transient: bool
+) -> None:
     # pylint: disable=protected-access
     trim = Mock()
     monkeypatch.setattr(lsa_utils._services, "trim", trim)
@@ -78,13 +82,21 @@ def test_incorporate(monkeypatch: pytest.MonkeyPatch) -> None:
         "Pb54_2BP_2021_06_09_EARLY_2400ms_V1",
         120.0,
         value,
-        relative=False,
+        relative=relative,
+        transient=transient,
         description="cernml.lsa_utils test suite",
     )
     trim.incorporate.assert_called_once()
+    [req], [] = trim.incorporate.call_args
+    assert req.isRelative() == relative
+    assert req.isTransient() == transient
 
 
-def test_multi_incorporate(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("transient", [False, True])
+@pytest.mark.parametrize("relative", [False, True])
+def test_multi_incorporate(
+    monkeypatch: pytest.MonkeyPatch, relative: bool, transient: bool
+) -> None:
     # pylint: disable=protected-access
     trim = Mock()
     monkeypatch.setattr(lsa_utils._services, "trim", trim)
@@ -98,10 +110,14 @@ def test_multi_incorporate(monkeypatch: pytest.MonkeyPatch) -> None:
         "SFT_PRO_MTE_L4780_2022_V1",
         4460.0,
         np.zeros(4),
-        relative=False,
+        relative=relative,
+        transient=transient,
         description="cernml.lsa_utils test suite",
     )
     trim.incorporate.assert_called_once()
+    [req], [] = trim.incorporate.call_args
+    assert req.isRelative() == relative
+    assert req.isTransient() == transient
 
 
 def test_incorporate_out_of_range() -> None:
@@ -117,7 +133,14 @@ def test_incorporate_out_of_range() -> None:
         )
 
 
-def test_trim_settings() -> None:
+@pytest.mark.parametrize("transient", [False, True])
+@pytest.mark.parametrize("relative", [False, True])
+def test_trim_settings(
+    monkeypatch: pytest.MonkeyPatch, relative: bool, transient: bool
+) -> None:
+    # pylint: disable=protected-access
+    trim = Mock()
+    monkeypatch.setattr(lsa_utils._services, "trim", trim)
     lsa_utils.trim_scalar_settings(
         {
             "ER.GSECVGUN/Enable#enabled": True,
@@ -126,7 +149,12 @@ def test_trim_settings() -> None:
             "ER.KFH31/SettingA#kickStrengthCcvA": 54.5,
         },
         user="LEI.USER.NOMINAL",
+        relative=relative,
+        transient=transient,
     )
+    [req], [] = trim.trimSettings.call_args
+    assert req.isRelative() == relative
+    assert req.isTransient() == transient
 
 
 def test_get_cycle_type_attributes() -> None:

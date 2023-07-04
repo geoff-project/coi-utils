@@ -33,7 +33,7 @@ def get_context_by_user(user: str) -> str:
     """Look up the name of the context that belongs to the user."""
     try:
         cycle = _services.context.findStandAloneContextByUser(user)
-    except java.lang.IllegalArgumentException:  # type: ignore
+    except java.lang.IllegalArgumentException:
         raise _incorporator.NotFound(user) from None
     return cycle.getName()
 
@@ -57,6 +57,7 @@ def incorporate_and_trim(
     value: float,
     *,
     relative: bool,
+    transient: bool = True,
     description: t.Optional[str] = None,
 ) -> None:
     ...  # pragma: no cover
@@ -70,6 +71,7 @@ def incorporate_and_trim(
     value: t.Union[np.ndarray, t.Sequence[float]],
     *,
     relative: bool,
+    transient: bool = True,
     description: t.Optional[str] = None,
 ) -> None:
     ...  # pragma: no cover
@@ -82,6 +84,7 @@ def incorporate_and_trim(
     value: t.Union[float, np.ndarray, t.Sequence[float]],
     *,
     relative: bool,
+    transient: bool = True,
     description: t.Optional[str] = None,
 ) -> None:
     """Modify a function or functions at a point and commit the change.
@@ -107,10 +110,14 @@ def incorporate_and_trim(
             *relative*. If *parameter_name* is a string, this is a
             single float. If *parameter_name* is a list of strings, this
             should be an array or list of the same length.
-        relative: If True, *value* is added to the correction of the
+        relative: If True, *value* is :ref:`added
+            <guide/lsa_utils:relative trims>` to the correction of the
             function at the given time. If False, the correction is set
             to *value*, overwriting the previous correction at the given
             time.
+        transient: If True (the default), mark this trim as
+            :ref:`transient <guide/lsa_utils:transient trims>`. If
+            False, this is a permanent trim.
         description: The description to appear in LSA's trim history. If
             not passed, an implementation-defined string will be used.
     """
@@ -118,13 +125,21 @@ def incorporate_and_trim(
         _incorporator.Incorporator(
             parameter_name, context=context
         ).incorporate_and_trim(
-            cycle_time, t.cast(float, value), relative=relative, description=description
+            cycle_time,
+            t.cast(float, value),
+            relative=relative,
+            transient=transient,
+            description=description,
         )
     else:
         _incorporator.IncorporatorGroup(
             parameter_name, context=context
         ).incorporate_and_trim(
-            cycle_time, value, relative=relative, description=description
+            cycle_time,
+            value,
+            relative=relative,
+            transient=transient,
+            description=description,
         )
 
 
@@ -134,6 +149,7 @@ def trim_scalar_settings(
     user: t.Optional[str] = None,
     context: t.Optional[str] = None,
     relative: bool = False,
+    transient: bool = True,
     description: t.Optional[str] = None,
 ) -> None:
     """Trim multiple scalar settings at once.
@@ -168,9 +184,13 @@ def trim_scalar_settings(
             process. Must not be passed together with *user*.
         user: If passed, the user for which the parameters are modified.
             Must not be passed together with *context*.
-        relative: If True, each passed value is added to the value in
-            the database. The default is to overwrite the database value
+        relative: If True, each passed value is :ref:`added
+            <guide/lsa_utils:relative trims>` to the value in the
+            database. The default is to overwrite the database value
             with the new one.
+        transient: If True (the default), mark this trim as
+            :ref:`transient <guide/lsa_utils:transient trims>`. If
+            False, this is a permanent trim.
         description: The description to appear in LSA's trim history. If
             not passed, an implementation-defined string will be used.
 
@@ -196,5 +216,6 @@ def trim_scalar_settings(
         )
         trim.addScalar(param, scalar)
     trim.setRelative(relative)
+    trim.setTransient(transient)
     trim.setDescription(description or _incorporator.DEFAULT_TRIM_DESCRIPTION)
     _services.trim.trimSettings(trim.build())

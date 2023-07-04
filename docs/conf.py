@@ -34,12 +34,12 @@ from unittest.mock import Mock
 from docutils import nodes
 from sphinx.ext import intersphinx
 
-try:
-    import importlib_metadata
-except ImportError:
+if sys.version_info < (3, 10):
+    import importlib_metadata as metadata
+else:
     # Starting with Python 3.10 (see pyproject.toml).
     # pylint: disable = ungrouped-imports
-    import importlib.metadata as importlib_metadata  # type: ignore
+    from importlib import metadata
 
 if t.TYPE_CHECKING:
     # pylint: disable = unused-import
@@ -109,7 +109,7 @@ ROOTDIR = pathlib.Path(__file__).absolute().parent.parent
 project = "cernml-coi-utils"
 copyright = "2020–2023 CERN, 2023 GSI Helmholtzzentrum für Schwerionenforschung"
 author = "Nico Madysa"
-release = importlib_metadata.version(project)
+release = metadata.version(project)
 
 # -- General configuration ---------------------------------------------
 

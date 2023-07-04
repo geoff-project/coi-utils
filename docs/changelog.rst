@@ -18,6 +18,8 @@ version 0.3.0.
 Unreleased
 ----------
 
+- ADD: Support for :ref:`guide/lsa_utils:transient trims`. This increases the
+  PJLSA requirement to 0.2.18.
 - FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
 - FIX: Type annotations for *data_filter* parameter of
   `~cernml.japc_utils.subscribe_stream()`.
