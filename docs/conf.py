@@ -118,6 +118,7 @@ release = importlib_metadata.version(project)
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx.ext.autosectionlabel",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
 ]
@@ -153,6 +154,10 @@ autodoc_type_aliases = {
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
+
+# -- options for Autosectionlabel --------------------------------------
+
+autosectionlabel_prefix_document = True
 
 # -- Options for Intersphinx -------------------------------------------
 
