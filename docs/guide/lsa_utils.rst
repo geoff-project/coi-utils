@@ -8,6 +8,8 @@
 Communicating with the LSA Database
 ===================================
 
+.. currentmodule:: cernml.lsa_utils
+
 In the general case, full interaction with the LSA database is already
 supported through the `Pjlsa`_ package. However, this package exposes the full
 Java API. This gives the user full flexibility, but also makes it difficult to
@@ -24,8 +26,8 @@ Importing an LSA-Dependent Package
 
 The `~cernml.lsa_utils` package directly imports Java packages via the JPype
 import system. It does not set up the JVM for you, so you have to start the JVM
-before importing the package. (In this regard, `~cernml.lsa_utils` itself
-behaves as if it were a Java package.)
+before importing the package. (In this regard, it behaves as if it were a Java
+package itself.)
 
 The cleanest way to import `~cernml.lsa_utils` is to use PJLSA's context
 manager for enabling Java imports:
@@ -71,10 +73,9 @@ If none of these solutions work for you, you may also use the
 Trimming One or Several Scalar Settings
 ---------------------------------------
 
-The function `~cernml.lsa_utils.trim_scalar_settings()` provides a convenient
-way to trim scalar settings in the LSA database. In the simplest case, you
-simply pass a mapping of parameter name to new value and the context to be
-modified:
+The function `trim_scalar_settings()` provides a convenient way to trim scalar
+settings in the LSA database. In the simplest case, you simply pass a mapping
+of parameter name to new value and the context to be modified:
 
 .. code-block:: python
 
@@ -146,9 +147,8 @@ Unless you want to pass an entire function object every time, trimming a
 function is slightly more complicated than trimming scalar settings. There are
 two ways to solve this task using `~cernml.lsa_utils`.
 
-The simple one is by using the free function
-`~cernml.lsa_utils.incorporate_and_trim()`. There are several other functions
-to make using it easier:
+The simple one is by using the free function `incorporate_and_trim()`. There
+are several other functions to make using it easier:
 
 .. code-block:: python
 
@@ -173,11 +173,11 @@ to make using it easier:
         description="Usage example of cernml.lsa_utils",
     )
 
-The slightly more complex one is to create an `~cernml.lsa_utils.Incorporator`
-and call the respective methods on it. This class avoids conversion from Python
-strings to LSA objects on every function call. Thus, if you are going to make
-multiple calls using the same parameter and context, this is going to be
-slightly more efficient.
+The slightly more complex one is to create an `Incorporator` and call the
+respective methods on it. This class avoids conversion from Python strings to
+LSA objects on every function call. Thus, if you are going to make multiple
+calls using the same parameter and context, this is going to be slightly more
+efficient.
 
 .. code-block:: python
 
@@ -202,7 +202,7 @@ The `~cernml.lsa_utils` package also allows trimming several functions with a
 single trim, as long as they're modified in the same location. (This
 requirement may be relaxed in the future, if necessary.) Again, there are two
 ways to achieve this. The simple one is by using the same function
-`~cernml.lsa_utils.incorporate_and_trim()` as for one parameter:
+`incorporate_and_trim()` as for one parameter:
 
 .. code-block:: python
 
@@ -227,8 +227,7 @@ incorporate. This may be anything that converts to a NumPy array of the correct
 size (including a single float). The remaining parameters are the same as
 before.
 
-For a more object-oriented interface, you can use
-`~cernml.lsa_utils.IncorporatorGroup`:
+For a more object-oriented interface, you can use `IncorporatorGroup`:
 
 .. code-block:: python
 
@@ -248,8 +247,8 @@ For a more object-oriented interface, you can use
         4460.0, 0.1, relative=True, description="Usage example"
     )
 
-The group also allows creating one `~cernml.lsa_utils.Incorporator` for each
-parameter individually:
+The group also allows creating one `Incorporator` for each parameter
+individually:
 
 .. code-block:: python
 
