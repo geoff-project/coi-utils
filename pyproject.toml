@@ -116,5 +116,5 @@ explicit_package_bases = true
 mypy_path = '$MYPY_CONFIG_FILE_DIR/src'
 
 [[tool.mypy.overrides]]
-module = ['scipy.*', 'gym.*', 'matplotlib.*', 'cern.*', 'java.*']
+module = ['scipy.*', 'gym.*', 'matplotlib.*']
 ignore_missing_imports = true
