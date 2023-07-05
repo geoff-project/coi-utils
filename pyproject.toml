@@ -90,6 +90,7 @@ profile = 'black'
 [tool.pytest.ini_options]
 addopts = '--doctest-modules --doctest-glob=*.rst --ignore=src/cernml/lsa_utils/'
 testpaths = ['tests', 'src', 'docs/guide']
+doctest_optionflags = ['ELLIPSIS', 'IGNORE_EXCEPTION_DETAIL']
 
 [tool.pylint.format]
 ignore-long-lines = '<?https?://\S+>?$'

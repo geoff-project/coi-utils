@@ -20,6 +20,10 @@ Unreleased
 
 - ADD: Support for :ref:`guide/lsa_utils:transient trims`. This increases the
   PJLSA requirement to 0.2.18.
+- ADD: :ref:`guide/lsa_utils:Global Trim Request Hooks` that allow host
+  applications like `GeOFF <https://gitlab.cern.ch/geoff/geoff-app>`_ to
+  enhance trim descriptions with information that is not available inside of
+  optimization problems.
 - FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
 - FIX: Type annotations for *data_filter* parameter of
   `~cernml.japc_utils.subscribe_stream()`.

@@ -10,13 +10,44 @@ PJLSA Utilities
 
 .. automodule:: cernml.lsa_utils
 
-    .. autofunction:: get_context_by_user
-    .. autofunction:: get_cycle_type_attributes
-    .. autofunction:: get_settings_function
-    .. autofunction:: trim_scalar_settings
-    .. autofunction:: incorporate_and_trim
-    .. autoclass:: Incorporator
-        :members:
-    .. autoclass:: IncorporatorGroup
-        :members:
-    .. autoexception:: NotFound
+.. currentmodule:: cernml.lsa_utils
+
+Free-Function API
+-----------------
+
+.. autofunction:: get_context_by_user
+.. autofunction:: get_cycle_type_attributes
+.. autofunction:: get_settings_function
+.. autofunction:: trim_scalar_settings
+.. autofunction:: incorporate_and_trim
+.. autoexception:: NotFound
+    :show-inheritance:
+
+Object-Oriented API
+-------------------
+
+.. autoclass:: Incorporator
+    :show-inheritance:
+    :members:
+.. autoclass:: IncorporatorGroup
+    :show-inheritance:
+    :members:
+
+Global Trim Request Hooks
+-------------------------
+
+See also :ref:`guide/lsa_utils:Global Trim Request Hooks` in the
+:doc:`/guide/index`.
+
+.. autoclass:: AbstractHooks
+    :show-inheritance:
+    :members:
+.. autoclass:: Hooks
+    :show-inheritance:
+    :members: install_globally, uninstall_globally
+.. autoclass:: DefaultHooks
+    :show-inheritance:
+    :members:
+.. autofunction:: get_current_hooks
+.. autoexception:: InconsistentHookInstalls
+    :show-inheritance:

@@ -427,3 +427,113 @@ can declare an incorporation range from 400 to 700 ms where both rules are
 
 .. image:: incorporation-result.png
    :alt: Result of the above incorporations into a constant function.
+
+Global Trim Request Hooks
+-------------------------
+
+Unfortunately, LSA comes with a lot of global state. Sometimes you want to
+modify this state without plugins such as optimization problems being aware of
+that. Until a better architecture is found, this will be done through global
+hooks.
+
+For example, it is desirable for a *host application* to influence the trim
+description sent by optimization problems – e.g. to add the host name and
+version to make the trim history more understandable. Another use case is to
+make trims :ref:`transient or permanent <guide/lsa_utils:transient trims>`
+depending on conditions in the app that the plugin cannot (and should not) know
+about.
+
+To afford these use cases, this package defines certain *trim request hooks*.
+These hooks are able to modify the *transient* flag and the trim *description*
+nearly arbitrarily. They are called by all functions of this package that send
+a trim request to the LSA database:
+
+- `Incorporator.incorporate_and_trim()`,
+- `IncorporatorGroup.incorporate_and_trim()`,
+- `incorporate_and_trim()`,
+- `trim_scalar_settings()`.
+
+Implementing Trim Request Hooks
++++++++++++++++++++++++++++++++
+
+To implement a new trim request hook, subclass the :term:`abstract base class`
+`Hooks`:
+
+.. code-block:: python
+   :emphasize-lines: 6
+
+    >>> from typing import Optional
+    >>> from cernml import lsa_utils
+    >>> class ForcefulHooks(lsa_utils.Hooks):
+    ...     def trim_description(self, desc: Optional[str]) -> str:
+    ...         if not desc:
+    ...             return "via my-app v1.0"
+    ...         desc = super().trim_description(desc)
+    ...         return f"{desc} (via my-app v1.0)"
+    ...     def trim_transient(self, transient: Optional[bool]) -> bool:
+    ...         warnings.warn(f"Ignoring transient flag: {transient}")
+    ...         return True
+
+The above hook will inspect the *description* and the *transient* arguments
+passed by every call to a trim function. Empty (or missing) descriptions are
+replaced with the name of the host application; non-empty descriptions are
+suffixed with it. The *transient* flag, on the other hand, is always ignored
+and replaced with `True`.
+
+The `super` call in the highlighted line deserves special attention: It calls
+the base implementation of the method, which will automatically forward the
+call to the previous hook. This ensures that you can always fall back to the
+default behavior.
+
+Becase the default behavior of the hook methods is to forward all calls to the
+previous hook, you only need to implement the methods that you're interested
+in.
+
+Installing Trim Request Hooks
++++++++++++++++++++++++++++++
+
+Implementing a `Hooks` subclass does not automatically *install* your hooks. To
+do that, you need to call `Hooks.install_globally()`:
+
+    >>> hooks = ForcefulHooks()
+    >>> hooks.install_globally()
+    >>> lsa_utils.get_current_hooks() is hooks
+    True
+    >>> hooks.uninstall_globally()
+    >>> lsa_utils.get_current_hooks() is hooks
+    False
+
+As you can see, `Hooks.uninstall_globally()` does the opposite: it removes your
+hooks and replaces them with whatever hooks came previously.
+
+To ensure that you don't forget to uninstall your trim request hooks, you can
+also use them as a context manager:
+
+    >>> with ForcefulHooks() as hooks:
+    ...     lsa_utils.get_current_hooks() is hooks
+    True
+    >>> lsa_utils.get_current_hooks() is hooks
+    False
+
+Because installing a hook preserves the previous hook, they can be nested as
+deep as necessary:
+
+    >>> with hooks:
+    ...     assert lsa_utils.get_current_hooks() is hooks
+    ...     with lsa_utils.Hooks() as no_op_hooks:
+    ...         assert lsa_utils.get_current_hooks() is no_op_hooks
+    ...     assert lsa_utils.get_current_hooks() is hooks
+
+Note that you should uninstall hooks in the reverse order of installation. Not
+doing so will give you a warning:
+
+    >>> import pytest
+    >>> hooks.install_globally()
+    >>> no_op_hooks.install_globally()
+    >>> with pytest.warns() as record:
+    ...     hooks.uninstall_globally()  # Oops! Forgot to uninstall no_op_hooks
+    >>> warning = record.pop()
+    >>> raise warning.category(warning.message)
+    Traceback (most recent call last):
+    ...
+    InconsistentHookInstalls: current hook is <...>, but expected <...>

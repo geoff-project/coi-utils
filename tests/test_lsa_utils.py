@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import typing as t
+from functools import partial
 from unittest.mock import Mock
 
 import numpy as np
@@ -28,6 +29,14 @@ def _is_sorted(array: np.ndarray) -> bool:
     assert np.ndim(array) == 1
     # Convert numpy.bool_ to built-in bool.
     return bool(np.all(array[:-1] < array[1:]))
+
+
+@pytest.fixture
+def trim_service(monkeypatch: pytest.MonkeyPatch) -> t.Iterator[Mock]:
+    # pylint: disable = protected-access
+    service = Mock()
+    monkeypatch.setattr(lsa_utils._services, "trim", service)
+    yield service
 
 
 def test_get_user() -> None:
@@ -68,12 +77,7 @@ def test_get_function_bad_context() -> None:
 
 @pytest.mark.parametrize("transient", [False, True])
 @pytest.mark.parametrize("relative", [False, True])
-def test_incorporate(
-    monkeypatch: pytest.MonkeyPatch, relative: bool, transient: bool
-) -> None:
-    # pylint: disable=protected-access
-    trim = Mock()
-    monkeypatch.setattr(lsa_utils._services, "trim", trim)
+def test_incorporate(trim_service: Mock, relative: bool, transient: bool) -> None:
     # Even if we don't promise it in our type signature, we can also
     # handle NumPy floats.
     value = t.cast(float, np.float32(-0.3416))
@@ -86,20 +90,15 @@ def test_incorporate(
         transient=transient,
         description="cernml.lsa_utils test suite",
     )
-    trim.incorporate.assert_called_once()
-    [req], [] = trim.incorporate.call_args
+    trim_service.incorporate.assert_called_once()
+    [req], [] = trim_service.incorporate.call_args
     assert req.isRelative() == relative
     assert req.isTransient() == transient
 
 
 @pytest.mark.parametrize("transient", [False, True])
 @pytest.mark.parametrize("relative", [False, True])
-def test_multi_incorporate(
-    monkeypatch: pytest.MonkeyPatch, relative: bool, transient: bool
-) -> None:
-    # pylint: disable=protected-access
-    trim = Mock()
-    monkeypatch.setattr(lsa_utils._services, "trim", trim)
+def test_multi_incorporate(trim_service: Mock, relative: bool, transient: bool) -> None:
     lsa_utils.incorporate_and_trim(
         [
             "logical.MDAH.2303/K",
@@ -114,8 +113,8 @@ def test_multi_incorporate(
         transient=transient,
         description="cernml.lsa_utils test suite",
     )
-    trim.incorporate.assert_called_once()
-    [req], [] = trim.incorporate.call_args
+    trim_service.incorporate.assert_called_once()
+    [req], [] = trim_service.incorporate.call_args
     assert req.isRelative() == relative
     assert req.isTransient() == transient
 
@@ -135,12 +134,7 @@ def test_incorporate_out_of_range() -> None:
 
 @pytest.mark.parametrize("transient", [False, True])
 @pytest.mark.parametrize("relative", [False, True])
-def test_trim_settings(
-    monkeypatch: pytest.MonkeyPatch, relative: bool, transient: bool
-) -> None:
-    # pylint: disable=protected-access
-    trim = Mock()
-    monkeypatch.setattr(lsa_utils._services, "trim", trim)
+def test_trim_settings(trim_service: Mock, relative: bool, transient: bool) -> None:
     lsa_utils.trim_scalar_settings(
         {
             "ER.GSECVGUN/Enable#enabled": True,
@@ -152,7 +146,7 @@ def test_trim_settings(
         relative=relative,
         transient=transient,
     )
-    [req], [] = trim.trimSettings.call_args
+    [req], [] = trim_service.trimSettings.call_args
     assert req.isRelative() == relative
     assert req.isTransient() == transient
 
@@ -269,23 +263,17 @@ class TestIncorporatorGroup:
 
     def test_incorporate(
         self,
+        trim_service: Mock,
         incorporator_group: lsa_utils.IncorporatorGroup,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # pylint: disable=protected-access
-        trim = Mock()
-        monkeypatch.setattr(lsa_utils._services, "trim", trim)
         incorporator_group.incorporate_and_trim(4460.0, 0.0, relative=False)
-        trim.incorporate.assert_called_once()
+        trim_service.incorporate.assert_called_once()
 
     def test_incorporate_dict(
         self,
+        trim_service: Mock,
         incorporator_group: lsa_utils.IncorporatorGroup,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # pylint: disable=protected-access
-        trim = Mock()
-        monkeypatch.setattr(lsa_utils._services, "trim", trim)
         values = {
             "logical.MDAH.2303/K": 1.0,
             "logical.MDAH.2307/K": 2.0,
@@ -293,27 +281,24 @@ class TestIncorporatorGroup:
             "logical.MDAV.2305.M/K": 4.0,
         }
         incorporator_group.incorporate_and_trim(4460.0, values, relative=False)
-        trim.incorporate.assert_called_once()
+        trim_service.incorporate.assert_called_once()
 
     def test_incorporate_bad_type(
         self,
+        trim_service: Mock,
         incorporator_group: lsa_utils.IncorporatorGroup,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # pylint: disable=protected-access
-        monkeypatch.setattr(lsa_utils._services, "trim", Mock())
         with pytest.raises(Exception, match="value of type STRING"):
             incorporator_group.incorporate_and_trim(
                 4460.0, t.cast(float, "0.0"), relative=False
             )
+        trim_service.incorporate.assert_not_called()
 
     def test_incorporate_dict_too_big(
         self,
+        trim_service: Mock,
         incorporator_group: lsa_utils.IncorporatorGroup,
-        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        # pylint: disable=protected-access
-        monkeypatch.setattr(lsa_utils._services, "trim", Mock())
         values = {
             "logical.MDAH.2201/K": 0.0,
             "logical.MDAH.2303/K": 1.0,
@@ -323,3 +308,144 @@ class TestIncorporatorGroup:
         }
         with pytest.raises(KeyError, match="logical.MDAH.2201/K"):
             incorporator_group.incorporate_and_trim(4460.0, values, relative=False)
+        trim_service.incorporate.assert_not_called()
+
+
+@pytest.fixture
+def mock_hooks() -> t.Iterator[lsa_utils.Hooks]:
+    hooks = Mock(spec=lsa_utils.Hooks)
+    lsa_utils.Hooks.install_globally(hooks)
+    try:
+        yield hooks
+    finally:
+        lsa_utils.Hooks.uninstall_globally(hooks)
+
+
+class TestHooks:
+    def test_default_hooks_are_default(self) -> None:
+        assert isinstance(lsa_utils.get_current_hooks(), lsa_utils.DefaultHooks)
+
+    def test_install_replaces_hooks(self) -> None:
+        default = lsa_utils.get_current_hooks()
+        new_hooks = lsa_utils.Hooks()
+        new_hooks.install_globally()
+        try:
+            assert lsa_utils.get_current_hooks() is new_hooks
+        finally:
+            new_hooks.uninstall_globally()
+        assert lsa_utils.get_current_hooks() == default
+
+    def test_context_replaces_hooks(self) -> None:
+        default = lsa_utils.get_current_hooks()
+        new_hooks = lsa_utils.Hooks()
+        with new_hooks:
+            assert lsa_utils.get_current_hooks() is new_hooks
+        assert lsa_utils.get_current_hooks() == default
+
+    def test_double_install_raises_runtime_error(self) -> None:
+        hooks = lsa_utils.Hooks()
+        with hooks:
+            with pytest.raises(RuntimeError):
+                hooks.install_globally()
+
+    def test_call_non_installed_hooks_raises_runtime_error(self) -> None:
+        hooks = lsa_utils.Hooks()
+        with pytest.raises(RuntimeError):
+            hooks.trim_description(Mock())
+        with pytest.raises(RuntimeError):
+            hooks.trim_transient(Mock())
+
+    def test_inconsistent_uninstall_warns(self) -> None:
+        outer_hooks = lsa_utils.Hooks()
+        inner_hooks = lsa_utils.Hooks()
+        with pytest.warns(lsa_utils.InconsistentHookInstalls):
+            with outer_hooks:
+                inner_hooks.install_globally()
+        # Both are uninstalled now.
+        for hooks in outer_hooks, inner_hooks:
+            with pytest.raises(RuntimeError):
+                hooks.trim_transient(Mock())
+
+    def test_hooks_call_parent(self, mock_hooks: Mock) -> None:
+        hooks = lsa_utils.Hooks()
+        desc = Mock()
+        transient = Mock()
+        with hooks:
+            hooks.trim_description(desc)
+            hooks.trim_transient(transient)
+        mock_hooks.trim_description.assert_called_once_with(desc)
+        mock_hooks.trim_transient.assert_called_once_with(transient)
+
+    def test_hooks_equality(self) -> None:
+        subclass = type("Subclass", (lsa_utils.DefaultHooks,), {})
+        assert lsa_utils.DefaultHooks() == lsa_utils.DefaultHooks()
+        assert lsa_utils.DefaultHooks() != subclass()
+        assert subclass() != lsa_utils.DefaultHooks()
+        assert subclass() == subclass()
+        assert lsa_utils.DefaultHooks() != lsa_utils.Hooks()
+        assert lsa_utils.Hooks() != lsa_utils.DefaultHooks()
+        assert lsa_utils.Hooks() != lsa_utils.Hooks()
+
+    def test_default_hooks_values(self) -> None:
+        hooks = lsa_utils.get_current_hooks()
+        desc = Mock()
+        transient = Mock()
+        assert hooks.trim_description(None) == "via cernml-coi-utils"
+        assert hooks.trim_description(desc) == desc
+        assert hooks.trim_transient(None) is True
+        assert hooks.trim_transient(transient) == transient
+
+    @pytest.mark.parametrize("transient_return", [False, True])
+    @pytest.mark.parametrize(
+        "curried_call",
+        [
+            partial(
+                lsa_utils.trim_scalar_settings,
+                {"ER.GSECVGUN/Enable#enabled": True},
+                user="LEI.USER.NOMINAL",
+            ),
+            partial(
+                lsa_utils.incorporate_and_trim,
+                "ETL.GSBHN10/KICK",
+                "Pb54_2BP_2021_06_09_EARLY_2400ms_V1",
+                120.0,
+                -0.3416,
+                relative=False,
+            ),
+            partial(
+                lsa_utils.incorporate_and_trim,
+                [
+                    "logical.MDAH.2303/K",
+                    "logical.MDAH.2307/K",
+                    "logical.MDAV.2301.M/K",
+                    "logical.MDAV.2305.M/K",
+                ],
+                "SFT_PRO_MTE_L4780_2022_V1",
+                4460.0,
+                np.zeros(4),
+                relative=False,
+            ),
+        ],
+    )
+    def test_hooks_are_called(
+        self,
+        trim_service: Mock,
+        mock_hooks: Mock,
+        curried_call: t.Callable,
+        transient_return: bool,
+    ) -> None:
+        mock_hooks.trim_description.return_value = str(Mock())
+        mock_hooks.trim_transient.return_value = transient_return
+        desc = Mock()
+        transient_arg = Mock()
+        curried_call(description=desc, transient=transient_arg)
+        mock_hooks.trim_description.assert_called_once_with(desc)
+        mock_hooks.trim_transient.assert_called_once_with(transient_arg)
+        [req], [] = getattr(
+            trim_service,
+            "trimSettings"
+            if "trim_scalar_settings" in repr(curried_call)
+            else "incorporate",
+        ).call_args
+        assert req.getDescription() == mock_hooks.trim_description.return_value
+        assert req.isTransient() == mock_hooks.trim_transient.return_value

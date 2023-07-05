@@ -15,7 +15,7 @@ import numpy as np
 from cern.accsoft.commons.value import Value, ValueFactory
 from cern.lsa.domain.settings import TrimRequest
 
-from . import _incorporator, _services
+from . import _hooks, _incorporator, _services
 
 
 def get_settings_function(
@@ -57,7 +57,7 @@ def incorporate_and_trim(
     value: float,
     *,
     relative: bool,
-    transient: bool = True,
+    transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
 ) -> None:
     ...  # pragma: no cover
@@ -71,7 +71,7 @@ def incorporate_and_trim(
     value: t.Union[np.ndarray, t.Sequence[float]],
     *,
     relative: bool,
-    transient: bool = True,
+    transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
 ) -> None:
     ...  # pragma: no cover
@@ -84,7 +84,7 @@ def incorporate_and_trim(
     value: t.Union[float, np.ndarray, t.Sequence[float]],
     *,
     relative: bool,
-    transient: bool = True,
+    transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
 ) -> None:
     """Modify a function or functions at a point and commit the change.
@@ -149,7 +149,7 @@ def trim_scalar_settings(
     user: t.Optional[str] = None,
     context: t.Optional[str] = None,
     relative: bool = False,
-    transient: bool = True,
+    transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
 ) -> None:
     """Trim multiple scalar settings at once.
@@ -206,6 +206,7 @@ def trim_scalar_settings(
         ...     description='Demonstrate COI trims',
         ... )
     """
+    hooks = _hooks.get_current_hooks()
     cycle = _incorporator.find_cycle(context=context, user=user)
     trim = TrimRequest.builder()
     trim.setContext(cycle)
@@ -216,6 +217,6 @@ def trim_scalar_settings(
         )
         trim.addScalar(param, scalar)
     trim.setRelative(relative)
-    trim.setTransient(transient)
-    trim.setDescription(description or _incorporator.DEFAULT_TRIM_DESCRIPTION)
+    trim.setTransient(hooks.trim_transient(transient))
+    trim.setDescription(hooks.trim_description(description))
     _services.trim.trimSettings(trim.build())

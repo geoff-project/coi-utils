@@ -16,7 +16,7 @@ import cern.lsa.domain.settings.spi as lsa_spi
 import java.util
 import numpy as np
 
-from . import _services
+from . import _hooks, _services
 
 DEFAULT_TRIM_DESCRIPTION = "Via COI"
 
@@ -107,7 +107,7 @@ class Incorporator:
         value: float,
         *,
         relative: bool,
-        transient: bool = True,
+        transient: t.Optional[bool] = None,
         description: t.Optional[str] = None,
     ) -> None:
         """Modify the function at a point and commit the change.
@@ -149,17 +149,16 @@ class Incorporator:
             cycle_time=cycle_time,
             value=value,
         )
+        hooks = _hooks.get_current_hooks()
         request_builder = (
             lsa_settings.IncorporationRequest.builder()
             .setContext(self._cycle)
-            .setDescription(
-                description if description is not None else DEFAULT_TRIM_DESCRIPTION
-            )
+            .setDescription(hooks.trim_description(description))
             .setRelative(relative)
             .addIncorporationSetting(setting)
         )
         # Workaround for buggy return type annotation in PJLSA 0.2.18.
-        request_builder.setTransient(transient)
+        request_builder.setTransient(hooks.trim_transient(transient))
         _services.trim.incorporate(request_builder.build())
 
     @classmethod
@@ -266,7 +265,7 @@ class IncorporatorGroup:
         values: t.Union[float, np.ndarray, t.Sequence[float], t.Mapping[str, float]],
         *,
         relative: bool,
-        transient: bool = True,
+        transient: t.Optional[bool] = None,
         description: t.Optional[str] = None,
     ) -> None:
         """Modify each function at a point and commit the change.
@@ -302,16 +301,15 @@ class IncorporatorGroup:
                 will be used.
         """
         values = self._canonicalize_values(values)
+        hooks = _hooks.get_current_hooks()
         request_builder = (
             lsa_settings.IncorporationRequest.builder()
             .setContext(self._cycle)
-            .setDescription(
-                description if description is not None else DEFAULT_TRIM_DESCRIPTION
-            )
+            .setDescription(hooks.trim_description(description))
             .setRelative(relative)
         )
         # Workaround for buggy return type annotation in PJLSA 0.2.18.
-        request_builder.setTransient(transient)
+        request_builder.setTransient(hooks.trim_transient(transient))
         for parameter, value in zip(self._parameters, values):
             if isinstance(value, np.floating):
                 value = float(value)
