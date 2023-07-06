@@ -5,6 +5,17 @@
 
     SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
+..
+    This is a comment and as such invisible to Sphinx.
+    Doctest, however, will pick it up. This way, we can verify that
+    Pytest has replaced the `TrimService` with a mock object. This guarantees
+    that we won't accidentally send trims to the LSA database. (Note that even
+    if we did, it shouldn't be a problem, since we use LSA NEXT, not PRO.)
+
+    >>> from cernml.lsa_utils import _services
+    >>> _services.trim  # doctest: +FAIL_FAST
+    <Mock spec='cern.lsa.client.TrimService' id='...'>
+
 Communicating with the LSA Database
 ===================================
 
@@ -33,14 +44,14 @@ The cleanest way to import `~cernml.lsa_utils` is to use PJLSA's context
 manager for enabling Java imports:
 
 .. code-block:: python
-    :emphasize-lines: 4-5
+    :emphasize-lines: 3-4
 
-    import pjlsa
-
-    lsa_client = pjlsa.LSAClient()
-    with lsa_client.java_api():
-        from cernml import lsa_utils
-    context = lsa_utils.get_context_by_user("SPS.USER.ALL")
+    >>> import pjlsa
+    >>> lsa_client = pjlsa.LSAClient(server="next")
+    >>> with lsa_client.java_api():
+    ...     from cernml import lsa_utils
+    >>> lsa_utils.get_context_by_user("SPS.USER.SFTPRO1")
+    'SFT_PRO_MTE_L4780_2023_V1'
 
 Note that the context manager only manages a change in the Python *import*
 system. Once a Java package has been imported, it remains available and
@@ -57,18 +68,16 @@ If none of these solutions work for you, you may also use the
 `jpype:jpype.imports` module, which permanently modifies the import system:
 
 .. code-block:: python
-    :emphasize-lines: 5-6
+    :emphasize-lines: 3-4
 
-    import pjlsa
+    >>> import pjlsa
+    >>> lsa_client = pjlsa.LSAClient(server="next")
+    >>> import jpype.imports
+    >>> # From here on, Java imports are okay.
+    >>> import java.lang
+    >>> import cern.lsa.client
+    >>> import cernml.lsa_utils
 
-    lsa_client = pjlsa.LSAClient()
-
-    import jpype.imports
-    # From here on, Java imports are okay.
-
-    import java.lang
-    import cern.lsa.client
-    import cernml.lsa_utils
 
 Trimming One or Several Scalar Settings
 ---------------------------------------
@@ -79,10 +88,10 @@ of parameter name to new value and the context to be modified:
 
 .. code-block:: python
 
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
-        context="Pb54_2BP_2021_06_09_EARLY_2400ms_V1",
-    )
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+    ...     context="Pb54_2BP_2021_06_09_EARLY_2400ms_V1",
+    ... )
 
 If the context is mapped to a user, you can also specify the **user** instead
 of the context:
@@ -90,10 +99,10 @@ of the context:
 .. code-block:: python
     :emphasize-lines: 3
 
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
-        user="LEI.USER.NOMINAL",
-    )
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+    ...     user="LEI.USER.NOMINAL",
+    ... )
 
 You can pass an additional *description* parameter to document your trim in the
 trim history:
@@ -101,11 +110,11 @@ trim history:
 .. code-block:: python
     :emphasize-lines: 4
 
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
-        user="LEI.USER.NOMINAL",
-        description="Reset kick strength to known good value",
-    )
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+    ...     user="LEI.USER.NOMINAL",
+    ...     description="Reset kick strength to known good value",
+    ... )
 
 All types of scalar settings are supported: integers, booleans and
 floating-point values – both the built-in Python types and NumPy variants – are
@@ -115,12 +124,12 @@ string (which denotes its name):
 
 .. code-block:: python
 
-    # Instead of "ON" and "OFF", you could also pass 1 and 0 resp.
-    # for this particular enum.
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickOnA": "ON"},
-        user="LEI.USER.NOMINAL",
-    )
+    >>> # Instead of "ON" and "OFF", you could also pass 1 and 0 resp.
+    >>> # for this particular enum.
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickOnA": "ON"},
+    ...     user="LEI.USER.NOMINAL",
+    ... )
 
 If the mapping contains **multiple parameters**, they are changed
 *transactionally*: the trim only succeeds if all settings can be applied. If
@@ -146,26 +155,31 @@ are several other functions to make using it easier:
 
 .. code-block:: python
 
-    import numpy as np
+    >>> import numpy as np
 
-    context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
-    assert context == "HIRADMAT_PILOT_Q20_2018_V1"
+    >>> context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
+    >>> context
+    'HIRADMAT_PILOT_L8400_Q20_2023_V1'
 
-    xs, ys = lsa_utils.get_settings_function(
-        "logical.RDH.20207/J", context
-    )
-    assert isinstance(xs, np.ndarray)
-    assert isinstance(ys, np.ndarray)
-    assert xs.shape == ys.shape
+    >>> xs, ys = lsa_utils.get_settings_function(
+    ...     "logical.RDH.20207/K", context
+    ... )
+    >>> np.stack([xs, ys])
+    array([[   0.,   35.,  100., 1015., 1885., 6200., 6700., 7550., 8400.],
+           [   0.,    0.,    0.,    0.,    0.,    0.,    0.,   nan,   nan]])
 
-    attrs = lsa_utils.get_cycle_type_attributes(context)
-    assert attrs["VE:Start flat top"] == "6200"
+    >>> attrs = lsa_utils.get_cycle_type_attributes(context)
+    >>> for key, value in attrs.items():
+    ...     if "flat top" in key:
+    ...         print(key, value, sep=": ")
+    VE:Start flat top: 6200
+    VE:Intermediate flat top: 0
 
-    lsa_utils.incorporate_and_trim(
-        "logical.RDH.20208/J", context, cycle_time=1440.0, value=0.0,
-        relative=False,
-        description="Usage example of cernml.lsa_utils",
-    )
+    >>> lsa_utils.incorporate_and_trim(
+    ...     "logical.RDH.20207/K", context, cycle_time=1440.0, value=0.0,
+    ...     relative=False,
+    ...     description="Usage example of cernml.lsa_utils",
+    ... )
 
 Unlike with scalar settings, the *relative* parameter does not have a
 default value. You must always specify whether you want
@@ -180,19 +194,21 @@ efficient.
 
 .. code-block:: python
 
-    inc = lsa_utils.Incorporator(
-        "logical.RDH.20207/J",
-        user="SPS.USER.HIRADMT1",
-    )
-    assert inc.context == "HIRADMAT_PILOT_Q20_2018_V1"
-
-    xs, ys = inc.get_function()
-    assert isinstance(xs, np.ndarray) and isinstance(ys, np.ndarray)
-    assert xs.shape == ys.shape
-
-    inc.incorporate_and_trim(
-        1440.0, 0.0, relative=False, description="Usage example"
-    )
+    >>> inc = lsa_utils.Incorporator(
+    ...     "logical.RDH.20207/K",
+    ...     user="SPS.USER.HIRADMT1",
+    ... )
+    >>> inc.context
+    'HIRADMAT_PILOT_L8400_Q20_2023_V1'
+    >>>
+    >>> xs, ys = inc.get_function()
+    >>> np.stack([xs, ys])
+    array([[   0.,   35.,  100., 1015., 1885., 6200., 6700., 7550., 8400.],
+           [   0.,    0.,    0.,    0.,    0.,    0.,    0.,   nan,   nan]])
+    >>>
+    >>> inc.incorporate_and_trim(
+    ...     1440.0, 0.0, relative=False, description="Usage example"
+    ... )
 
 Trimming Multiple Functions
 ---------------------------
@@ -210,19 +226,19 @@ ways to achieve this. The simple one is by using the same function
 
 .. code-block:: python
 
-    lsa_utils.incorporate_and_trim(
-        [
-            "logical.MDAH.2303/K",
-            "logical.MDAH.2307/K",
-            "logical.MDAV.2301.M/K",
-            "logical.MDAV.2305.M/K",
-        ],
-        context="SFT_PRO_MTE_L4780_2022_V1",
-        cycle_time=4460.0,
-        value=[0.1, -0.1, 0.0, 0.05],
-        relative=False,
-        description="Usage example of cernml.lsa_utils",
-    )
+    >>> lsa_utils.incorporate_and_trim(
+    ...     [
+    ...         "logical.MDAH.2303/K",
+    ...         "logical.MDAH.2307/K",
+    ...         "logical.MDAV.2301.M/K",
+    ...         "logical.MDAV.2305.M/K",
+    ...     ],
+    ...     context="SFT_PRO_MTE_L4780_2022_V1",
+    ...     cycle_time=4460.0,
+    ...     value=[0.1, -0.1, 0.0, 0.05],
+    ...     relative=False,
+    ...     description="Usage example of cernml.lsa_utils",
+    ... )
 
 The first parameter is a list of all functions that should be changed
 simultaneously, the second is the context to use. Then come the point to modify
@@ -235,39 +251,36 @@ For a more object-oriented interface, you can use `IncorporatorGroup`:
 
 .. code-block:: python
 
-    group = lsa_utils.IncorporatorGroup(
-        [
-            "logical.MDAH.2303/K",
-            "logical.MDAH.2307/K",
-            "logical.MDAV.2301.M/K",
-            "logical.MDAV.2305.M/K",
-        ],
-        user="SPS.USER.HIRADMT1",
-    )
-    assert group.context == "HIRADMAT_PILOT_Q20_2018_V1"
-
-    # Increase all parameters by 0.1:
-    group.incorporate_and_trim(
-        4460.0, 0.1, relative=True, description="Usage example"
-    )
+    >>> group = lsa_utils.IncorporatorGroup(
+    ...     [
+    ...         "logical.MDAH.2303/K",
+    ...         "logical.MDAH.2307/K",
+    ...         "logical.MDAV.2301.M/K",
+    ...         "logical.MDAV.2305.M/K",
+    ...     ],
+    ...     user="SPS.USER.SFTPRO1",
+    ... )
+    >>> group.context
+    'SFT_PRO_MTE_L4780_2023_V1'
+    >>>
+    >>> # Increase all parameters by 0.1:
+    >>> group.incorporate_and_trim(
+    ...     4460.0, 0.1, relative=True, description="Usage example"
+    ... )
 
 The group also allows creating one `Incorporator` for each parameter
 individually:
 
 .. code-block:: python
 
-    inc = group.get("logical.MDAH.2303/K")
-    assert isinstance(inc, lsa_utils.Incorporator)
+    >>> group.get("logical.MDAH.2303/K")
+    <cernml.lsa_utils...Incorporator object at ...>
 
-    parameters = tuple(
-        incorporator.parameters for incorporator in group.incorporators()
-    )
-    assert parameters == group.parameters == (
-        "logical.MDAH.2303/K",
-        "logical.MDAH.2307/K",
-        "logical.MDAV.2301.M/K",
-        "logical.MDAV.2305.M/K",
-    )
+    >>> parameters = tuple(
+    ...     incorporator.parameter for incorporator in group.incorporators()
+    ... )
+    >>> parameters == group.parameters
+    True
 
 See also the sections on :ref:`guide/lsa_utils:Relative Trims` and
 :ref:`guide/lsa_utils:Transient Trims`.
@@ -287,22 +300,22 @@ For example, the following call *increases* a magnet's kick strength by 0.1:
 .. code-block:: python
     :emphasize-lines: 4
 
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": 0.1},
-        user="LEI.USER.NOMINAL",
-        relative=True,
-    )
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickStrengthCcvA": 0.1},
+    ...     user="LEI.USER.NOMINAL",
+    ...     relative=True,
+    ... )
 
 To decrease a parameter value, simply send a relative trim with a negative
 value:
 
 .. code-block:: python
 
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": -0.3},
-        user="LEI.USER.NOMINAL",
-        relative=True,
-    )
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickStrengthCcvA": -0.3},
+    ...     user="LEI.USER.NOMINAL",
+    ...     relative=True,
+    ... )
 
 Transient Trims
 ---------------
@@ -321,12 +334,12 @@ To override this default and mark a trim as *permanent*, you can set the
 .. code-block:: python
     :emphasize-lines: 4
 
-    lsa_utils.trim_scalar_settings(
-        {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
-        user="LEI.USER.NOMINAL",
-        transient=False,
-        description="Reset kick strength to known good value",
-    )
+    >>> lsa_utils.trim_scalar_settings(
+    ...     {"ER.KFH31/SettingA#kickStrengthCcvA": 54.5},
+    ...     user="LEI.USER.NOMINAL",
+    ...     transient=False,
+    ...     description="Reset kick strength to known good value",
+    ... )
 
 Keep in mind that a meaningful description, while always important, is even
 *more* important for permanent trims.

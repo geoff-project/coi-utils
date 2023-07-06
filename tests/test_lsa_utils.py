@@ -29,12 +29,37 @@ def _is_sorted(array: np.ndarray) -> bool:
     return bool(np.all(array[:-1] < array[1:]))
 
 
+# Note: @pytest.fixture def trim_service() is defined in /conftest.py.
+# This is necessary to ensure it is active even in doctests.
+
+
 @pytest.fixture
-def trim_service(monkeypatch: pytest.MonkeyPatch) -> t.Iterator[Mock]:
-    # pylint: disable = protected-access
-    service = Mock()
-    monkeypatch.setattr(lsa_utils._services, "trim", service)
-    yield service
+def incorporator() -> lsa_utils.Incorporator:
+    return lsa_utils.Incorporator(
+        parameter="logical.RDH.20207/K",
+        user="SPS.USER.HIRADMT1",
+    )
+
+
+@pytest.fixture
+def incorporator_group() -> lsa_utils.IncorporatorGroup:
+    return lsa_utils.IncorporatorGroup(
+        [
+            f"logical.{i}/K"
+            for i in ["MDAH.2303", "MDAH.2307", "MDAV.2301.M", "MDAV.2305.M"]
+        ],
+        user="SPS.USER.SFTPRO1",
+    )
+
+
+@pytest.fixture
+def mock_hooks() -> t.Iterator[lsa_utils.Hooks]:
+    hooks = Mock(spec=lsa_utils.Hooks)
+    lsa_utils.Hooks.install_globally(hooks)
+    try:
+        yield hooks
+    finally:
+        lsa_utils.Hooks.uninstall_globally(hooks)
 
 
 def test_get_user() -> None:
@@ -161,14 +186,6 @@ def test_get_cycle_type_attributes_bad_name() -> None:
         _ = lsa_utils.get_cycle_type_attributes("bad_context")
 
 
-@pytest.fixture
-def incorporator() -> lsa_utils.Incorporator:
-    return lsa_utils.Incorporator(
-        parameter="logical.RDH.20207/K",
-        user="SPS.USER.HIRADMT1",
-    )
-
-
 class TestIncorporator:
     def test_missing_argument(self) -> None:
         with pytest.raises(TypeError, match="'context' or 'user'"):
@@ -202,17 +219,6 @@ class TestIncorporator:
             incorporator.user = "bad_user"
         with pytest.raises(lsa_utils.NotFound, match="bad_context"):
             incorporator.context = "bad_context"
-
-
-@pytest.fixture
-def incorporator_group() -> lsa_utils.IncorporatorGroup:
-    return lsa_utils.IncorporatorGroup(
-        [
-            f"logical.{i}/K"
-            for i in ["MDAH.2303", "MDAH.2307", "MDAV.2301.M", "MDAV.2305.M"]
-        ],
-        user="SPS.USER.SFTPRO1",
-    )
 
 
 class TestIncorporatorGroup:
@@ -307,16 +313,6 @@ class TestIncorporatorGroup:
         with pytest.raises(KeyError, match="logical.MDAH.2201/K"):
             incorporator_group.incorporate_and_trim(4460.0, values, relative=False)
         trim_service.incorporate.assert_not_called()
-
-
-@pytest.fixture
-def mock_hooks() -> t.Iterator[lsa_utils.Hooks]:
-    hooks = Mock(spec=lsa_utils.Hooks)
-    lsa_utils.Hooks.install_globally(hooks)
-    try:
-        yield hooks
-    finally:
-        lsa_utils.Hooks.uninstall_globally(hooks)
 
 
 class TestHooks:
