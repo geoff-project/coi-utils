@@ -18,6 +18,11 @@ version 0.3.0.
 Unreleased
 ----------
 
+No changes yet!
+
+v0.2.10
+-------
+
 - ADD: Support for :ref:`guide/lsa_utils:transient trims`. This increases the
   PJLSA requirement to 0.2.18.
 - ADD: :ref:`guide/lsa_utils:Global Trim Request Hooks` that allow host
