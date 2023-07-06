@@ -52,6 +52,14 @@ class Incorporator:
         self._parameter = find_parameter(parameter)
         self._cycle = find_cycle(context=context, user=user)
 
+    def __str__(self) -> str:
+        user = self.user
+        context_str = f"user={user!r}" if user else f"context={self.context!r}"
+        return f"<{self.parameter} @ {context_str}>"
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.parameter!r}, context={self.context!r})"
+
     @property
     def parameter(self) -> str:
         """The name of the parameter."""
@@ -197,6 +205,18 @@ class IncorporatorGroup:
     ):
         self._parameters = tuple(find_parameter(name) for name in parameters)
         self._cycle = find_cycle(context=context, user=user)
+
+    def __str__(self) -> str:
+        num = len(self._parameters)
+        user = self.user
+        context_str = f"user={user!r}" if user else f"context={self.context!r}"
+        return f"<{num} parameter{'s'[:num!=1]} @ {context_str}>"
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}({list(self.parameters)!r}, "
+            f"context={self.context!r})"
+        )
 
     @property
     def parameters(self) -> t.Tuple[str, ...]:

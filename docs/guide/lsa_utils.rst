@@ -198,9 +198,8 @@ efficient.
     ...     "logical.RDH.20207/K",
     ...     user="SPS.USER.HIRADMT1",
     ... )
-    >>> inc.context
-    'HIRADMAT_PILOT_L8400_Q20_2023_V1'
-    >>>
+    >>> print(inc)
+    <logical.RDH.20207/K @ user='SPS.USER.HIRADMT1'>
     >>> xs, ys = inc.get_function()
     >>> np.stack([xs, ys])
     array([[   0.,   35.,  100., 1015., 1885., 6200., 6700., 7550., 8400.],
@@ -260,9 +259,8 @@ For a more object-oriented interface, you can use `IncorporatorGroup`:
     ...     ],
     ...     user="SPS.USER.SFTPRO1",
     ... )
-    >>> group.context
-    'SFT_PRO_MTE_L4780_2023_V1'
-    >>>
+    >>> print(group)
+    <4 parameters @ user='SPS.USER.SFTPRO1'>
     >>> # Increase all parameters by 0.1:
     >>> group.incorporate_and_trim(
     ...     4460.0, 0.1, relative=True, description="Usage example"
@@ -274,8 +272,7 @@ individually:
 .. code-block:: python
 
     >>> group.get("logical.MDAH.2303/K")
-    <cernml.lsa_utils...Incorporator object at ...>
-
+    Incorporator('logical.MDAH.2303/K', context='SFT_PRO_MTE_L4780_2023_V1')
     >>> parameters = tuple(
     ...     incorporator.parameter for incorporator in group.incorporators()
     ... )

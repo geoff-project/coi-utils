@@ -24,6 +24,8 @@ Unreleased
   applications like `GeOFF <https://gitlab.cern.ch/geoff/geoff-app>`_ to
   enhance trim descriptions with information that is not available inside of
   optimization problems.
+- ADD: :class:`str() <str>` and :func:`repr` implementations for
+  `~cernml.lsa_utils.Incorporator` and `~cernml.lsa_utils.IncorporatorGroup`.
 - FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
 - FIX: Type annotations for *data_filter* parameter of
   `~cernml.japc_utils.subscribe_stream()`.

@@ -187,6 +187,15 @@ def test_get_cycle_type_attributes_bad_name() -> None:
 
 
 class TestIncorporator:
+    def test_str(self, incorporator: lsa_utils.Incorporator) -> None:
+        assert str(incorporator) == "<logical.RDH.20207/K @ user='SPS.USER.HIRADMT1'>"
+
+    def test_repr(self, incorporator: lsa_utils.Incorporator) -> None:
+        assert (
+            repr(incorporator) == "Incorporator('logical.RDH.20207/K', "
+            "context='HIRADMAT_PILOT_L8400_Q20_2023_V1')"
+        )
+
     def test_missing_argument(self) -> None:
         with pytest.raises(TypeError, match="'context' or 'user'"):
             _ = lsa_utils.Incorporator("logical.RDH.20207/K")
@@ -222,6 +231,16 @@ class TestIncorporator:
 
 
 class TestIncorporatorGroup:
+    def test_str(self, incorporator_group: lsa_utils.IncorporatorGroup) -> None:
+        assert str(incorporator_group) == "<4 parameters @ user='SPS.USER.SFTPRO1'>"
+
+    def test_repr(self, incorporator_group: lsa_utils.IncorporatorGroup) -> None:
+        assert (
+            repr(incorporator_group) == "IncorporatorGroup(['logical.MDAH.2303/K', "
+            "'logical.MDAH.2307/K', 'logical.MDAV.2301.M/K', "
+            "'logical.MDAV.2305.M/K'], context='SFT_PRO_MTE_L4780_2023_V1')"
+        )
+
     def test_bad_names(self) -> None:
         with pytest.raises(lsa_utils.NotFound, match="bad_name"):
             _ = lsa_utils.IncorporatorGroup(["bad_name"], user="SPS.USER.SFTPRO1")
