@@ -20,9 +20,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-pjlsa = pytest.importorskip("pjlsa")
-with pjlsa.LSAClient(server="next").java_api():
-    from cernml import lsa_utils
+from cernml import lsa_utils
 
 
 def _is_sorted(array: np.ndarray) -> bool:

@@ -88,7 +88,7 @@ include = '\.pyi?$'
 profile = 'black'
 
 [tool.pytest.ini_options]
-addopts = '--doctest-modules --doctest-glob=*.rst --ignore=src/cernml/lsa_utils/'
+addopts = '--doctest-modules --doctest-glob=*.rst'
 testpaths = ['tests', 'src', 'docs/guide']
 doctest_optionflags = ['ELLIPSIS', 'IGNORE_EXCEPTION_DETAIL']
 
