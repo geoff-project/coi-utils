@@ -10,9 +10,8 @@ from __future__ import annotations
 
 import typing as t
 
-import cern.accsoft.commons.value as acc_value
-import cern.lsa.domain.settings as lsa_settings
-import cern.lsa.domain.settings.spi as lsa_spi
+import cern.accsoft.commons as acc
+import cern.lsa.domain.settings as lsa
 import java.util
 import numpy as np
 
@@ -85,7 +84,7 @@ class Incorporator:
             cycle = _services.context.findStandAloneContextByUser(name)
         except java.lang.IllegalArgumentException:
             raise NotFound(name) from None
-        assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
+        assert isinstance(cycle, lsa.StandAloneCycle), cycle
         self._cycle = cycle
 
     def get_function(self) -> t.Tuple[np.ndarray, np.ndarray]:
@@ -94,11 +93,11 @@ class Incorporator:
         This returns the function as a 2-tuple of times and values, each
         an 1D array of equal length.
         """
-        request = lsa_settings.ContextSettingsRequest.byStandAloneContextAndParameters(
+        request = lsa.ContextSettingsRequest.byStandAloneContextAndParameters(
             self._cycle, java.util.Collections.singleton(self._parameter)
         )
         settings = _services.setting.findContextSettings(request)
-        function = lsa_settings.Settings.getFunction(settings, self._parameter)
+        function = lsa.Settings.getFunction(settings, self._parameter)
         return np.array(function.toXArray()), np.array(function.toYArray())
 
     def incorporate_and_trim(
@@ -151,7 +150,7 @@ class Incorporator:
         )
         hooks = _hooks.get_current_hooks()
         request_builder = (
-            lsa_settings.IncorporationRequest.builder()
+            lsa.IncorporationRequest.builder()
             .setContext(self._cycle)
             .setDescription(hooks.trim_description(description))
             .setRelative(relative)
@@ -163,7 +162,7 @@ class Incorporator:
 
     @classmethod
     def _from_raw(
-        cls, parameter: lsa_settings.Parameter, context: lsa_settings.StandAloneCycle
+        cls, parameter: lsa.Parameter, context: lsa.StandAloneCycle
     ) -> Incorporator:
         result = super().__new__(cls)
         result._parameter = parameter
@@ -227,7 +226,7 @@ class IncorporatorGroup:
             cycle = _services.context.findStandAloneContextByUser(name)
         except java.lang.IllegalArgumentException:
             raise NotFound(name) from None
-        assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
+        assert isinstance(cycle, lsa.StandAloneCycle), cycle
         self._cycle = cycle
 
     def incorporators(self) -> t.Iterator[Incorporator]:
@@ -303,7 +302,7 @@ class IncorporatorGroup:
         values = self._canonicalize_values(values)
         hooks = _hooks.get_current_hooks()
         request_builder = (
-            lsa_settings.IncorporationRequest.builder()
+            lsa.IncorporationRequest.builder()
             .setContext(self._cycle)
             .setDescription(hooks.trim_description(description))
             .setRelative(relative)
@@ -332,7 +331,7 @@ class IncorporatorGroup:
 
 
 def _canonicalize_dict(
-    values: t.Mapping[str, float], parameters: t.Iterable[lsa_settings.Parameter]
+    values: t.Mapping[str, float], parameters: t.Iterable[lsa.Parameter]
 ) -> np.ndarray:
     # Shallow-copy the dict, remove items from it. If anything is left,
     # the user specified parameters that we don't know.
@@ -343,7 +342,7 @@ def _canonicalize_dict(
     return result
 
 
-def find_parameter(name: str) -> lsa_settings.Parameter:
+def find_parameter(name: str) -> lsa.Parameter:
     """Look up a parameter by its name.
 
     Raises `NotFound` if the parameter does not exist in the database.
@@ -356,7 +355,7 @@ def find_parameter(name: str) -> lsa_settings.Parameter:
 
 def find_cycle(
     *, context: t.Optional[str] = None, user: t.Optional[str] = None
-) -> lsa_settings.StandAloneCycle:
+) -> lsa.StandAloneCycle:
     """Resolve context/user strings to a LSA domain cycle.
 
     You should pass either *context* or *user*. Passing both or neither
@@ -370,7 +369,7 @@ def find_cycle(
             cycle = _services.context.findStandAloneContextByUser(user)
         except java.lang.IllegalArgumentException:
             raise NotFound(user) from None
-        assert isinstance(cycle, lsa_settings.StandAloneCycle), cycle
+        assert isinstance(cycle, lsa.StandAloneCycle), cycle
         return cycle
     if context:
         cycle = _services.context.findStandAloneCycle(context)
@@ -381,31 +380,31 @@ def find_cycle(
 
 
 def _build_incorporation_setting(
-    parameter: lsa_settings.Parameter,
-    context: lsa_settings.StandAloneContext,
+    parameter: lsa.Parameter,
+    context: lsa.StandAloneContext,
     cycle_time: float,
     value: float,
-) -> lsa_settings.IncorporationSetting:
+) -> lsa.IncorporationSetting:
     beam_process = _get_beam_process_at(parameter, context, cycle_time)
     beam_process_time = cycle_time - beam_process.getStartTime()
-    setting = lsa_spi.ScalarSetting(acc_value.Type.DOUBLE)
+    setting = lsa.spi.ScalarSetting(acc.value.Type.DOUBLE)
     setting.setBeamProcess(beam_process)
     setting.setParameter(parameter)
-    setting.setCorrectionValue(acc_value.ValueFactory.createScalar(value))
-    return lsa_settings.IncorporationSetting(setting, beam_process_time)
+    setting.setCorrectionValue(acc.value.ValueFactory.createScalar(value))
+    return lsa.IncorporationSetting(setting, beam_process_time)
 
 
 def _get_beam_process_at(
-    parameter: lsa_settings.Parameter,
-    context: lsa_settings.StandAloneContext,
+    parameter: lsa.Parameter,
+    context: lsa.StandAloneContext,
     cycle_time: float,
-) -> lsa_settings.BeamProcess:
+) -> lsa.BeamProcess:
     # If there are multiple particle transfers, find the first one
     # that returns a beam process at the given time. Since we are
     # dealing with functions, the beam processes of different
     # particle transfers cannot overlap.
     for transfer in parameter.getParticleTransfers():
-        beam_process = lsa_settings.Contexts.getFunctionBeamProcessAt(
+        beam_process = lsa.Contexts.getFunctionBeamProcessAt(
             context, transfer, cycle_time
         )
         if beam_process is not None:
