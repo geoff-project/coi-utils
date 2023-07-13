@@ -8,10 +8,16 @@
 
 from __future__ import annotations
 
+import sys
 import typing as t
 import warnings
 from abc import ABCMeta, abstractmethod
 from types import TracebackType
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 
 class InconsistentHookInstalls(Warning):
@@ -69,8 +75,11 @@ class Hooks(AbstractHooks):
 
         >>> hooks = Hooks()
         >>> hooks.install_globally()
-        >>> assert get_current_hooks() is hooks
+        >>> get_current_hooks() is hooks
+        True
         >>> hooks.uninstall_globally()
+        >>> get_current_hooks() is hooks
+        False
 
     Instead of calling `~Hooks.install_globally()` and
     `~Hooks.uninstall_globally()` manually, it is usually easier to use
@@ -141,7 +150,7 @@ class Hooks(AbstractHooks):
 
     # pylint: enable = global-statement
 
-    def __enter__(self) -> "Hooks":
+    def __enter__(self) -> Self:
         self.install_globally()
         return self
 

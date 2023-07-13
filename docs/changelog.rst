@@ -18,7 +18,14 @@ version 0.3.0.
 Unreleased
 ----------
 
-No changes yet!
+v0.2.11
+-------
+
+- FIX: Type hint of :meth:`~object.__enter__()` method on
+  `cernml.lsa_utils.Hooks` now specifies `~typing.Self` instead of
+  `~cernml.lsa_utils.Hooks`. This requires an additional dependency on
+  `typing_extensions <https://github.com/python/typing_extensions/>`_ for
+  Python versions below 3.11.
 
 v0.2.10
 -------

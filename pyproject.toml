@@ -24,6 +24,7 @@ readme = 'README.md'
 license = {file='COPYING'}
 dependencies = [
     'cernml-coi >=0.7, <0.9',
+    'typing_extensions >= 4.0; python_version<"3.11"'
 ]
 classifiers = [
     'Development Status :: 3 - Alpha',
