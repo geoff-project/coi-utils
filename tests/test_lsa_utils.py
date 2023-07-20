@@ -338,6 +338,16 @@ class TestHooks:
     def test_default_hooks_are_default(self) -> None:
         assert isinstance(lsa_utils.get_current_hooks(), lsa_utils.DefaultHooks)
 
+    def test_default_hooks_are_identical(self) -> None:
+        # Check changes in get_current_hooks() implementation.
+        assert lsa_utils.get_current_hooks() is lsa_utils.get_current_hooks()
+
+    def test_cannot_uninstall_default_hooks(self) -> None:
+        hooks = lsa_utils.get_current_hooks()
+        assert isinstance(hooks, lsa_utils.DefaultHooks)
+        with pytest.raises(RuntimeError):
+            hooks.uninstall_globally()
+
     def test_install_replaces_hooks(self) -> None:
         default = lsa_utils.get_current_hooks()
         new_hooks = lsa_utils.Hooks()
@@ -360,6 +370,17 @@ class TestHooks:
         with hooks:
             with pytest.raises(RuntimeError):
                 hooks.install_globally()
+
+    def test_bare_uninstall_raises_runtime_error(self) -> None:
+        hooks = lsa_utils.Hooks()
+        with pytest.raises(RuntimeError):
+            hooks.uninstall_globally()
+
+    def test_double_uninstall_raises_runtime_error(self) -> None:
+        hooks = lsa_utils.Hooks()
+        with pytest.raises(RuntimeError):
+            with hooks:
+                hooks.uninstall_globally()
 
     def test_call_non_installed_hooks_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()

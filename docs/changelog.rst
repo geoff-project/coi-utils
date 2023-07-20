@@ -18,6 +18,14 @@ version 0.3.0.
 Unreleased
 ----------
 
+No changes yet!
+
+v0.2.12
+-------
+
+- FIX: A bug that prevented :ref:`guide/lsa_utils:Global Trim Request Hooks`
+  from properly forwarding calls to their parent hooks.
+
 v0.2.11
 -------
 

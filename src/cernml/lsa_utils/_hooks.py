@@ -24,7 +24,7 @@ class InconsistentHookInstalls(Warning):
     """Hooks have been installed in another order than they've been installed."""
 
 
-global_hooks: t.Optional[Hooks] = None
+global_hooks: Hooks
 
 
 class AbstractHooks(metaclass=ABCMeta):
@@ -146,6 +146,8 @@ class Hooks(AbstractHooks):
                 f"{self!r}, child of {self.__parent!r}",
                 InconsistentHookInstalls,
             )
+        if self.__parent is None:
+            raise RuntimeError("cannot uninstall root hooks")
         global_hooks, self.__parent = self.__parent, None
 
     # pylint: enable = global-statement
@@ -210,10 +212,13 @@ class DefaultHooks(Hooks):
         return transient if transient is not None else True
 
 
+global_hooks = DefaultHooks()
+
+
 def get_current_hooks() -> AbstractHooks:
     """Return the currently installed `Hooks`.
 
     If no hooks are currently installed, `DefaultHooks()` are returned
     instead.
     """
-    return global_hooks or DefaultHooks()
+    return global_hooks
