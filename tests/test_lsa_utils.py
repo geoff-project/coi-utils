@@ -19,7 +19,6 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
-
 from cernml import lsa_utils
 
 
@@ -238,7 +237,7 @@ class TestIncorporatorGroup:
         assert (
             repr(incorporator_group) == "IncorporatorGroup(['logical.MDAH.2303/K', "
             "'logical.MDAH.2307/K', 'logical.MDAV.2301.M/K', "
-            "'logical.MDAV.2305.M/K'], context='SFT_PRO_MTE_L4780_2023_V1')"
+            "'logical.MDAV.2305.M/K'], context='SFT_PRO_MTE_L4780_2024_V1')"
         )
 
     def test_bad_names(self) -> None:
@@ -373,14 +372,16 @@ class TestHooks:
 
     def test_bare_uninstall_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
-        with pytest.raises(RuntimeError):
-            hooks.uninstall_globally()
+        with pytest.warns(lsa_utils.InconsistentHookInstalls):
+            with pytest.raises(RuntimeError):
+                hooks.uninstall_globally()
 
     def test_double_uninstall_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
-        with pytest.raises(RuntimeError):
-            with hooks:
-                hooks.uninstall_globally()
+        with pytest.warns(lsa_utils.InconsistentHookInstalls):
+            with pytest.raises(RuntimeError):
+                with hooks:
+                    hooks.uninstall_globally()
 
     def test_call_non_installed_hooks_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
@@ -477,9 +478,11 @@ class TestHooks:
         mock_hooks.trim_transient.assert_called_once_with(transient_arg)
         [req], [] = getattr(
             trim_service,
-            "trimSettings"
-            if "trim_scalar_settings" in repr(curried_call)
-            else "incorporate",
+            (
+                "trimSettings"
+                if "trim_scalar_settings" in repr(curried_call)
+                else "incorporate"
+            ),
         ).call_args
         assert req.getDescription() == mock_hooks.trim_description.return_value
         assert req.isTransient() == mock_hooks.trim_transient.return_value

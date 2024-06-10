@@ -51,7 +51,7 @@ manager for enabling Java imports:
     >>> with lsa_client.java_api():
     ...     from cernml import lsa_utils
     >>> lsa_utils.get_context_by_user("SPS.USER.SFTPRO1")
-    'SFT_PRO_MTE_L4780_2023_V1'
+    'SFT_PRO_MTE_L4780_2024_V1'
 
 Note that the context manager only manages a change in the Python *import*
 system. Once a Java package has been imported, it remains available and
@@ -272,7 +272,7 @@ individually:
 .. code-block:: python
 
     >>> group.get("logical.MDAH.2303/K")
-    Incorporator('logical.MDAH.2303/K', context='SFT_PRO_MTE_L4780_2023_V1')
+    Incorporator('logical.MDAH.2303/K', context='SFT_PRO_MTE_L4780_2024_V1')
     >>> parameters = tuple(
     ...     incorporator.parameter for incorporator in group.incorporators()
     ... )
