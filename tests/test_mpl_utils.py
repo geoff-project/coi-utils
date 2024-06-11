@@ -166,8 +166,8 @@ class TestRenderGenerator:
     def test_good_double_assign(self) -> None:
         class Container:
             @render_generator
-            def first(self, _: mpl.figure.Figure) -> None:
-                pass  # pragma: no cover
+            def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
+                pass
 
         # pylint: disable = no-member
         Container.first.__set_name__(Container, "first")
@@ -186,8 +186,8 @@ class TestRenderGenerator:
             class Container:
                 # pylint: disable = unused-variable
                 @render_generator
-                def first(self, _: mpl.figure.Figure) -> None:
-                    pass  # pragma: no cover
+                def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
+                    pass
 
                 second = first
 

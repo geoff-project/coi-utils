@@ -16,7 +16,7 @@ from matplotlib.figure import Figure
 
 from ._iter import iter_matplotlib_figures
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if t.TYPE_CHECKING:
     # pylint: disable = unused-import
     from ._iter import MatplotlibFigures
 
@@ -439,13 +439,13 @@ class _Decorator(t.Generic[T]):
 
     @t.overload
     def __get__(self, instance: None, owner: t.Type[T]) -> _Decorator[T]:
-        ...  # pragma: no cover
+        ...
 
     @t.overload
     def __get__(
         self, instance: T, owner: t.Type[T]
     ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]:
-        ...  # pragma: no cover
+        ...
 
     def __get__(
         self, instance: t.Optional[T], owner: t.Type[T]

@@ -29,8 +29,8 @@ class VerboseBox(Box):
     need the shape attribute.
     """
 
-    def __repr__(self) -> str:
-        return f"Box({self.low}, {self.high}, {self.dtype})"  # pragma: no cover
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"Box({self.low}, {self.high}, {self.dtype})"
 
 
 @pytest.fixture(scope="module", params=np.random.uniform(-10, 10, size=(50, 2, 3)))

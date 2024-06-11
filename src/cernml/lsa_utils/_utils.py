@@ -60,7 +60,7 @@ def incorporate_and_trim(
     transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
 ) -> None:
-    ...  # pragma: no cover
+    ...
 
 
 @t.overload
@@ -74,7 +74,7 @@ def incorporate_and_trim(
     transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
 ) -> None:
-    ...  # pragma: no cover
+    ...
 
 
 def incorporate_and_trim(

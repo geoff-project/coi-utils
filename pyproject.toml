@@ -114,6 +114,22 @@ ignored-modules = ['java', 'cern']
 ignore-patterns = ['.*\.pyi$', 'test_.*\.py$']
 ignore-paths = ['docs/']
 
+[tool.coverage.run]
+source = ['src']
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    '^\s*@.*\.overload$',
+    '^\s*def __del__',
+    '^\s*except ImportError:$',
+    '^\s*from .* import',
+    '^\s*if .*\.TYPE_CHECKING:$',
+    '^\s*if sys\.version_info ..? \(\d, \d+\):$',
+    '^\s*import ',
+    '^\s*raise NotImplementedError',
+]
+
 [tool.mypy]
 disallow_untyped_defs = true
 explicit_package_bases = true

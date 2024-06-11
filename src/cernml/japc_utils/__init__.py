@@ -25,12 +25,12 @@ from collections import deque
 
 from cernml.coi import cancellation  # pylint: disable=unused-import
 
-if sys.version_info < (3, 9):  # pragma: no cover
+if sys.version_info < (3, 9):
     from typing import ContextManager
-else:  # pragma: no cover
+else:
     from contextlib import AbstractContextManager as ContextManager
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if t.TYPE_CHECKING:
     # pylint: disable=import-error, unused-import
     import cern.japc.core
     import pyjapc
@@ -499,11 +499,11 @@ class ParamStream(_BaseStream):
 
     @t.overload
     def pop_or_wait(self) -> t.Tuple[object, Header]:
-        ...  # pragma: no cover
+        ...
 
     @t.overload
     def pop_or_wait(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
-        ...  # pragma: no cover
+        ...
 
     @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
     def pop_or_wait(
@@ -519,11 +519,11 @@ class ParamStream(_BaseStream):
 
     @t.overload
     def wait_for_next(self) -> t.Tuple[object, Header]:
-        ...  # pragma: no cover
+        ...
 
     @t.overload
     def wait_for_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
-        ...  # pragma: no cover
+        ...
 
     @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
     def wait_for_next(
@@ -565,7 +565,8 @@ class ParamGroupStream(_BaseStream):
     def parameter_names(self) -> t.Tuple[str, ...]:
         """A list with the names of all underlying parameters."""
         handle = t.cast(
-            "cern.japc.core.group.GroupSubscriptionHandle", self._handle  # noqa: F821
+            "cern.japc.core.group.GroupSubscriptionHandle",
+            self._handle,  # noqa: F821
         )
         return tuple(handle.getParameterGroup().getNames())
 
@@ -579,13 +580,13 @@ class ParamGroupStream(_BaseStream):
 
     @t.overload
     def pop_or_wait(self) -> t.List[t.Tuple[object, Header]]:
-        ...  # pragma: no cover
+        ...
 
     @t.overload
     def pop_or_wait(
         self, timeout: float
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        ...  # pragma: no cover
+        ...
 
     @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
     def pop_or_wait(
@@ -601,13 +602,13 @@ class ParamGroupStream(_BaseStream):
 
     @t.overload
     def wait_for_next(self) -> t.List[t.Tuple[object, Header]]:
-        ...  # pragma: no cover
+        ...
 
     @t.overload
     def wait_for_next(
         self, timeout: float
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        ...  # pragma: no cover
+        ...
 
     @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
     def wait_for_next(
@@ -628,7 +629,7 @@ def subscribe_stream(
     selector: t.Optional[str] = ...,
     data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
 ) -> ParamStream:
-    ...  # pragma: no cover
+    ...
 
 
 # Note: `name_or_names` is annotated as a list on purpose. The reason is
@@ -647,7 +648,7 @@ def subscribe_stream(
     selector: t.Optional[str] = ...,
     data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
 ) -> ParamGroupStream:
-    ...  # pragma: no cover
+    ...
 
 
 def subscribe_stream(

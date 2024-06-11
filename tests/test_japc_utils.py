@@ -23,7 +23,7 @@ from cernml.coi import cancellation
 
 from cernml import japc_utils
 
-if t.TYPE_CHECKING:  # pragma: no cover
+if t.TYPE_CHECKING:
     # pylint: disable=import-error, unused-import
     import pyjapc
 
@@ -200,7 +200,7 @@ def mock_japc(
 
 
 def extract_mock_handle(
-    stream: t.Union[japc_utils.ParamStream, japc_utils.ParamGroupStream]
+    stream: t.Union[japc_utils.ParamStream, japc_utils.ParamGroupStream],
 ) -> MockSubscriptionHandle:
     # pylint: disable = protected-access
     return t.cast(MockSubscriptionHandle, stream._handle)

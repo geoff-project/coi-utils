@@ -14,9 +14,9 @@ import warnings
 from abc import ABCMeta, abstractmethod
 from types import TracebackType
 
-if sys.version_info < (3, 11):  # pragma: no cover
+if sys.version_info < (3, 11):
     from typing_extensions import Self
-else:  # pragma: no cover
+else:
     from typing import Self
 
 
@@ -47,7 +47,7 @@ class AbstractHooks(metaclass=ABCMeta):
         Call :samp:`super().trim_description({desc})` to pass the
         decision on to the previously installed hook.
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError
 
     @abstractmethod
     def trim_transient(self, transient: t.Optional[bool]) -> bool:
@@ -61,7 +61,7 @@ class AbstractHooks(metaclass=ABCMeta):
         Call :samp:`super().trim_transient({transient})` to pass the
         decision on to the previously installed hook.
         """
-        raise NotImplementedError()  # pragma: no cover
+        raise NotImplementedError
 
 
 class Hooks(AbstractHooks):

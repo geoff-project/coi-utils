@@ -54,7 +54,7 @@ try:
         incorporate_and_trim,
         trim_scalar_settings,
     )
-except ImportError as exc:  # pragma: no cover
+except ImportError as exc:
     raise ImportError("import this package in `with LSAClient().java_api()`") from exc
 
 __all__ = [
