@@ -87,7 +87,7 @@ def iter_matplotlib_figures(
         yield from iter(t.cast(t.Mapping[str, Figure], figures).items())
         return
     try:
-        iterator = iter(figures)
+        iterator = iter(t.cast(t.Iterable, figures))
     except TypeError:
         # Not iterable, assume a single figure.
         yield "", t.cast(Figure, figures)

@@ -49,7 +49,7 @@ wiki = 'https://wikis.cern.ch/pages/viewpage.action?pageId=194741479'
 
 [project.optional-dependencies]
 matplotlib = [
-    'matplotlib ~= 3.0',
+    'matplotlib ~= 3.8',
 ]
 pyjapc = [
     'pyjapc ~= 2.7',
@@ -134,5 +134,5 @@ explicit_package_bases = true
 mypy_path = '$MYPY_CONFIG_FILE_DIR/src'
 
 [[tool.mypy.overrides]]
-module = ['scipy.*', 'matplotlib.*']
+module = ['scipy.*']
 ignore_missing_imports = true

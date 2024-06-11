@@ -46,8 +46,20 @@ class Renderer(metaclass=abc.ABCMeta):
             KeyError: if *mode* is neither of the two known render
                 modes.
         """
-        func = {"human": pyplot.figure, "matplotlib_figures": Figure}[mode]
-        return func()
+        handlers: t.Dict[str, t.Callable[[], Figure]] = {
+            "human": pyplot.figure,
+            "matplotlib_figures": Figure,
+        }
+        return handlers[mode]()
+
+    @t.overload
+    def update(self, mode: t.Literal["human"]) -> None: ...
+
+    @t.overload
+    def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
+
+    @t.overload
+    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]: ...
 
     @abc.abstractmethod
     def update(self, mode: str) -> t.Optional["MatplotlibFigures"]:
@@ -210,6 +222,15 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         if self.figure is not None:
             pyplot.close(self.figure)
 
+    @t.overload
+    def update(self, mode: t.Literal["human"]) -> None: ...
+
+    @t.overload
+    def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
+
+    @t.overload
+    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]: ...
+
     def update(self, mode: str) -> t.Optional["MatplotlibFigures"]:
         try:
             figure = self.figure
@@ -333,15 +354,26 @@ class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
         Renderer 5 updated
     """
 
+    @t.overload
+    def update(self, mode: t.Literal["human"]) -> None: ...
+
+    @t.overload
+    def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
+
+    @t.overload
+    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]: ...
+
     def update(self, mode: str = "human") -> t.Optional["MatplotlibFigures"]:
         if mode == "human":
             for renderer in self:
-                renderer.update(mode)
+                renderer.update("human")
             return None
         if mode == "matplotlib_figures":
             res: t.List[t.Tuple[str, Figure]] = []
             for renderer in self:
-                res.extend(iter_matplotlib_figures(renderer.update(mode)))
+                res.extend(
+                    iter_matplotlib_figures(renderer.update("matplotlib_figures"))
+                )
             return res
         raise KeyError(mode)
 
