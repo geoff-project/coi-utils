@@ -438,14 +438,12 @@ class _Decorator(t.Generic[T]):
             )
 
     @t.overload
-    def __get__(self, instance: None, owner: t.Type[T]) -> _Decorator[T]:
-        ...
+    def __get__(self, instance: None, owner: t.Type[T]) -> _Decorator[T]: ...
 
     @t.overload
     def __get__(
         self, instance: T, owner: t.Type[T]
-    ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]:
-        ...
+    ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]: ...
 
     def __get__(
         self, instance: t.Optional[T], owner: t.Type[T]

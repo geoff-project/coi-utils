@@ -59,8 +59,7 @@ def incorporate_and_trim(
     relative: bool,
     transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
-) -> None:
-    ...
+) -> None: ...
 
 
 @t.overload
@@ -73,8 +72,7 @@ def incorporate_and_trim(
     relative: bool,
     transient: t.Optional[bool] = None,
     description: t.Optional[str] = None,
-) -> None:
-    ...
+) -> None: ...
 
 
 def incorporate_and_trim(

@@ -16,12 +16,12 @@ next value has arrived. Parameter streams are created via
 import abc
 import contextlib
 import datetime
-import functools
 import logging
 import sys
 import threading
 import typing as t
 from collections import deque
+from functools import update_wrapper
 
 from cernml.coi import cancellation  # pylint: disable=unused-import
 
@@ -498,39 +498,41 @@ class ParamStream(_BaseStream):
         return t.cast(t.Tuple[object, Header], super().newest)
 
     @t.overload
-    def pop_or_wait(self) -> t.Tuple[object, Header]:
-        ...
+    def pop_or_wait(self) -> t.Tuple[object, Header]: ...
 
     @t.overload
-    def pop_or_wait(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
-        ...
+    def pop_or_wait(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]: ...
 
-    @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
     def pop_or_wait(
         self, timeout: t.Optional[float] = None
     ) -> t.Optional[t.Tuple[object, Header]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.Tuple[object, Header], super()._pop_or_wait(timeout))
 
-    @functools.wraps(_BaseStream._pop_if_ready, assigned=["__doc__"], updated=[])
+    # Workaround for <https://github.com/python/mypy/issues/17166>.
+    update_wrapper(pop_or_wait, _BaseStream._pop_or_wait, assigned=["__doc__"])
+
     def pop_if_ready(self) -> t.Optional[t.Tuple[object, Header]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.Tuple[object, Header], super()._pop_if_ready())
 
-    @t.overload
-    def wait_for_next(self) -> t.Tuple[object, Header]:
-        ...
+    # Workaround for <https://github.com/python/mypy/issues/17166>.
+    update_wrapper(pop_if_ready, _BaseStream._pop_if_ready, assigned=["__doc__"])
 
     @t.overload
-    def wait_for_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]:
-        ...
+    def wait_for_next(self) -> t.Tuple[object, Header]: ...
 
-    @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
+    @t.overload
+    def wait_for_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]: ...
+
     def wait_for_next(
         self, timeout: t.Optional[float] = None
     ) -> t.Optional[t.Tuple[object, Header]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.Tuple[object, Header], super()._wait_for_next(timeout))
+
+    # Workaround for <https://github.com/python/mypy/issues/17166>.
+    update_wrapper(wait_for_next, _BaseStream._wait_for_next, assigned=["__doc__"])
 
 
 class ParamGroupStream(_BaseStream):
@@ -579,43 +581,45 @@ class ParamGroupStream(_BaseStream):
         return t.cast(t.List[t.Tuple[object, Header]], super().newest)
 
     @t.overload
-    def pop_or_wait(self) -> t.List[t.Tuple[object, Header]]:
-        ...
+    def pop_or_wait(self) -> t.List[t.Tuple[object, Header]]: ...
 
     @t.overload
     def pop_or_wait(
         self, timeout: float
-    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        ...
+    ) -> t.Optional[t.List[t.Tuple[object, Header]]]: ...
 
-    @functools.wraps(_BaseStream._pop_or_wait, assigned=["__doc__"], updated=[])
     def pop_or_wait(
         self, timeout: t.Optional[float] = None
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.List[t.Tuple[object, Header]], super()._pop_or_wait(timeout))
 
-    @functools.wraps(_BaseStream._pop_if_ready, assigned=["__doc__"], updated=[])
+    # Workaround for <https://github.com/python/mypy/issues/17166>.
+    update_wrapper(pop_or_wait, _BaseStream._pop_or_wait, assigned=["__doc__"])
+
     def pop_if_ready(self) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.List[t.Tuple[object, Header]], super()._pop_if_ready())
 
+    # Workaround for <https://github.com/python/mypy/issues/17166>.
+    update_wrapper(pop_if_ready, _BaseStream._pop_if_ready, assigned=["__doc__"])
+
     @t.overload
-    def wait_for_next(self) -> t.List[t.Tuple[object, Header]]:
-        ...
+    def wait_for_next(self) -> t.List[t.Tuple[object, Header]]: ...
 
     @t.overload
     def wait_for_next(
         self, timeout: float
-    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        ...
+    ) -> t.Optional[t.List[t.Tuple[object, Header]]]: ...
 
-    @functools.wraps(_BaseStream._wait_for_next, assigned=["__doc__"], updated=[])
     def wait_for_next(
         self, timeout: t.Optional[float] = None
     ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
         # pylint: disable = missing-function-docstring
         return t.cast(t.List[t.Tuple[object, Header]], super()._wait_for_next(timeout))
+
+    # Workaround for <https://github.com/python/mypy/issues/17166>.
+    update_wrapper(wait_for_next, _BaseStream._wait_for_next, assigned=["__doc__"])
 
 
 @t.overload
@@ -628,8 +632,7 @@ def subscribe_stream(
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
     data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
-) -> ParamStream:
-    ...
+) -> ParamStream: ...
 
 
 # Note: `name_or_names` is annotated as a list on purpose. The reason is
@@ -647,8 +650,7 @@ def subscribe_stream(
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
     data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
-) -> ParamGroupStream:
-    ...
+) -> ParamGroupStream: ...
 
 
 def subscribe_stream(

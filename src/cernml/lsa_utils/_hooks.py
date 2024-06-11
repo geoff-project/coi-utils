@@ -187,7 +187,7 @@ class DefaultHooks(Hooks):
 
     def __eq__(self, other: object) -> bool:
         # pylint: disable = unidiomatic-typecheck
-        if type(self) == type(other):
+        if type(self) is type(other):
             return True
         return NotImplemented
 
