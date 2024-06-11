@@ -104,6 +104,7 @@ score = false
 disable = [
     'not-an-iterable',
     'similarities',
+    'too-many-arguments',
     'unpacking-non-sequence',
     'unsubscriptable-object',
 ]
@@ -111,6 +112,8 @@ disable = [
 [tool.pylint.MAIN]
 # Ignore Java packages imported via JPype as if they really existed.
 ignored-modules = ['java', 'cern']
+ignore-patterns = ['.*\.pyi$', 'test_.*\.py$']
+ignore-paths = ['docs/']
 
 [tool.mypy]
 disallow_untyped_defs = true

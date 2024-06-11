@@ -19,6 +19,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
+
 from cernml import lsa_utils
 
 

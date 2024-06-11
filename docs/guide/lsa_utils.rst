@@ -156,6 +156,7 @@ are several other functions to make using it easier:
 .. code-block:: python
 
     >>> import numpy as np
+    >>> from operator import itemgetter
 
     >>> context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
     >>> context
@@ -169,11 +170,11 @@ are several other functions to make using it easier:
            [   0.,    0.,    0.,    0.,    0.,    0.,    0.,   nan,   nan]])
 
     >>> attrs = lsa_utils.get_cycle_type_attributes(context)
-    >>> for key, value in attrs.items():
+    >>> for key, value in sorted(attrs.items(), key=itemgetter(1)):
     ...     if "flat top" in key:
     ...         print(key, value, sep=": ")
-    VE:Start flat top: 6200
     VE:Intermediate flat top: 0
+    VE:Start flat top: 6200
 
     >>> lsa_utils.incorporate_and_trim(
     ...     "logical.RDH.20207/K", context, cycle_time=1440.0, value=0.0,
