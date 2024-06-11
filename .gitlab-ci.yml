@@ -15,6 +15,16 @@ variables:
   ACC_PY_BASE_IMAGE_NAME: 'acc-py_cc7_openjdk11_ci'
   PY_VERSION: "3.9"
 
+.coi_run_on_all_currently_supported:
+  # Copied from `.acc_py_run_on_all_currently_supported`, but only using the
+  # Python versions that we support.
+  parallel:
+    matrix:
+      - ACC_PY_BASE_IMAGE_TAG: "2021.12"
+        PY_VERSION: "3.9"
+      - ACC_PY_BASE_IMAGE_TAG: "2023.06"
+        PY_VERSION: "3.11"
+
 # Build: Create a wheel to speed up installation.
 
 build_sdist:
@@ -37,7 +47,7 @@ test_pre-commit:
 test_dev:
   extends:
     - .acc_py_dev_test
-    - .acc_py_run_on_all_currently_supported
+    - .coi_run_on_all_currently_supported
   # Use AccPy image instead of ManyLinux.
   image: registry.cern.ch/acc/${ACC_PY_BASE_IMAGE_NAME}:${ACC_PY_BASE_IMAGE_TAG}
   # Override `script` to change the precise pytest-cov arguments.
@@ -54,7 +64,7 @@ test_dev:
 test_wheel:
   extends:
     - .acc_py_wheel_test
-    - .acc_py_run_on_all_currently_supported
+    - .coi_run_on_all_currently_supported
   # Override `script` to adjust the pytest call.
   script:
     - cd ${project_root}/tests
