@@ -6,8 +6,10 @@
 
 """Utilities for working with OpenAI Gym."""
 
+import typing as t
+
 import numpy as np
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 
 class Scaler:
@@ -128,7 +130,7 @@ class Scaler:
             >>> Scaler(box, symmetric=False).symmetric
             False
             >>> Scaler(box, symmetric=False).scaled_space
-            Box([0. 0.], [1. 1.], (2,), float32)
+            Box(0.0, 1.0, (2,), float32)
         """
         return self._symmetric
 
@@ -155,16 +157,13 @@ class Scaler:
 
             >>> box = Box(5, 8, shape=(3,))
             >>> Scaler(box).scaled_space
-            Box([-1. -1. -1.], [1. 1. 1.], (3,), float32)
+            Box(-1.0, 1.0, (3,), float32)
             >>> Scaler(box, symmetric=False).scaled_space
-            Box([0. 0. 0.], [1. 1. 1.], (3,), float32)
+            Box(0.0, 1.0, (3,), float32)
         """
-        return Box(
-            -1 if self._symmetric else 0,
-            1,
-            shape=self.space.shape,
-            dtype=self.space.dtype,
-        )
+        shape = self.space.shape
+        dtype = t.cast(np.dtype[np.floating], self.space.dtype)
+        return Box(-1 if self._symmetric else 0, 1, shape=shape, dtype=dtype.type)
 
 
 def scale_from_box(

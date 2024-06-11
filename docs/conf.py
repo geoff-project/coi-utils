@@ -43,6 +43,7 @@ else:
 
 if t.TYPE_CHECKING:
     # pylint: disable = unused-import
+    from sphinx import addnodes
     from sphinx.application import Sphinx
     from sphinx.environment import BuildEnvironment
 
@@ -168,8 +169,9 @@ def acc_py_docs_link(repo: str) -> str:
 
 
 intersphinx_mapping = {
-    "coi": (acc_py_docs_link("geoff/cernml-coi"), None),
     "cmmnbuild": (acc_py_docs_link("scripting-tools/cmmnbuild-dep-manager"), None),
+    "coi": (acc_py_docs_link("geoff/cernml-coi"), None),
+    "gym": ("https://gymnasium.farama.org/", None),
     "jpype": ("https://jpype.readthedocs.io/en/latest/", None),
     "mpl": ("https://matplotlib.org/stable/", None),
     "np": ("https://numpy.org/doc/stable/", None),
@@ -260,7 +262,10 @@ def make_external_ref(
 
 
 def _fix_crossrefs(
-    app: Sphinx, env: BuildEnvironment, node: nodes.Inline, contnode: nodes.TextElement
+    app: Sphinx,
+    env: BuildEnvironment,
+    node: addnodes.pending_xref,
+    contnode: nodes.TextElement,
 ) -> t.Optional[nodes.Element]:
     # Autodoc doesn't handle typing.TypeVar correctly.
     if node["reftarget"].rpartition(".")[-1] == "T":
@@ -268,8 +273,8 @@ def _fix_crossrefs(
         return intersphinx.missing_reference(app, env, node, contnode)
     # Intersphinx cannot read the :canonical: attribute on the ..class
     # directive for Box.
-    if node["reftarget"] == "gym.spaces.box.Box":
-        node["reftarget"] = "coi:gym.spaces.Box"
+    if node["reftarget"] == "gymnasium.spaces.box.Box":
+        node["reftarget"] = "gymnasium.spaces.Box"
         return intersphinx.missing_reference(app, env, node, contnode)
     # Cross-link Java documentation.
     if node["reftarget"] == "cern.accsoft.commons.value.Value":

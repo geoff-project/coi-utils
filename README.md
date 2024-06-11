@@ -106,7 +106,7 @@ A Gym space wrapper to automatically normalize parameters:
 
 ```python
 import numpy
-from gym import spaces
+from gymnasium import spaces
 from cernml import gym_utils
 
 space = spaces.Dict({

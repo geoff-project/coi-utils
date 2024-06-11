@@ -25,7 +25,7 @@ transformations:
 .. code-block:: python
 
     from cernml import coi
-    from gym.spaces import Box
+    from gymnasium.spaces import Box
     from pyjapc import PyJapc
 
     class ExampleEnv(coi.SingleOptimizable):
@@ -57,7 +57,7 @@ use a SUBSCRIBE request instead. This would look somewhat like this:
     :emphasize-lines: 17-22,24-25,28,35-38
 
     from cernml import coi
-    from gym.spaces import Box
+    from gymnasium.spaces import Box
     from pyjapc import PyJapc
 
     class ExampleEnv(coi.SingleOptimizable):
@@ -131,7 +131,7 @@ For this, we can use a `~threading.Condition` variable:
     from threading import Condition
 
     from cernml import coi
-    from gym.spaces import Box
+    from gymnasium.spaces import Box
     from pyjapc import PyJapc
 
     class ExampleEnv(coi.SingleOptimizable):
@@ -206,7 +206,7 @@ Here is how much they simplify your code:
     :emphasize-lines: 1,17-19,24,31-32
 
     from cernml import coi, japc_utils
-    from gym.spaces import Box
+    from gymnasium.spaces import Box
     from pyjapc import PyJapc
 
     class ExampleEnv(coi.SingleOptimizable):

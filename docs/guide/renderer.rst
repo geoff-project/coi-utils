@@ -95,7 +95,7 @@ Acc-Py tutorial`_.
     >>> import numpy as np
     >>> from cernml import coi
     >>> from cernml.mpl_utils import make_renderer
-    >>> from gym.spaces import Box
+    >>> from gymnasium.spaces import Box
     >>>
     >>> class MyProblem(coi.SingleOptimizable):
     ...     metadata = {

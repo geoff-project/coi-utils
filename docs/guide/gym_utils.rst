@@ -12,16 +12,16 @@ The COI have inherited a rich API to specify exactly the domain on which an
 optimization problem is specified and what bounds it has to respect.
 Nonetheless, for the time being, COI restricts the domains of optimization
 problems: `~cernml.coi.SingleOptimizable.optimization_space`,
-`~gym.Env.observation_space` and `~gym.Env.action_space` all must have
-symmetric and normalized bounds, i.e. [−1; +1].
+`~gymnasium.Env.observation_space` and `~gymnasium.Env.action_space` all must
+have symmetric and normalized bounds, i.e. [−1; +1].
 
 Consequently, most optimization problems have to perform conversions from the
 *scaled* inputs of
 :meth:`~cernml.coi.SingleOptimizable.compute_single_objective()` and
-:meth:`~gym.Env.step()` (in [−1; +1]) to the *unscaled* inputs of the actual
-machines [x₁; x₂]. In addition, :meth:`~gym.Env.step()` also has to convert
-from *unscaled* observations on the real machine to *scaled* observations in
-the range [−1; +1].
+:func:`~gymnasium.Env.step()` (in [−1; +1]) to the *unscaled* inputs of the
+actual machines [x₁; x₂]. In addition, :func:`~gymnasium.Env.step()` also has
+to convert from *unscaled* observations on the real machine to *scaled*
+observations in the range [−1; +1].
 
 This procedure is cumbersome and error-prone. It is easy to forget scaling or
 unscaling a value; or to scale or unscale it twice; or to use the wrong scaling
@@ -37,10 +37,10 @@ Take this toy machine as an example:
 
 .. code-block:: python
 
-    >>> import gym
     >>> import numpy as np
     >>> from cernml import coi, gym_utils
-    >>> from gym.spaces import Box
+    >>> from gymnasium import Env
+    >>> from gymnasium.spaces import Box
     >>>
     >>> class Machine:
     ...     SETTINGS_LIMITS = np.array([10.0, 10.0, 2.0, 2.0])
@@ -67,7 +67,7 @@ look like this:
     >>> class MyOptimizable(coi.SingleOptimizable):
     ...
     ...     metadata = {
-    ...         'render.modes': [],
+    ...         'render_modes': [],
     ...         'coi.machine': coi.Machine.NO_MACHINE,
     ...     }
     ...     # Scale settings into [−1; +1].
@@ -86,10 +86,16 @@ look like this:
     ...
     ...     optimization_space = settings_scale.scaled_space
     ...
-    ...     def __init__(self):
+    ...     def __init__(self, render_mode=None):
+    ...         super().__init__(render_mode)
     ...         self.machine = Machine()
     ...
-    ...     def get_initial_params(self):
+    ...     def get_initial_params(self, seed=None, options=None):
+    ...         super().get_initial_params(seed=seed, options=options)
+    ...         if seed is not None:
+    ...             self.settings_scale.space.seed(seed)
+    ...             self.readings_scale.space.seed(seed)
+    ...             self.optimization_space.seed(seed)
     ...         settings = self.machine.recv_settings()
     ...         return self.settings_scale.scale(settings)
     ...
@@ -116,20 +122,27 @@ unscaled ones:
     >>> loss
     1.0
 
-And using it in an `~gym.Env` might look like this:
+And using it in an `~gymnasium.Env` might look like this:
 
 .. code-block:: python
 
-    >>> class MyEnv(MyOptimizable, gym.Env):
+    >>> class MyEnv(MyOptimizable, Env):
     ...
     ...     action_space = MyOptimizable.settings_scale.scaled_space
     ...     observation_space = MyOptimizable.readings_scale.scaled_space
     ...
-    ...     def __init__(self):
-    ...         super().__init__()
+    ...     def __init__(self, render_mode=None):
+    ...         super().__init__(render_mode)
     ...         self._actions = np.zeros(self.action_space.shape)
     ...
-    ...     def reset(self):
+    ...     def reset(self, seed=None, options=None):
+    ...         super().reset(seed=seed, options=options)
+    ...         if seed is not None:
+    ...             self.settings_scale.space.seed(seed)
+    ...             self.readings_scale.space.seed(seed)
+    ...             self.optimization_space.seed(seed)
+    ...             self.action_space.seed(seed)
+    ...             self.observation_space.seed(seed)
     ...         self.machine.send_settings(self.settings_scale.space.sample())
     ...         readings = self.machine.acquire_readings()
     ...         return self.readings_scale.scale(readings)
@@ -140,17 +153,10 @@ And using it in an `~gym.Env` might look like this:
     ...         readings = self.machine.acquire_readings()
     ...         obs = self.readings_scale.scale(readings)
     ...         reward = -np.sum(obs)
-    ...         done = success = reward > 0.01
+    ...         terminated = success = reward > 0.01
+    ...         truncated = False
     ...         info = {"readings": readings, "success": success}
-    ...         return obs, reward, done, info
-    ...     def seed(self, seed=None):
-    ...         return [
-    ...             self.settings_scale.space.seed(seed),
-    ...             self.readings_scale.space.seed(seed),
-    ...             self.optimization_space.seed(seed),
-    ...             self.action_space.seed(seed),
-    ...             self.observation_space.seed(seed),
-    ...         ]
+    ...         return obs, reward, terminated, truncated, info
 
 And again, the optimizer only sees scaled values while the machine only sees
 unscaled ones:
@@ -158,14 +164,14 @@ unscaled ones:
 .. code-block:: python
 
     >>> env = MyEnv()
-    >>> _ = env.seed(0)
-    >>> obs = env.reset()
-    sent to machine: [-8.91279887  9.30781874  0.53076378 -0.83993062]
+    >>> obs = env.reset(seed=0)
+    sent to machine: [ 2.73923375 -4.60426572 -1.8361059  -1.93388946]
     acquired from machine: [250. 250. 250. 250.]
     >>> obs
     array([0.25, 0.25, 0.25, 0.25])
-    >>> obs, reward, done, info = env.step(env.action_space.sample())
-    sent to machine: [-8.91279887  9.30781874  0.53076378 -0.83993062]
+    >>> action = env.action_space.sample()
+    >>> obs, reward, terminated, truncated, info = env.step(action)
+    sent to machine: [ 2.73923375 -4.60426572 -1.8361059  -1.93388946]
     acquired from machine: [250. 250. 250. 250.]
     >>> obs
     array([0.25, 0.25, 0.25, 0.25])

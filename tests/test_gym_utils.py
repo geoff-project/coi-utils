@@ -15,7 +15,7 @@ import typing as t
 
 import numpy as np
 import pytest
-from gym.spaces import Box
+from gymnasium.spaces import Box
 
 from cernml.gym_utils import Scaler, scale_from_box, unscale_into_box
 
@@ -43,7 +43,8 @@ def space(request: t.Any) -> Box:
 
 def test_scale_is_precise(space: Box) -> None:
     scaler = Scaler(space)
-    normalized = Box(-1, 1, shape=space.shape, dtype=space.dtype)
+    dtype = t.cast(np.dtype[np.floating], space.dtype)
+    normalized = Box(-1, 1, shape=space.shape, dtype=dtype.type)
     assert np.array_equal(scaler.scale(space.low), normalized.low)
     assert np.array_equal(scaler.scale(space.high), normalized.high)
 
@@ -69,11 +70,11 @@ def test_reject_inf() -> None:
     low = np.array([-1, -1, -1])
     high = np.array([1, np.inf, 1])
     with pytest.raises(TypeError, match="space is not bounded"):
-        _ = Scaler(Box(low, high, dtype=float))
+        _ = Scaler(Box(low, high, dtype=np.float64))
 
 
 def test_broadcast() -> None:
-    space = Box(-2, 2, shape=(3, 3), dtype=float)
+    space = Box(-2, 2, shape=(3, 3), dtype=np.float64)
     neg_ones, ones = scale_from_box(space, np.array([space.low, space.high]))
     assert np.allclose(neg_ones, -1, atol=1e-6)
     assert np.allclose(ones, 1, atol=1e-6)
