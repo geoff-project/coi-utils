@@ -20,7 +20,7 @@ from . import _hooks, _incorporator, _services
 
 def get_settings_function(
     parameter: str, context: str
-) -> t.Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """Query the settings function for a given parameter and context.
 
     This returns the function as a 2-tuple of times and values, each an
@@ -38,7 +38,7 @@ def get_context_by_user(user: str) -> str:
     return cycle.getName()
 
 
-def get_cycle_type_attributes(context: str) -> t.Dict[str, str]:
+def get_cycle_type_attributes(context: str) -> dict[str, str]:
     """Look up the cycle type attributes associated with a context."""
     cycle = _services.context.findStandAloneCycle(context)
     if cycle is None:
@@ -57,33 +57,33 @@ def incorporate_and_trim(
     value: float,
     *,
     relative: bool,
-    transient: t.Optional[bool] = None,
-    description: t.Optional[str] = None,
+    transient: bool | None = None,
+    description: str | None = None,
 ) -> None: ...
 
 
 @t.overload
 def incorporate_and_trim(
-    parameter_name: t.List[str],
+    parameter_name: list[str],
     context: str,
     cycle_time: float,
-    value: t.Union[np.ndarray, t.Sequence[float]],
+    value: np.ndarray | t.Sequence[float],
     *,
     relative: bool,
-    transient: t.Optional[bool] = None,
-    description: t.Optional[str] = None,
+    transient: bool | None = None,
+    description: str | None = None,
 ) -> None: ...
 
 
 def incorporate_and_trim(
-    parameter_name: t.Union[str, t.List[str]],
+    parameter_name: str | list[str],
     context: str,
     cycle_time: float,
-    value: t.Union[float, np.ndarray, t.Sequence[float]],
+    value: float | np.ndarray | t.Sequence[float],
     *,
     relative: bool,
-    transient: t.Optional[bool] = None,
-    description: t.Optional[str] = None,
+    transient: bool | None = None,
+    description: str | None = None,
 ) -> None:
     """Modify a function or functions at a point and commit the change.
 
@@ -142,13 +142,13 @@ def incorporate_and_trim(
 
 
 def trim_scalar_settings(
-    settings: t.Dict[str, t.Union[str, float, np.number, np.bool_, Value]],
+    settings: dict[str, str | float | np.number | np.bool_ | Value],
     *,
-    user: t.Optional[str] = None,
-    context: t.Optional[str] = None,
+    user: str | None = None,
+    context: str | None = None,
     relative: bool = False,
-    transient: t.Optional[bool] = None,
-    description: t.Optional[str] = None,
+    transient: bool | None = None,
+    description: str | None = None,
 ) -> None:
     """Trim multiple scalar settings at once.
 

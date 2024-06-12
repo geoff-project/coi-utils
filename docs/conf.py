@@ -82,14 +82,10 @@ class MockLoader(Loader, MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: t.Optional[t.Sequence[str]],
-        target: t.Optional[ModuleType] = None,
-    ) -> t.Optional[ModuleSpec]:
-        if (
-            fullname in ["cern", "java"]
-            or fullname.startswith("cern.")
-            or fullname.startswith("java.")
-        ):
+        path: t.Sequence[str] | None,
+        target: ModuleType | None = None,
+    ) -> ModuleSpec | None:
+        if fullname in ["cern", "java"] or fullname.startswith(("cern.", "java.")):
             return ModuleSpec(fullname, self, is_package=True)
         return None
 
@@ -216,7 +212,7 @@ def replace_modname(modname: str) -> None:
     *modname*. It does so recursively for all public attributes (i.e.
     those whose name does not have a leading underscore).
     """
-    todo: t.List[t.Any] = [import_module(modname)]
+    todo: list[t.Any] = [import_module(modname)]
     while todo:
         parent = todo.pop()
         for pubname in pubnames(parent):
@@ -229,13 +225,13 @@ def replace_modname(modname: str) -> None:
 
 def pubnames(obj: t.Any) -> t.Iterator[str]:
     """Return an iterator over the public names in an object."""
+    try:
+        getmembers = inspect.getmembers_static  # type: ignore[attr-defined]
+    except AttributeError:
+        getmembers = inspect.getmembers
     return iter(
-        t.cast(t.List[str], getattr(obj, "__all__", None))
-        or (
-            name
-            for name, _ in inspect.getmembers_static(obj)
-            if not name.startswith("_")
-        )
+        t.cast(list[str], getattr(obj, "__all__", None))
+        or (name for name, _ in getmembers(obj) if not name.startswith("_"))
     )
 
 
@@ -266,7 +262,7 @@ def _fix_crossrefs(
     env: BuildEnvironment,
     node: addnodes.pending_xref,
     contnode: nodes.TextElement,
-) -> t.Optional[nodes.Element]:
+) -> nodes.Element | None:
     # Autodoc doesn't handle typing.TypeVar correctly.
     if node["reftarget"].rpartition(".")[-1] == "T":
         node["reftarget"] = "std:typing.TypeVar"
@@ -276,8 +272,15 @@ def _fix_crossrefs(
     if node["reftarget"] == "gymnasium.spaces.box.Box":
         node["reftarget"] = "gymnasium.spaces.Box"
         return intersphinx.missing_reference(app, env, node, contnode)
+    # With `from __future__ import annotations`, import aliases don't
+    # get resolved.
+    if node["reftarget"].startswith("np."):
+        _, unqualified_name = node["reftarget"].split(".")
+        node["reftarget"] = "numpy." + unqualified_name
+        contnode = t.cast(nodes.TextElement, nodes.Text(unqualified_name))
+        return intersphinx.missing_reference(app, env, node, contnode)
     # Cross-link Java documentation.
-    if node["reftarget"] == "cern.accsoft.commons.value.Value":
+    if node["reftarget"] == "Value":
         return make_external_ref(
             contnode,
             uri="https://abwww.cern.ch/ap/dist/accsoft/commons/accsoft-commons-value/"

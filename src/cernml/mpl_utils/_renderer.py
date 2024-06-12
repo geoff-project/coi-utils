@@ -11,7 +11,7 @@ from __future__ import annotations
 import abc
 import typing as t
 
-from matplotlib import pyplot
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
 
 from ._iter import iter_matplotlib_figures
@@ -46,8 +46,8 @@ class Renderer(metaclass=abc.ABCMeta):
             KeyError: if *mode* is neither of the two known render
                 modes.
         """
-        handlers: t.Dict[str, t.Callable[[], Figure]] = {
-            "human": pyplot.figure,
+        handlers: dict[str, t.Callable[[], Figure]] = {
+            "human": plt.figure,
             "matplotlib_figures": Figure,
         }
         return handlers[mode]()
@@ -59,10 +59,10 @@ class Renderer(metaclass=abc.ABCMeta):
     def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
 
     @t.overload
-    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]: ...
+    def update(self, mode: str) -> "MatplotlibFigures" | None: ...
 
     @abc.abstractmethod
-    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]:
+    def update(self, mode: str) -> "MatplotlibFigures" | None:
         """Update the renderer's figures and return them.
 
         On the first call, this should initialize the renderer's
@@ -203,8 +203,8 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         updated
     """
 
-    def __init__(self, title: t.Optional[str] = None) -> None:
-        self.figure: t.Optional[Figure] = None
+    def __init__(self, title: str | None = None) -> None:
+        self.figure: Figure | None = None
         self._title = title
 
     def close(self) -> None:
@@ -220,7 +220,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         # managed by pyplot. This case is caught internally and nothing
         # happens.
         if self.figure is not None:
-            pyplot.close(self.figure)
+            plt.close(self.figure)
 
     @t.overload
     def update(self, mode: t.Literal["human"]) -> None: ...
@@ -229,9 +229,9 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
 
     @t.overload
-    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]: ...
+    def update(self, mode: str) -> "MatplotlibFigures" | None: ...
 
-    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]:
+    def update(self, mode: str) -> "MatplotlibFigures" | None:
         try:
             figure = self.figure
         except AttributeError:
@@ -278,7 +278,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
 
     @staticmethod
     def from_callback(
-        func: "RenderCallback", title: t.Optional[str] = None
+        func: "RenderCallback", title: str | None = None
     ) -> "FigureRenderer":
         """Create a renderer via a callback function or generator.
 
@@ -303,11 +303,11 @@ class _FigureFuncRenderer(FigureRenderer):
     def __init__(
         self,
         func: RenderCallback,
-        title: t.Optional[str] = None,
+        title: str | None = None,
     ) -> None:
         super().__init__(title)
         self._func = func
-        self._generator: t.Optional[RenderGenerator] = None
+        self._generator: RenderGenerator | None = None
 
     def __repr__(self) -> str:
         if self._title is not None:
@@ -327,7 +327,7 @@ class _FigureFuncRenderer(FigureRenderer):
             self._func(figure)
 
 
-class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
+class RendererGroup(Renderer, tuple[Renderer, ...]):
     """A composite renderer that dispatches to multiple children.
 
     This is just a tuple of renderers that implements itself the
@@ -354,6 +354,8 @@ class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
         Renderer 5 updated
     """
 
+    __slots__ = ()
+
     @t.overload
     def update(self, mode: t.Literal["human"]) -> None: ...
 
@@ -361,15 +363,15 @@ class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
     def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
 
     @t.overload
-    def update(self, mode: str) -> t.Optional["MatplotlibFigures"]: ...
+    def update(self, mode: str) -> "MatplotlibFigures" | None: ...
 
-    def update(self, mode: str = "human") -> t.Optional["MatplotlibFigures"]:
+    def update(self, mode: str = "human") -> "MatplotlibFigures" | None:
         if mode == "human":
             for renderer in self:
                 renderer.update("human")
             return None
         if mode == "matplotlib_figures":
-            res: t.List[t.Tuple[str, Figure]] = []
+            res: list[tuple[str, Figure]] = []
             for renderer in self:
                 res.extend(
                     iter_matplotlib_figures(renderer.update("matplotlib_figures"))
@@ -379,7 +381,7 @@ class RendererGroup(Renderer, t.Tuple[Renderer, ...]):
 
 
 def make_renderer(
-    *funcs: t.Union[RenderCallback, t.Mapping[str, RenderCallback]],
+    *funcs: RenderCallback | t.Mapping[str, RenderCallback],
     squeeze: bool = True,
 ) -> Renderer:
     """Build a renderer from one or more callbacks.
@@ -421,7 +423,7 @@ def make_renderer(
         >>> len(make_renderer({"foo": callback}, squeeze=False))
         1
     """
-    renderers: t.List[Renderer] = []
+    renderers: list[Renderer] = []
     for func_or_mapping in funcs:
         if isinstance(func_or_mapping, t.Mapping):
             renderers.extend(
@@ -444,23 +446,20 @@ class _Decorator(t.Generic[T]):
 
     def __init__(
         self,
-        func: t.Union[
-            t.Callable[[T, Figure], None],
-            t.Callable[[T, Figure], RenderGenerator],
-        ],
+        func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
     ) -> None:
         self.func = func
         self.__doc__ = func.__doc__
-        self.attrname: t.Optional[str] = None
-        self.renderer: t.Optional[_FigureFuncRenderer] = None
+        self.attrname: str | None = None
+        self.renderer: _FigureFuncRenderer | None = None
 
     def _make_renderer(self, instance: T) -> _FigureFuncRenderer:
-        def iter_func_call(fig: Figure) -> t.Optional[RenderGenerator]:
+        def iter_func_call(fig: Figure) -> RenderGenerator | None:
             return self.func(instance, fig)
 
         return _FigureFuncRenderer(t.cast(RenderCallback, iter_func_call))
 
-    def __set_name__(self, owner: t.Type[T], name: str) -> None:
+    def __set_name__(self, owner: type[T], name: str) -> None:
         if self.attrname is None:
             self.attrname = name
         elif name != self.attrname:
@@ -470,16 +469,16 @@ class _Decorator(t.Generic[T]):
             )
 
     @t.overload
-    def __get__(self, instance: None, owner: t.Type[T]) -> _Decorator[T]: ...
+    def __get__(self, instance: None, owner: type[T]) -> _Decorator[T]: ...
 
     @t.overload
     def __get__(
-        self, instance: T, owner: t.Type[T]
-    ) -> t.Callable[[str], t.Optional["MatplotlibFigures"]]: ...
+        self, instance: T, owner: type[T]
+    ) -> t.Callable[[str], "MatplotlibFigures" | None]: ...
 
     def __get__(
-        self, instance: t.Optional[T], owner: t.Type[T]
-    ) -> t.Union[_Decorator[T], t.Callable[[str], t.Optional["MatplotlibFigures"]]]:
+        self, instance: T | None, owner: type[T]
+    ) -> _Decorator[T] | t.Callable[[str], "MatplotlibFigures" | None]:
         if instance is None:
             return self
         if self.attrname is None:
@@ -492,10 +491,7 @@ class _Decorator(t.Generic[T]):
 
 
 def render_generator(
-    func: t.Union[
-        t.Callable[[T, Figure], None],
-        t.Callable[[T, Figure], RenderGenerator],
-    ],
+    func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
 ) -> _Decorator:
     """Decorator wrapper for `FigureRenderer`.
 

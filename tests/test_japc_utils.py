@@ -19,9 +19,9 @@ import typing as t
 from unittest.mock import ANY, Mock
 
 import pytest
-from cernml.coi import cancellation
 
 from cernml import japc_utils
+from cernml.coi import cancellation
 
 if t.TYPE_CHECKING:
     # pylint: disable=import-error, unused-import
@@ -71,12 +71,12 @@ class MockJapc:
 
     TIME_STEP_SECONDS = 0.01
 
-    def __init__(self, mock_values: t.Union[list, t.Dict[str, list]]) -> None:
+    def __init__(self, mock_values: list | dict[str, list]) -> None:
         self.mock_values = mock_values
 
     def subscribeParam(
         self,
-        name: t.Union[str, t.List[str]],
+        name: str | list[str],
         onValueReceived: t.Callable,
         onException: t.Callable,
         **kwargs: t.Any,
@@ -118,7 +118,7 @@ class MockSubscriptionHandle:
 
     def __init__(
         self,
-        name_or_names: t.Union[str, t.List[str]],
+        name_or_names: str | list[str],
         *,
         on_value: t.Callable,
         on_exception: t.Callable,
@@ -126,7 +126,7 @@ class MockSubscriptionHandle:
         time_step: float,
         **kwargs: t.Any,
     ) -> None:
-        self.thread: t.Optional[threading.Thread] = None
+        self.thread: threading.Thread | None = None
         self.name = name_or_names
         self.on_value = on_value
         self.on_exception = on_exception
@@ -169,7 +169,7 @@ class MockSubscriptionHandle:
 
     # pylint: enable = invalid-name
 
-    def _mock_headers(self) -> t.Union[japc_utils.Header, t.List[japc_utils.Header]]:
+    def _mock_headers(self) -> japc_utils.Header | list[japc_utils.Header]:
         if isinstance(self.name, str):
             return mock_header()
         assert isinstance(self.name, list)
@@ -193,14 +193,14 @@ class MockSubscriptionHandle:
 
 
 def mock_japc(
-    mock_values: t.Union[list, t.Dict[str, list]],
-) -> "pyjapc.PyJapc":  # noqa: F821
+    mock_values: list | dict[str, list],
+) -> "pyjapc.PyJapc":
     """Create a `MockJapc` that behaves like a `PyJapc`."""
-    return t.cast("pyjapc.PyJapc", MockJapc(mock_values))  # noqa: F821
+    return t.cast("pyjapc.PyJapc", MockJapc(mock_values))
 
 
 def extract_mock_handle(
-    stream: t.Union[japc_utils.ParamStream, japc_utils.ParamGroupStream],
+    stream: japc_utils.ParamStream | japc_utils.ParamGroupStream,
 ) -> MockSubscriptionHandle:
     # pylint: disable = protected-access
     return t.cast(MockSubscriptionHandle, stream._handle)
@@ -303,7 +303,7 @@ def test_raise_if_not_monitoring() -> None:
     stream = japc_utils.subscribe_stream(japc, "")
     with pytest.raises(japc_utils.StreamError):
         stream.pop_or_wait()
-        assert stream.pop_or_wait(MockJapc.TIME_STEP_SECONDS) is None
+    assert stream.pop_or_wait(MockJapc.TIME_STEP_SECONDS) is None
 
 
 def test_queue_maxlen_is_one() -> None:
@@ -394,7 +394,7 @@ def test_stream_token() -> None:
 
 
 @pytest.mark.parametrize("name", ["", [""]])
-def test_wait_for_next_clears_queue(name: t.Union[str, t.List[str]]) -> None:
+def test_wait_for_next_clears_queue(name: str | list[str]) -> None:
     sent_values = [Mock(name=f"Sent value #{i+1}") for i in range(5)]
     expected_return_values = [
         (v, ANY) if isinstance(name, str) else [(v, ANY)] for v in sent_values
@@ -417,7 +417,7 @@ def test_wait_for_next_clears_queue(name: t.Union[str, t.List[str]]) -> None:
 
 
 @pytest.mark.parametrize("name", ["", [""]])
-def test_oldest_newest(name: t.Union[str, t.List[str]]) -> None:
+def test_oldest_newest(name: str | list[str]) -> None:
     sent_values = [Mock(name=f"Sent value #{i+1}") for i in range(2)]
     expected_return_values = [
         (v, ANY) if isinstance(name, str) else [(v, ANY)] for v in sent_values
@@ -445,7 +445,7 @@ def test_exception() -> None:
     stream = japc_utils.subscribe_stream(japc, "")
     with stream:
         received = []
-        with pytest.raises(japc_utils.JavaException):
+        with pytest.raises(japc_utils.JavaException):  # noqa: PT012
             while True:
                 value, _ = stream.pop_or_wait()
                 received.append(value)
@@ -456,9 +456,8 @@ def test_cancel() -> None:
     token = cancellation.Token(cancelled=True)
     japc = mock_japc([Mock()])
     stream = japc_utils.subscribe_stream(japc, "", token=token)
-    with pytest.raises(cancellation.CancelledError):
-        with stream:
-            stream.pop_or_wait()
+    with pytest.raises(cancellation.CancelledError), stream:
+        stream.pop_or_wait()
     assert not stream.ready
 
 
@@ -466,11 +465,11 @@ def test_cancel_preempts_ready() -> None:
     token = cancellation.Token(cancelled=True)
     japc = mock_japc([Mock()])
     stream = japc_utils.subscribe_stream(japc, "", token=token)
-    with pytest.raises(cancellation.CancelledError):
-        with stream:
-            handle = extract_mock_handle(stream)
-            assert handle.thread is not None
-            handle.thread.join()
+    with stream:
+        handle = extract_mock_handle(stream)
+        assert handle.thread is not None
+        handle.thread.join()
+        with pytest.raises(cancellation.CancelledError):
             stream.pop_or_wait()
     assert stream.ready
 
@@ -490,10 +489,10 @@ def test_cancel_breaks_deadlock() -> None:
         source.cancel()
 
     canceller = threading.Thread(target=cancel_delayed)
-    with pytest.raises(cancellation.CancelledError):
-        received_values = []
-        with stream:
-            canceller.start()
+    received_values = []
+    with stream:
+        canceller.start()
+        with pytest.raises(cancellation.CancelledError):  # noqa: PT012
             # Would eventually deadlock if not cancelled.
             for value, _ in iter(stream.pop_or_wait, None):
                 received_values.append(value)

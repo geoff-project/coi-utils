@@ -21,14 +21,15 @@ import sys
 import threading
 import typing as t
 from collections import deque
+from contextlib import AbstractContextManager as ContextManager
 from functools import update_wrapper
 
 from cernml.coi import cancellation  # pylint: disable=unused-import
 
-if sys.version_info < (3, 9):
-    from typing import ContextManager
+if sys.version_info < (3, 12):
+    from typing_extensions import override
 else:
-    from contextlib import AbstractContextManager as ContextManager
+    from typing import override
 
 if t.TYPE_CHECKING:
     # pylint: disable=import-error, unused-import
@@ -57,32 +58,38 @@ class Header(dict):
 
     @property
     def acquisition_stamp(self) -> datetime.datetime:
+        """Accesses the header's acquisition timestamp."""
         return self["acqStamp"]
 
     @property
     def cycle_stamp(self) -> datetime.datetime:
+        """Accesses the header's begin-of-cycle timestamp."""
         return self["cycleStamp"]
 
     @property
     def set_stamp(self) -> datetime.datetime:
+        """Accesses the header's setting timestamp."""
         return self["setStamp"]
 
     @property
     def selector(self) -> str:
+        """Accesses the header's timing selector."""
         return self["selector"]
 
     @property
     def is_first_update(self) -> bool:
+        """Accesses the header's first-update flag."""
         return self["isFirstUpdate"]
 
     @property
     def is_immediate_update(self) -> bool:
+        """Accesses the header's immediate-update flag."""
         return self["isImmediateUpdate"]
 
 
 T = t.TypeVar("T")  # pylint: disable=invalid-name
-_OneOrList = t.Union[T, t.List[T]]
-_Item = _OneOrList[t.Tuple[object, Header]]
+_OneOrList = t.Union[T, list[T]]
+_Item = _OneOrList[tuple[object, Header]]
 _Event = t.Union[_Item, JavaException]
 
 
@@ -151,7 +158,7 @@ def monitoring(handle: T) -> t.Iterator[T]:
 
 
 # Fix up return type annotation for the docs.
-monitoring.__annotations__["return"] = ContextManager[T]  # type: ignore # noqa
+monitoring.__annotations__["return"] = ContextManager[T]  # type: ignore[valid-type]
 
 
 class _BaseStream(metaclass=abc.ABCMeta):
@@ -172,7 +179,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Union[str, t.List[str], t.Tuple[str, ...]],
+        name: t.Union[str, list[str], tuple[str, ...]],
         *,
         token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
@@ -185,7 +192,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
             getHeader=True,
             **kwargs,
         )
-        self._queue: t.Deque[_Event] = deque(maxlen=maxlen)
+        self._queue: deque[_Event] = deque(maxlen=maxlen)
         # If we get a token, we reuse its condition variable. This is
         # the only reasonable way to wait for _either_ a cancellation
         # _or_ a new JAPC event.
@@ -196,7 +203,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         self.start_monitoring()
         return self
 
-    def __exit__(self, *args: t.Any) -> None:
+    def __exit__(self, *args: object) -> None:
         self.stop_monitoring()
 
     @property
@@ -431,7 +438,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
                 event = [
                     (value, Header(header))
                     for value, header in zip(
-                        t.cast(t.List[object], values), t.cast(t.List[dict], headers)
+                        t.cast(list[object], values), t.cast(list[dict], headers)
                     )
                 ]
             self._queue.append(event)
@@ -462,6 +469,10 @@ class ParamStream(_BaseStream):
     class.
     """
 
+    # Ignore missing docstring: we copy a few from non-public methods on
+    # _BaseStream onto public methods of this class.
+    # pylint: disable = missing-function-docstring
+
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
@@ -486,50 +497,49 @@ class ParamStream(_BaseStream):
     @property
     def parameter_name(self) -> str:
         """The name of the stream's underlying parameter."""
-        handle = t.cast("cern.japc.core.SubscriptionHandle", self._handle)  # noqa: F821
+        handle = t.cast("cern.japc.core.SubscriptionHandle", self._handle)
         return handle.getParameter().getName()
 
     @property
-    def oldest(self) -> t.Tuple[object, Header]:
-        return t.cast(t.Tuple[object, Header], super().oldest)
+    @override
+    def oldest(self) -> tuple[object, Header]:
+        return t.cast(tuple[object, Header], super().oldest)
 
     @property
-    def newest(self) -> t.Tuple[object, Header]:
-        return t.cast(t.Tuple[object, Header], super().newest)
+    @override
+    def newest(self) -> tuple[object, Header]:
+        return t.cast(tuple[object, Header], super().newest)
 
     @t.overload
-    def pop_or_wait(self) -> t.Tuple[object, Header]: ...
+    def pop_or_wait(self) -> tuple[object, Header]: ...
 
     @t.overload
-    def pop_or_wait(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]: ...
+    def pop_or_wait(self, timeout: float) -> t.Optional[tuple[object, Header]]: ...
 
-    def pop_or_wait(
+    def pop_or_wait(  # noqa: D102
         self, timeout: t.Optional[float] = None
-    ) -> t.Optional[t.Tuple[object, Header]]:
-        # pylint: disable = missing-function-docstring
-        return t.cast(t.Tuple[object, Header], super()._pop_or_wait(timeout))
+    ) -> t.Optional[tuple[object, Header]]:
+        return t.cast(tuple[object, Header], super()._pop_or_wait(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(pop_or_wait, _BaseStream._pop_or_wait, assigned=["__doc__"])
 
-    def pop_if_ready(self) -> t.Optional[t.Tuple[object, Header]]:
-        # pylint: disable = missing-function-docstring
-        return t.cast(t.Tuple[object, Header], super()._pop_if_ready())
+    def pop_if_ready(self) -> t.Optional[tuple[object, Header]]:  # noqa: D102
+        return t.cast(tuple[object, Header], super()._pop_if_ready())
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(pop_if_ready, _BaseStream._pop_if_ready, assigned=["__doc__"])
 
     @t.overload
-    def wait_for_next(self) -> t.Tuple[object, Header]: ...
+    def wait_for_next(self) -> tuple[object, Header]: ...
 
     @t.overload
-    def wait_for_next(self, timeout: float) -> t.Optional[t.Tuple[object, Header]]: ...
+    def wait_for_next(self, timeout: float) -> t.Optional[tuple[object, Header]]: ...
 
-    def wait_for_next(
+    def wait_for_next(  # noqa: D102
         self, timeout: t.Optional[float] = None
-    ) -> t.Optional[t.Tuple[object, Header]]:
-        # pylint: disable = missing-function-docstring
-        return t.cast(t.Tuple[object, Header], super()._wait_for_next(timeout))
+    ) -> t.Optional[tuple[object, Header]]:
+        return t.cast(tuple[object, Header], super()._wait_for_next(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(wait_for_next, _BaseStream._wait_for_next, assigned=["__doc__"])
@@ -542,10 +552,14 @@ class ParamGroupStream(_BaseStream):
     class.
     """
 
+    # Ignore missing docstring: we copy a few from non-public methods on
+    # _BaseStream onto public methods of this class.
+    # pylint: disable = missing-function-docstring
+
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Union[t.List[str], t.Tuple[str, ...]],
+        name: t.Union[list[str], tuple[str, ...]],
         *,
         token: t.Optional[cancellation.Token],
         maxlen: t.Optional[int],
@@ -564,59 +578,58 @@ class ParamGroupStream(_BaseStream):
         )
 
     @property
-    def parameter_names(self) -> t.Tuple[str, ...]:
+    def parameter_names(self) -> tuple[str, ...]:
         """A list with the names of all underlying parameters."""
         handle = t.cast(
             "cern.japc.core.group.GroupSubscriptionHandle",
-            self._handle,  # noqa: F821
+            self._handle,
         )
         return tuple(handle.getParameterGroup().getNames())
 
     @property
-    def oldest(self) -> t.List[t.Tuple[object, Header]]:
-        return t.cast(t.List[t.Tuple[object, Header]], super().oldest)
+    @override
+    def oldest(self) -> list[tuple[object, Header]]:
+        return t.cast(list[tuple[object, Header]], super().oldest)
 
     @property
-    def newest(self) -> t.List[t.Tuple[object, Header]]:
-        return t.cast(t.List[t.Tuple[object, Header]], super().newest)
+    @override
+    def newest(self) -> list[tuple[object, Header]]:
+        return t.cast(list[tuple[object, Header]], super().newest)
 
     @t.overload
-    def pop_or_wait(self) -> t.List[t.Tuple[object, Header]]: ...
+    def pop_or_wait(self) -> list[tuple[object, Header]]: ...
 
     @t.overload
     def pop_or_wait(
         self, timeout: float
-    ) -> t.Optional[t.List[t.Tuple[object, Header]]]: ...
+    ) -> t.Optional[list[tuple[object, Header]]]: ...
 
-    def pop_or_wait(
+    def pop_or_wait(  # noqa: D102
         self, timeout: t.Optional[float] = None
-    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        # pylint: disable = missing-function-docstring
-        return t.cast(t.List[t.Tuple[object, Header]], super()._pop_or_wait(timeout))
+    ) -> t.Optional[list[tuple[object, Header]]]:
+        return t.cast(list[tuple[object, Header]], super()._pop_or_wait(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(pop_or_wait, _BaseStream._pop_or_wait, assigned=["__doc__"])
 
-    def pop_if_ready(self) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        # pylint: disable = missing-function-docstring
-        return t.cast(t.List[t.Tuple[object, Header]], super()._pop_if_ready())
+    def pop_if_ready(self) -> t.Optional[list[tuple[object, Header]]]:  # noqa: D102
+        return t.cast(list[tuple[object, Header]], super()._pop_if_ready())
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(pop_if_ready, _BaseStream._pop_if_ready, assigned=["__doc__"])
 
     @t.overload
-    def wait_for_next(self) -> t.List[t.Tuple[object, Header]]: ...
+    def wait_for_next(self) -> list[tuple[object, Header]]: ...
 
     @t.overload
     def wait_for_next(
         self, timeout: float
-    ) -> t.Optional[t.List[t.Tuple[object, Header]]]: ...
+    ) -> t.Optional[list[tuple[object, Header]]]: ...
 
-    def wait_for_next(
+    def wait_for_next(  # noqa: D102
         self, timeout: t.Optional[float] = None
-    ) -> t.Optional[t.List[t.Tuple[object, Header]]]:
-        # pylint: disable = missing-function-docstring
-        return t.cast(t.List[t.Tuple[object, Header]], super()._wait_for_next(timeout))
+    ) -> t.Optional[list[tuple[object, Header]]]:
+        return t.cast(list[tuple[object, Header]], super()._wait_for_next(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(wait_for_next, _BaseStream._wait_for_next, assigned=["__doc__"])
@@ -631,7 +644,7 @@ def subscribe_stream(
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
-    data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
+    data_filter: t.Optional[dict[str, t.Any]] = ...,
 ) -> ParamStream: ...
 
 
@@ -643,25 +656,25 @@ def subscribe_stream(
 @t.overload
 def subscribe_stream(
     japc: "pyjapc.PyJapc",
-    name_or_names: t.Union[t.List[str], t.Tuple[str, ...]],
+    name_or_names: t.Union[list[str], tuple[str, ...]],
     *,
     token: t.Optional[cancellation.Token] = ...,
     maxlen: t.Optional[int] = ...,
     convert_to_python: bool = ...,
     selector: t.Optional[str] = ...,
-    data_filter: t.Optional[t.Dict[str, t.Any]] = ...,
+    data_filter: t.Optional[dict[str, t.Any]] = ...,
 ) -> ParamGroupStream: ...
 
 
 def subscribe_stream(
     japc: "pyjapc.PyJapc",
-    name_or_names: t.Union[str, t.List[str], t.Tuple[str, ...]],
+    name_or_names: t.Union[str, list[str], tuple[str, ...]],
     *,
     token: t.Optional[cancellation.Token] = None,
     maxlen: t.Optional[int] = 1,
     convert_to_python: bool = True,
     selector: t.Optional[str] = None,
-    data_filter: t.Optional[t.Dict[str, t.Any]] = None,
+    data_filter: t.Optional[dict[str, t.Any]] = None,
 ) -> t.Union[ParamStream, ParamGroupStream]:
     """Subscribe to a parameter and create a stream of its values.
 
@@ -717,7 +730,7 @@ def subscribe_stream(
         ...     values, headers = zip(*values_and_headers)
         ...     ...
     """
-    subscribe_kwargs: t.Dict[str, t.Any] = {"noPyConversion": not convert_to_python}
+    subscribe_kwargs: dict[str, t.Any] = {"noPyConversion": not convert_to_python}
     if selector is not None:
         subscribe_kwargs["timingSelectorOverride"] = selector
     if data_filter is not None:

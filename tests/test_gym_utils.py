@@ -33,7 +33,9 @@ class VerboseBox(Box):
         return f"Box({self.low}, {self.high}, {self.dtype})"
 
 
-@pytest.fixture(scope="module", params=np.random.uniform(-10, 10, size=(50, 2, 3)))
+@pytest.fixture(
+    scope="module", params=np.random.default_rng().uniform(-10, 10, size=(50, 2, 3))
+)
 def space(request: t.Any) -> Box:
     edges = np.asarray(request.param, dtype=np.float32)
     edges.sort(axis=0)
@@ -88,7 +90,7 @@ def test_scale_is_monotonic(space: Box) -> None:
 
 
 def test_unscale_is_monotonic(space: Box) -> None:
-    points = np.random.uniform(-1, 1, size=(10,) + space.shape)
+    points = np.random.default_rng().uniform(-1, 1, size=(10, *space.shape))
     points.sort(axis=0)
     unscaled = unscale_into_box(space, points)
     assert np.array_equal(unscaled, np.sort(unscaled, axis=0))

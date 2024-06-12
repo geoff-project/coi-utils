@@ -12,7 +12,7 @@ import typing as t
 
 from matplotlib.figure import Figure
 
-MaybeTitledFigure = t.Union[Figure, t.Tuple[str, Figure]]
+MaybeTitledFigure = t.Union[Figure, tuple[str, Figure]]
 """Helper annotation for `MatplotlibFigures`."""
 
 MatplotlibFigures = t.Union[
@@ -25,7 +25,7 @@ MatplotlibFigures = t.Union[
 
 def iter_matplotlib_figures(
     figures: "MatplotlibFigures",
-) -> t.Iterator[t.Tuple[str, Figure]]:
+) -> t.Iterator[tuple[str, Figure]]:
     """Handle result of render mode ``"matplotlib_figures"``.
 
     Problem authors are given a lot of freedom in what they return from
@@ -100,7 +100,7 @@ def iter_matplotlib_figures(
         if isinstance(item, str):
             raise TypeError(f"not a figure: {item!r}")
         if hasattr(item, "__iter__") or hasattr(item, "__getitem__"):
-            title, figure = t.cast(t.Tuple[str, Figure], item)
+            title, figure = t.cast(tuple[str, Figure], item)
         else:
             title, figure = "", item
         yield title, figure

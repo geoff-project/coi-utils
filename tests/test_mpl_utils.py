@@ -23,8 +23,8 @@ if t.TYPE_CHECKING:
     from cernml.mpl_utils._renderer import _Decorator
 
 
-@pytest.fixture(scope="module")
-def mpl_backend() -> t.Iterator[None]:
+@pytest.fixture(scope="module", autouse=True)
+def _mpl_backend() -> t.Iterator[None]:
     old_backend = mpl.rcParams["backend"]
     mpl.use("agg")
     try:
@@ -33,12 +33,10 @@ def mpl_backend() -> t.Iterator[None]:
         mpl.use(old_backend)
 
 
-@pytest.mark.usefixtures("mpl_backend")
 def test_fixture() -> None:
     assert mpl.rcParams["backend"] == "agg"
 
 
-@pytest.mark.usefixtures("mpl_backend")
 class TestFigureRenderer:
     class MockFigureRenderer(FigureRenderer):
         def __init__(self, title: t.Any = None) -> None:
@@ -65,7 +63,7 @@ class TestFigureRenderer:
     def test_update_logic(self, mode: str) -> None:
         # pylint: disable = protected-access
         renderer = self.MockFigureRenderer()
-        renderer.make_figure = Mock()  # type: ignore
+        renderer.make_figure = Mock()  # type: ignore[method-assign]
         assert renderer.figure is None
         renderer.update(mode)
         assert renderer.figure == renderer.make_figure.return_value
@@ -116,7 +114,6 @@ class TestFigureRenderer:
             renderer.update("numpy_array")
 
 
-@pytest.mark.usefixtures("mpl_backend")
 class TestRendererGroup:
     def test_is_tuple(self) -> None:
         renderers = [Mock(name=f"Renderer #{i+1}") for i in range(5)]
@@ -156,7 +153,6 @@ class TestRendererGroup:
         ]
 
 
-@pytest.mark.usefixtures("mpl_backend")
 class TestRenderGenerator:
     # pylint: disable = too-few-public-methods
 

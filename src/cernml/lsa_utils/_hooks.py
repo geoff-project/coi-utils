@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import sys
-import typing as t
 import warnings
 from abc import ABCMeta, abstractmethod
 from types import TracebackType
@@ -37,7 +36,7 @@ class AbstractHooks(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def trim_description(self, desc: t.Optional[str]) -> str:
+    def trim_description(self, desc: str | None) -> str:
         """Hook to override the trim description.
 
         The argument is the description as passed by the user, or `None`
@@ -50,7 +49,7 @@ class AbstractHooks(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def trim_transient(self, transient: t.Optional[bool]) -> bool:
+    def trim_transient(self, transient: bool | None) -> bool:
         """Hook to override the transient-trim flag.
 
         The argument is the flag as passed by the user, or `None` if
@@ -103,7 +102,7 @@ class Hooks(AbstractHooks):
     """
 
     def __init__(self) -> None:
-        self.__parent: t.Optional[Hooks] = None
+        self.__parent: Hooks | None = None
 
     # pylint: disable = global-statement
 
@@ -145,6 +144,7 @@ class Hooks(AbstractHooks):
                 f"current hook is {global_hooks!r}, but expected "
                 f"{self!r}, child of {self.__parent!r}",
                 InconsistentHookInstalls,
+                stacklevel=2,
             )
         if self.__parent is None:
             raise RuntimeError("cannot uninstall root hooks")
@@ -158,18 +158,18 @@ class Hooks(AbstractHooks):
 
     def __exit__(
         self,
-        exc_type: t.Optional[t.Type[Exception]],
-        exc_value: t.Optional[Exception],
-        traceback: t.Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         self.uninstall_globally()
 
-    def trim_description(self, desc: t.Optional[str]) -> str:
+    def trim_description(self, desc: str | None) -> str:
         if not self.__parent:
             raise RuntimeError("called trim_description() on an uninstalled hook")
         return self.__parent.trim_description(desc)
 
-    def trim_transient(self, transient: t.Optional[bool]) -> bool:
+    def trim_transient(self, transient: bool | None) -> bool:
         if not self.__parent:
             raise RuntimeError("called trim_transient() on an uninstalled hook")
         return self.__parent.trim_transient(transient)
@@ -194,7 +194,7 @@ class DefaultHooks(Hooks):
     def __ne__(self, other: object) -> bool:
         return not self == other
 
-    def trim_description(self, desc: t.Optional[str]) -> str:
+    def trim_description(self, desc: str | None) -> str:
         """Default trim description.
 
         The default description is ``"via cernml-coi-utils"`` (the name
@@ -203,7 +203,7 @@ class DefaultHooks(Hooks):
         """
         return desc if desc is not None else "via cernml-coi-utils"
 
-    def trim_transient(self, transient: t.Optional[bool]) -> bool:
+    def trim_transient(self, transient: bool | None) -> bool:
         """Default transient-trim flag.
 
         The default flag is `True`, unless the user explicitly passed

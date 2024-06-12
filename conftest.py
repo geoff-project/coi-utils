@@ -10,29 +10,32 @@
 
 """Pytest configuration file."""
 
+from collections.abc import Iterator
 from contextlib import ExitStack
-from typing import Iterator, Union
+from typing import Union
 from unittest.mock import Mock
 
-from pjlsa import LSAClient  # type: ignore
-from pytest import ExitCode, MonkeyPatch, Session, fixture
+import pytest
+from pjlsa import LSAClient  # type: ignore[import-untyped]
 
 exit_stack = ExitStack()
 
 
-def pytest_sessionstart(session: Session) -> None:
+def pytest_sessionstart(session: pytest.Session) -> None:
     lsa_client = LSAClient(server="next")
     exit_stack.enter_context(lsa_client.java_api())
 
 
-def pytest_sessionfinish(session: Session, exitstatus: Union[int, ExitCode]) -> None:
+def pytest_sessionfinish(
+    session: pytest.Session, exitstatus: Union[int, pytest.ExitCode]
+) -> None:
     exit_stack.close()
 
 
-@fixture(autouse=True)
-def trim_service(monkeypatch: MonkeyPatch) -> Iterator[Mock]:
+@pytest.fixture(autouse=True)
+def trim_service(monkeypatch: pytest.MonkeyPatch) -> Iterator[Mock]:
     from cernml.lsa_utils import _services
 
     service = Mock(spec=_services.TrimService)
     monkeypatch.setattr(_services, "trim", service)
-    yield service
+    return service

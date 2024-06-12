@@ -367,22 +367,25 @@ class TestHooks:
 
     def test_double_install_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
-        with hooks:
-            with pytest.raises(RuntimeError):
-                hooks.install_globally()
+        with hooks, pytest.raises(RuntimeError):
+            hooks.install_globally()
 
     def test_bare_uninstall_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
-        with pytest.warns(lsa_utils.InconsistentHookInstalls):
-            with pytest.raises(RuntimeError):
-                hooks.uninstall_globally()
+        with (
+            pytest.warns(lsa_utils.InconsistentHookInstalls),
+            pytest.raises(RuntimeError),
+        ):
+            hooks.uninstall_globally()
 
     def test_double_uninstall_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
-        with pytest.warns(lsa_utils.InconsistentHookInstalls):
-            with pytest.raises(RuntimeError):
-                with hooks:
-                    hooks.uninstall_globally()
+        with (
+            pytest.warns(lsa_utils.InconsistentHookInstalls),
+            pytest.raises(RuntimeError),
+            hooks,
+        ):
+            hooks.uninstall_globally()
 
     def test_call_non_installed_hooks_raises_runtime_error(self) -> None:
         hooks = lsa_utils.Hooks()
@@ -394,9 +397,8 @@ class TestHooks:
     def test_inconsistent_uninstall_warns(self) -> None:
         outer_hooks = lsa_utils.Hooks()
         inner_hooks = lsa_utils.Hooks()
-        with pytest.warns(lsa_utils.InconsistentHookInstalls):
-            with outer_hooks:
-                inner_hooks.install_globally()
+        with pytest.warns(lsa_utils.InconsistentHookInstalls), outer_hooks:
+            inner_hooks.install_globally()
         # Both are uninstalled now.
         for hooks in outer_hooks, inner_hooks:
             with pytest.raises(RuntimeError):

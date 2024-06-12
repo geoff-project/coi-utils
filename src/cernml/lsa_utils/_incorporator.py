@@ -46,8 +46,8 @@ class Incorporator:
         self,
         parameter: str,
         *,
-        context: t.Optional[str] = None,
-        user: t.Optional[str] = None,
+        context: str | None = None,
+        user: str | None = None,
     ) -> None:
         self._parameter = find_parameter(parameter)
         self._cycle = find_cycle(context=context, user=user)
@@ -82,7 +82,7 @@ class Incorporator:
         self._cycle = cycle
 
     @property
-    def user(self) -> t.Optional[str]:
+    def user(self) -> str | None:
         """The user name, or None if the context is unmapped."""
         return self._cycle.getUser()
 
@@ -95,7 +95,7 @@ class Incorporator:
         assert isinstance(cycle, lsa.StandAloneCycle), cycle
         self._cycle = cycle
 
-    def get_function(self) -> t.Tuple[np.ndarray, np.ndarray]:
+    def get_function(self) -> tuple[np.ndarray, np.ndarray]:
         """Query the function for the current context and parameter.
 
         This returns the function as a 2-tuple of times and values, each
@@ -114,8 +114,8 @@ class Incorporator:
         value: float,
         *,
         relative: bool,
-        transient: t.Optional[bool] = None,
-        description: t.Optional[str] = None,
+        transient: bool | None = None,
+        description: str | None = None,
     ) -> None:
         """Modify the function at a point and commit the change.
 
@@ -198,10 +198,10 @@ class IncorporatorGroup:
 
     def __init__(
         self,
-        parameters: t.List[str],
+        parameters: list[str],
         *,
-        context: t.Optional[str] = None,
-        user: t.Optional[str] = None,
+        context: str | None = None,
+        user: str | None = None,
     ):
         self._parameters = tuple(find_parameter(name) for name in parameters)
         self._cycle = find_cycle(context=context, user=user)
@@ -219,7 +219,7 @@ class IncorporatorGroup:
         )
 
     @property
-    def parameters(self) -> t.Tuple[str, ...]:
+    def parameters(self) -> tuple[str, ...]:
         """The names of the parameters."""
         return tuple(p.getName() for p in self._parameters)
 
@@ -236,7 +236,7 @@ class IncorporatorGroup:
         self._cycle = cycle
 
     @property
-    def user(self) -> t.Optional[str]:
+    def user(self) -> str | None:
         """The user name, or None if the context is unmapped."""
         return self._cycle.getUser()
 
@@ -281,11 +281,11 @@ class IncorporatorGroup:
     def incorporate_and_trim(
         self,
         cycle_time: float,
-        values: t.Union[float, np.ndarray, t.Sequence[float], t.Mapping[str, float]],
+        values: float | np.ndarray | t.Sequence[float] | t.Mapping[str, float],
         *,
         relative: bool,
-        transient: t.Optional[bool] = None,
-        description: t.Optional[str] = None,
+        transient: bool | None = None,
+        description: str | None = None,
     ) -> None:
         """Modify each function at a point and commit the change.
 
@@ -343,7 +343,7 @@ class IncorporatorGroup:
 
     def _canonicalize_values(
         self,
-        values: t.Union[float, np.ndarray, t.Sequence[float], t.Mapping[str, float]],
+        values: float | np.ndarray | t.Sequence[float] | t.Mapping[str, float],
     ) -> np.ndarray:
         if isinstance(values, t.Mapping):
             return _canonicalize_dict(values, self._parameters)
@@ -374,7 +374,7 @@ def find_parameter(name: str) -> lsa.Parameter:
 
 
 def find_cycle(
-    *, context: t.Optional[str] = None, user: t.Optional[str] = None
+    *, context: str | None = None, user: str | None = None
 ) -> lsa.StandAloneCycle:
     """Resolve context/user strings to a LSA domain cycle.
 
