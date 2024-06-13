@@ -145,6 +145,11 @@ def acc_py_docs_link(repo: str) -> str:
     return f"https://acc-py.web.cern.ch/gitlab/{repo}/docs/stable/"
 
 
+def rtd_link(name: str, branch: str = "stable") -> str:
+    """A URL pointing to a Read The Docs project."""
+    return f"https://{name}.readthedocs.io/en/{branch}"
+
+
 intersphinx_mapping = {
     "cmmnbuild": (acc_py_docs_link("scripting-tools/cmmnbuild-dep-manager"), None),
     "coi": (acc_py_docs_link("geoff/cernml-coi"), None),
@@ -152,8 +157,10 @@ intersphinx_mapping = {
     "jpype": ("https://jpype.readthedocs.io/en/latest/", None),
     "mpl": ("https://matplotlib.org/stable/", None),
     "np": ("https://numpy.org/doc/stable/", None),
+    "pip": (rtd_link("pip-python3"), None),
     "pyjapc": (acc_py_docs_link("scripting-tools/pyjapc"), None),
     "python": ("https://docs.python.org/3", None),
+    "setuptools": ("https://setuptools.pypa.io/en/stable/", None),
     "std": ("https://docs.python.org/3/", None),
 }
 

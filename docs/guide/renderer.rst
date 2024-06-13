@@ -11,18 +11,18 @@ Keeping Rendering Logic Concise
 Motivation
 ----------
 
-The render mode `"matplotlib_figures" <coi:cernml.coi.Problem.render>` makes it
-possible to create `mpl:matplotlib` plots and have the host application embed
-them. Because optimization problems change on each iteration, these plots need
-to be updated regularly. Doing this correctly without paying the cost of
-clearing and completely redrawing the plot each time is complicated. This
-complexity tends to hide the basic logic that you might wish to express when
-creating a plot.
+The render mode :rmode:`"matplotlib_figures"` makes it possible to create
+`matplotlib` plots and have the host application embed them. Because
+optimization problems change on each iteration, these plots need to be updated
+regularly. Doing this correctly without paying the cost of clearing and
+completely redrawing the plot each time is complicated. This complexity tends
+to hide the basic logic of the plot (which is often quite straightforward).
 
-In addition, the render mode `"human" <coi:cernml.coi.Problem.render>` also
-often uses Matplotlib, but in an interactive environment. Supporting both
-render modes while writing the plotting logic only once again is tricky to get
-right.
+In addition, the render mode :rmode:`"human"` also often uses Matplotlib, but
+in an interactive environment. Supporting both render modes while writing the
+plotting logic only once – again – is tricky to get right. See
+:doc:`mpl:users/explain/figure/api_interfaces` for details on just how tricky
+it is.
 
 The `~cernml.mpl_utils.FigureRenderer` class provides an interface that
 separates plot *initialization* from plot *updating*. In addition, it contains
@@ -31,7 +31,7 @@ hold a `~cernml.mpl_utils.FigureRenderer` in your hand, the implementation of
 :meth:`~cernml.coi.Problem.render()` becomes trivial:
 
 .. code-block:: python
-    :emphasize-lines: 20
+    :emphasize-lines: 18
 
     from cernml.mpl_utils import FigureRenderer
     from cernml.coi import SingleOptimizable
@@ -61,16 +61,16 @@ Generators
 ----------
 
 While you can implement the interface of `~cernml.mpl_utils.FigureRenderer`
-yourself (and that may make sense in particularly complicated cases), most
-cases are extremely simple: you create a plot once, then repeatedly update it
-with new data. For this case, :term:`generators <generator>` are particularly
-well suited. Generators are like regular functions, but contain
-:keyword:`yield` instead of :keyword:`return`.
+yourself (and that may make sense in some cases), most cases are extremely
+simple: you create a plot once, then repeatedly update it with new data. For
+this case, :term:`generators <generator>` are particularly well suited.
+Generators are like regular functions, but contain :keyword:`yield` instead of
+:keyword:`return`.
 
 Whenever a generator hits a yield point, it suspends execution and returns to
-the caller. When the caller later resumes the generator, it continues execution
-from the previous yield point. This makes it easy to express the init–update
-pattern.
+the caller. When the caller later resumes the generator, it **continues
+execution** from the previous yield point. This makes it easy to express the
+init–update pattern.
 
 Example
 -------
@@ -87,7 +87,8 @@ It also contains a few `print` calls to show the control flow. In production
 code, you would usually create a module-scope logger, as explained in `this
 Acc-Py tutorial`_.
 
-.. _`this Acc-Py tutorial`: https://wikis.cern.ch/display/ACCPY/Logging#Logging-Configuringaloggerinlibrarycode
+.. _`this Acc-Py tutorial`:
+    https://wikis.cern.ch/display/ACCPY/Logging#Logging-Configuringaloggerinlibrarycode
 
 .. code-block:: python
     :emphasize-lines: 15,33,77
@@ -96,7 +97,7 @@ Acc-Py tutorial`_.
     >>> from cernml import coi
     >>> from cernml.mpl_utils import make_renderer
     >>> from gymnasium.spaces import Box
-    >>>
+    ...
     >>> class MyProblem(coi.SingleOptimizable):
     ...     metadata = {
     ...         "render.modes": ["human", "matplotlib_figures"],

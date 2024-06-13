@@ -16,14 +16,11 @@ PyJapc Utilities
     .. autoclass:: ParamStream
         :members:
         :inherited-members:
-        :exclude-members: Self
     .. autoclass:: ParamGroupStream
         :members:
         :inherited-members:
-        :exclude-members: Self
     .. autoclass:: Header
         :show-inheritance:
         :members:
-        :undoc-members:
     .. autoexception:: JavaException
     .. autoexception:: StreamError

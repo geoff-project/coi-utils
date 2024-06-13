@@ -83,7 +83,7 @@ class Scaler:
         >>> scaler.unscale([-1, 1])
         array([-9.8     ,  8.999999], dtype=float32)
 
-    Both methods pass through the array subclass of the argument, but
+    Both methods pass the array subclass of the argument through, but
     coerce the dtype to whatever the given space uses::
 
         >>> scaler = Scaler(Box(0, 1, (2,), dtype=np.float32))

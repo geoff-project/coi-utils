@@ -26,27 +26,26 @@ MatplotlibFigures = t.Union[
     t.Iterable[MaybeTitledFigure],
     t.Mapping[str, Figure],
 ]
-"""Type of the return value of render mode ``"matplotlib_figures"``."""
+"""Type of the return value of render mode :rmode:`"matplotlib_figures"`."""
 
 
 def iter_matplotlib_figures(
     figures: "MatplotlibFigures",
 ) -> t.Iterator[tuple[str, Figure]]:
-    """Handle result of render mode ``"matplotlib_figures"``.
+    """Handle result of render mode :rmode:`"matplotlib_figures"`.
 
     Problem authors are given a lot of freedom in what they return from
     :meth:`~cernml.coi.Problem.render()`. This method unifies all
     possible return types and produces one consistent iterator.
 
     Args:
-        figures: The :obj:`return value
-            <cernml.mpl_utils.MatplotlibFigures>` of
-            :meth:`render("matplotlib_figures")
-            <cernml.coi.Problem.render()>`.
+        figures: Whatever :meth:`~cernml.coi.Problem.render()` returned
+            in render mode :rmode:`"matplotlib_figures"`.
 
     Yields:
-        A 2-tuple of a title and a figure for every item in *figures*.
-        If a figure doesn't have a title, the empty string is used.
+        A 2-tuple :samp:`({title}, {figure})` for every item in
+        *figures*. For any item without a title, the empty string is
+        used.
 
     Examples:
 
@@ -57,19 +56,22 @@ def iter_matplotlib_figures(
         >>> def print_matplotlib_figures(figures):
         ...     for t, f in iter_matplotlib_figures(figures):
         ...         print(f"{t!r}: {f!r}")
-        ...
+
         >>> # A single figure:
         >>> print_matplotlib_figures(Figure())
         '': Figure()
+
         >>> # Lists of figures:
         >>> print_matplotlib_figures([Figure(), Figure()])
         '': Figure()
         '': Figure()
+
         >>> # Arbitrary iterables of figures:
         >>> print_matplotlib_figures(Figure() for _ in range(3))
         '': Figure()
         '': Figure()
         '': Figure()
+
         >>> # Lists of title-figure tuples OR figures:
         >>> print_matplotlib_figures([
         ...     ["Foo", Figure()],
@@ -79,10 +81,12 @@ def iter_matplotlib_figures(
         'Foo': Figure()
         'Bar': Figure()
         '': Figure()
+
         >>> # Mappings from titles to figures:
         >>> print_matplotlib_figures({"Foo": Figure(), "Bar": Figure()})
         'Foo': Figure()
         'Bar': Figure()
+
         >>> # We get a clear error message if a string is passed.
         >>> print_matplotlib_figures(("not_a_title", Figure()))
         Traceback (most recent call last):

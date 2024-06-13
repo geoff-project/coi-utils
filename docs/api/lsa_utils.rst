@@ -10,8 +10,6 @@ PJLSA Utilities
 
 .. automodule:: cernml.lsa_utils
 
-.. currentmodule:: cernml.lsa_utils
-
 Free-Function API
 -----------------
 

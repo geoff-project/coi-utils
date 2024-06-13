@@ -50,8 +50,8 @@ class Renderer(metaclass=abc.ABCMeta):
     def make_figure(mode: str) -> Figure:
         """Create the correct kind of figure for the render mode.
 
-        This creates a managed figure in the mode ``"human"`` and an
-        unmanaged figure in the mode ``"matplotlib_figures"``.
+        This creates a managed figure in the mode :rmode:`"human"` and
+        an unmanaged figure in the mode :rmode:`"matplotlib_figures"`.
 
         Raises:
             KeyError: if *mode* is neither of the two known render
@@ -67,13 +67,13 @@ class Renderer(metaclass=abc.ABCMeta):
     def update(self, mode: t.Literal["human"]) -> None: ...
 
     @t.overload
-    def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
+    def update(self, mode: t.Literal["matplotlib_figures"]) -> MatplotlibFigures: ...
 
     @t.overload
-    def update(self, mode: str) -> "MatplotlibFigures" | None: ...
+    def update(self, mode: str) -> MatplotlibFigures | None: ...
 
     @abc.abstractmethod
-    def update(self, mode: str) -> "MatplotlibFigures" | None:
+    def update(self, mode: str) -> MatplotlibFigures | None:
         """Update the renderer's figures and return them.
 
         On the first call, this should initialize the renderer's
@@ -81,12 +81,12 @@ class Renderer(metaclass=abc.ABCMeta):
         and update their contents.
 
         Args:
-            mode: The render mode. This must be either ``"human"`` or
-                ``"matplotlib_figures"``.
+            mode: The render mode. This must be either :rmode:`"human"`
+                or :rmode:`"matplotlib_figures"`.
 
         Returns:
-            None if the render mode is ``"human"``. Otherwise, a
-            sequence of all figures managed by this renderer.
+            None if the render mode is :rmode:`"human"`. Otherwise,
+            a sequence of all figures managed by this renderer.
         """
 
 
@@ -97,18 +97,19 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         title: If passed, a figure title that is used in the return
             value of ``renderer.update("matplotlib_figures")``. Unused
             in other render modes. In particular, this does *not* add a
-            title to the figure's contents. For this, consider using
+            title to the figure's contents. For this, use
             :meth:`~matplotlib.figure.Figure.suptitle()` instead.
 
-    This is another abstract base class. There are three typical use
-    cases:
+    This is another :term:`abstract base class`. There are three typical
+    use cases:
 
-    1. You pass a generator to `from_callback()`. On the first
+    1. You pass a :term:`generator` to `from_callback()`. On the first
        `~Renderer.update()` call, the generator is called to create an
-       iterator. This iterator is polled on each
+       :term:`iterator`. This iterator is polled on each
        `~Renderer.update()` call::
 
         >>> import numpy as np
+        ...
         >>> class Problem:
         ...     metadata = {"render.modes": ["matplotlib_figures"]}
         ...
@@ -136,6 +137,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         ...             # Update the plot, loop, and yield again.
         ...             points.set_ydata(self.data)
         ...             print("updated")
+        ...
         >>> problem = Problem()
         >>> fig = problem.render("matplotlib_figures")
         initialized
@@ -147,6 +149,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
        `~Renderer.update()` call.
 
         >>> import numpy as np
+        ...
         >>> class Problem:
         ...     metadata = {"render.modes": ["matplotlib_figures"]}
         ...
@@ -168,6 +171,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         ...         axes.clear()
         ...         axes.plot(self.data, "o")
         ...         print("redrawn")
+        ...
         >>> problem = Problem()
         >>> fig = problem.render("matplotlib_figures")
         redrawn
@@ -179,6 +183,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
        `~Renderer.update()` at the appropriate times.
 
         >>> import numpy as np
+        ...
         >>> class ProblemRenderer(FigureRenderer):
         ...     def __init__(self, problem):
         ...         super().__init__()
@@ -207,6 +212,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         ...         if mode in self.metadata["render.modes"]:
         ...             return self.renderer.update(mode)
         ...         return super().render(mode)
+        ...
         >>> problem = Problem()
         >>> fig = problem.render("matplotlib_figures")
         initialized
@@ -221,8 +227,8 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     def close(self) -> None:
         """Close the figure managed by this renderer.
 
-        This only does anything if the figure has been created with
-        render mode ``"human"``.
+        Unless the render mode is :rmode:`"human"` (and figures are
+        managed by Matplotlib), this does nothing.
         """
         # Do not call ``pyplot.close(None)`` -- that closes the current
         # figure, as returned by ``pyplot.gcf()``, which might be
@@ -237,12 +243,12 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     def update(self, mode: t.Literal["human"]) -> None: ...
 
     @t.overload
-    def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
+    def update(self, mode: t.Literal["matplotlib_figures"]) -> MatplotlibFigures: ...
 
     @t.overload
-    def update(self, mode: str) -> "MatplotlibFigures" | None: ...
+    def update(self, mode: str) -> MatplotlibFigures | None: ...
 
-    def update(self, mode: str) -> "MatplotlibFigures" | None:
+    def update(self, mode: str) -> MatplotlibFigures | None:
         try:
             figure = self.figure
         except AttributeError:
@@ -272,35 +278,32 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
     def _init_figure(self, figure: Figure) -> None:
         """Initialize the figure.
 
-        This is called on the first call to `~Renderer.update()`,
-        directly after instantiating the figure. It should create and
-        fill items of the plot.
+        This is called on the first call to `.update()`, directly after
+        instantiating the figure. It should create and fill items of the
+        plot.
         """
 
     @abc.abstractmethod
     def _update_figure(self, figure: Figure) -> None:
         """Update the figure, reflecting any new data.
 
-        This is called on every subsequent `~Renderer.update()`
-        (but not on the first one). It should recreate or update the
-        contents of the figure. Afterwards, `~Renderer.update()`
-        will automatically display the figure to the user.
+        This is called on every subsequent `.update()` (but not on the
+        first one). It should recreate or update the contents of the
+        figure. Afterwards, `.update()` will automatically display the
+        figure to the user.
         """
 
     @staticmethod
-    def from_callback(
-        func: "RenderCallback", title: str | None = None
-    ) -> "FigureRenderer":
+    def from_callback(func: RenderCallback, title: str | None = None) -> FigureRenderer:
         """Create a renderer via a callback function or generator.
 
         Args:
             func: Either a regular function or a generator. If the
-                former, it is called on every
-                `~Renderer.update()`. If the latter, it is called
-                once to create an iterator. The iterator is polled on
-                every `~Renderer.update()`.
+                former, it is called on every `.update()`. If the
+                latter, it is called once to create an :term:`iterator`.
+                The iterator is polled on every `.update()`.
             title: If passed, a string to attach to the figure in the
-                render mode ``"matplotlib_figures"``.
+                render mode :rmode:`"matplotlib_figures"`.
 
         Returns:
             An unspecified subclass of `FigureRenderer`.
@@ -351,7 +354,7 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
         ...     def __init__(self, index):
         ...         self.index = index
         ...     def update(self, mode):
-        ...         print("Renderer", self.index, "updated")
+        ...         print(f"Renderer {self.index} updated")
         >>> g = RendererGroup(PrintRenderer(i) for i in range(1, 6))
         >>> len(g)
         5
@@ -398,8 +401,8 @@ def make_renderer(
     """Build a renderer from one or more callbacks.
 
     This is a convenience function that calls
-    `FigureRenderer.from_callback` on each passed callback. There
-    are three ways to calls this function:
+    `FigureRenderer.from_callback()` on each passed callback. There are
+    three ways to calls this function:
 
     1. With a single callback function or generator::
 
@@ -485,7 +488,7 @@ class _Decorator(t.Generic[T]):
     @t.overload
     def __get__(
         self, instance: T, owner: type[T]
-    ) -> t.Callable[[str], "MatplotlibFigures" | None]: ...
+    ) -> t.Callable[[str], MatplotlibFigures | None]: ...
 
     def __get__(
         self, instance: T | None, owner: type[T]
@@ -508,9 +511,9 @@ def render_generator(
 
     This is a wrapper around `FigureRenderer.from_callback()`. It
     automatically manages a `FigureRenderer` for you. Calling the
-    decorated method will call ``renderer.update()`` instead. This keeps
-    your ``render()`` implementation short and avoids duplicate code in
-    your plotting logic.
+    decorated method will call `.update()` on that renderer instead.
+    This keeps your :samp:`render()` implementation short and avoids
+    duplicate code in your plotting logic.
 
     For a less magical interface, see the `FigureRenderer` class
     itself.

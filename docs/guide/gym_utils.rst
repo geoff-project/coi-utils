@@ -8,24 +8,27 @@
 Normalizing Parameters
 ======================
 
+.. currentmodule:: cernml.coi
+
 The COI have inherited a rich API to specify exactly the domain on which an
 optimization problem is specified and what bounds it has to respect.
-Nonetheless, for the time being, COI restricts the domains of optimization
-problems: `~cernml.coi.SingleOptimizable.optimization_space`,
-`~gymnasium.Env.observation_space` and `~gymnasium.Env.action_space` all must
-have symmetric and normalized bounds, i.e. [−1; +1].
+Nonetheless, it is sometimes useful to restrict the domains of optimization
+problems (`~SingleOptimizable.optimization_space`,
+`~gymnasium.Env.observation_space` and `~gymnasium.Env.action_space`) such that
+they have symmetric and normalized bounds, i.e. [−1; +1].
 
-Consequently, most optimization problems have to perform conversions from the
-*scaled* inputs of
-:meth:`~cernml.coi.SingleOptimizable.compute_single_objective()` and
-:func:`~gymnasium.Env.step()` (in [−1; +1]) to the *unscaled* inputs of the
-actual machines [x₁; x₂]. In addition, :func:`~gymnasium.Env.step()` also has
-to convert from *unscaled* observations on the real machine to *scaled*
-observations in the range [−1; +1].
+Consequently, such optimization problems have to perform conversions from the
+*scaled* inputs of :meth:`~SingleOptimizable.compute_single_objective()` and
+:func:`~gymnasium.Env.step()` in [−1; +1] to the *unscaled* inputs of the
+actual machines [x₁; x₂]. In addition, :func:`~gymnasium.Env.reset()` and
+:func:`~gymnasium.Env.step()` may also have to convert from *unscaled*
+observations on the real machine to *scaled* observations in the range [−1;
++1].
 
-This procedure is cumbersome and error-prone. It is easy to forget scaling or
-unscaling a value; or to scale or unscale it twice; or to use the wrong scaling
-factor; or to unscale a value that should have been scaled and vice versa.
+Doing this manuallt is not only cumbersome, but also error-prone. It is easy to
+forget scaling or unscaling a value; or to scale or unscale it twice; or to use
+the wrong scaling factor; or to unscale a value that should have been scaled
+and vice versa.
 
 The `~cernml.gym_utils` package does not prevent any of these errors, but it
 hopefully makes them less likely. At its core, it provides a
@@ -55,11 +58,11 @@ Take this toy machine as an example:
     ...         print("sent to machine:", settings)
     ...
     ...     def acquire_readings(self):
-    ...         readings = 250.0 * np.ones(4)
+    ...         readings = np.repeat(250.0, repeats=4)
     ...         print("acquired from machine:", readings)
     ...         return readings
 
-Using scalers in a `~cernml.coi.SingleOptimizable` to communicate with it might
+Using scalers in a `SingleOptimizable` to communicate with it might
 look like this:
 
 .. code-block:: python
@@ -72,11 +75,7 @@ look like this:
     ...     }
     ...     # Scale settings into [−1; +1].
     ...     settings_scale = gym_utils.Scaler(
-    ...         Box(
-    ...             -Machine.SETTINGS_LIMITS,
-    ...             Machine.SETTINGS_LIMITS,
-    ...             dtype=np.double,
-    ...         )
+    ...         Box(-Machine.SETTINGS_LIMITS, Machine.SETTINGS_LIMITS, dtype=np.double)
     ...     )
     ...     # Scale readings into [0; 1].
     ...     readings_scale = gym_utils.Scaler(
@@ -93,9 +92,10 @@ look like this:
     ...     def get_initial_params(self, seed=None, options=None):
     ...         super().get_initial_params(seed=seed, options=options)
     ...         if seed is not None:
-    ...             self.settings_scale.space.seed(seed)
-    ...             self.readings_scale.space.seed(seed)
-    ...             self.optimization_space.seed(seed)
+    ...             next_seed = self.np_random.bit_generator.random_raw
+    ...             self.settings_scale.space.seed(next_seed())
+    ...             self.readings_scale.space.seed(next_seed())
+    ...             self.optimization_space.seed(next_seed())
     ...         settings = self.machine.recv_settings()
     ...         return self.settings_scale.scale(settings)
     ...
@@ -138,11 +138,12 @@ And using it in an `~gymnasium.Env` might look like this:
     ...     def reset(self, seed=None, options=None):
     ...         super().reset(seed=seed, options=options)
     ...         if seed is not None:
-    ...             self.settings_scale.space.seed(seed)
-    ...             self.readings_scale.space.seed(seed)
-    ...             self.optimization_space.seed(seed)
-    ...             self.action_space.seed(seed)
-    ...             self.observation_space.seed(seed)
+    ...             next_seed = self.np_random.bit_generator.random_raw
+    ...             self.settings_scale.space.seed(next_seed())
+    ...             self.readings_scale.space.seed(next_seed())
+    ...             self.optimization_space.seed(next_seed())
+    ...             self.action_space.seed(next_seed())
+    ...             self.observation_space.seed(next_seed())
     ...         self.machine.send_settings(self.settings_scale.space.sample())
     ...         readings = self.machine.acquire_readings()
     ...         return self.readings_scale.scale(readings)
@@ -165,13 +166,13 @@ unscaled ones:
 
     >>> env = MyEnv()
     >>> obs = env.reset(seed=0)
-    sent to machine: [ 2.73923375 -4.60426572 -1.8361059  -1.93388946]
+    sent to machine: [-4.06452837  9.91057096  0.4817112   0.74395322]
     acquired from machine: [250. 250. 250. 250.]
     >>> obs
     array([0.25, 0.25, 0.25, 0.25])
     >>> action = env.action_space.sample()
     >>> obs, reward, terminated, truncated, info = env.step(action)
-    sent to machine: [ 2.73923375 -4.60426572 -1.8361059  -1.93388946]
+    sent to machine: [-5.35037513  6.47447155  1.47493981 -1.19426039]
     acquired from machine: [250. 250. 250. 250.]
     >>> obs
     array([0.25, 0.25, 0.25, 0.25])

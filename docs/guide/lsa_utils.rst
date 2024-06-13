@@ -22,7 +22,7 @@ Communicating with the LSA Database
 .. currentmodule:: cernml.lsa_utils
 
 In the general case, full interaction with the LSA database is already
-supported through the `Pjlsa`_ package. However, this package exposes the full
+supported through the Pjlsa_ package. However, this package exposes the full
 Java API. This gives the user full flexibility, but also makes it difficult to
 solve certain common problems without writing many lines of code.
 
@@ -35,10 +35,10 @@ welcome.
 Importing an LSA-Dependent Package
 ----------------------------------
 
-The `~cernml.lsa_utils` package directly imports Java packages via the JPype
-import system. It does not set up the JVM for you, so you have to start the JVM
-before importing the package. (In this regard, it behaves as if it were a Java
-package itself.)
+The `cernml.lsa_utils` package directly imports Java packages via the
+:doc:`JPype <jpype:index>` import system. It does not set up the JVM for you,
+so you have to start the JVM before importing the package. (In this regard, it
+behaves as if it were a Java package itself.)
 
 The cleanest way to import `~cernml.lsa_utils` is to use PJLSA's context
 manager for enabling Java imports:
@@ -82,6 +82,11 @@ If none of these solutions work for you, you may also use the
 Trimming One or Several Scalar Settings
 ---------------------------------------
 
+.. seealso::
+    :ref:`guide/lsa_utils:Relative Trims` and :ref:`guide/lsa_utils:Transient
+    Trims` for additional features related to scalar settings.
+
+
 The function `trim_scalar_settings()` provides a convenient way to trim scalar
 settings in the LSA database. In the simplest case, you simply pass a mapping
 of parameter name to new value and the context to be modified:
@@ -116,7 +121,7 @@ trim history:
     ...     description="Reset kick strength to known good value",
     ... )
 
-All types of scalar settings are supported: integers, booleans and
+All types of scalar settings are supported. Integers, booleans and
 floating-point values – both the built-in Python types and NumPy variants – are
 automatically converted to Java objects. If you want to trim an enum setting,
 you can pass either an integer (which denotes the enum's ordinal number), or a
@@ -133,18 +138,15 @@ string (which denotes its name):
 
 If the mapping contains **multiple parameters**, they are changed
 *transactionally*: the trim only succeeds if all settings can be applied. If
-any one of them fails, the trim is rolled back and changes are applied at all.
-Furthermore, the entire trim occupies only one entry in the trim history.
-
-See also the sections on :ref:`guide/lsa_utils:Relative Trims` and
-:ref:`guide/lsa_utils:Transient Trims`.
+any one of them fails, the trim is rolled back and no changes are applied at
+all. Furthermore, the entire trim occupies only one entry in the trim history.
 
 Trimming a Single Function
 --------------------------
 
-.. note::
-   Before trimming a function, you must define
-   :ref:`guide/lsa_utils:Incorporation Ranges` in the LSA App Suite.
+.. seealso::
+    :ref:`guide/lsa_utils:Incorporation Ranges`, which must be defined in the
+    LSA App Suite before you can trim a function.
 
 Unless you want to pass an entire function object every time, trimming a
 function is slightly more complicated than trimming scalar settings. There are
@@ -156,7 +158,6 @@ are several other functions to make using it easier:
 .. code-block:: python
 
     >>> import numpy as np
-    >>> from operator import itemgetter
 
     >>> context = lsa_utils.get_context_by_user("SPS.USER.HIRADMT1")
     >>> context
@@ -170,7 +171,7 @@ are several other functions to make using it easier:
            [   0.,    0.,    0.,    0.,    0.,    0.,    0.,   nan,   nan]])
 
     >>> attrs = lsa_utils.get_cycle_type_attributes(context)
-    >>> for key, value in sorted(attrs.items(), key=itemgetter(1)):
+    >>> for key, value in sorted(attrs.items()):
     ...     if "flat top" in key:
     ...         print(key, value, sep=": ")
     VE:Intermediate flat top: 0
@@ -187,11 +188,11 @@ default value. You must always specify whether you want
 :ref:`guide/lsa_utils:Relative Trims` or not. :ref:`guide/lsa_utils:Transient
 Trims`, on the other hand, are still the default.
 
-The slightly more complex one is to create an `Incorporator` and call the
-respective methods on it. This class avoids conversion from Python strings to
-LSA objects on every function call. Thus, if you are going to make multiple
-calls using the same parameter and context, this is going to be slightly more
-efficient.
+The slightly more complex way to trim a function is to create an `Incorporator`
+and call the respective methods on it. This class reduces the amount of
+conversions from Python strings to LSA objects. Thus, if you are going to make
+multiple calls using the same parameter and context, this is going to be
+slightly more efficient.
 
 .. code-block:: python
 
@@ -213,16 +214,14 @@ efficient.
 Trimming Multiple Functions
 ---------------------------
 
-.. note::
-   As with trimming single functions, you must ensure that each function has
-   its :ref:`guide/lsa_utils:Incorporation Ranges` defined *before* sending any
-   trims.
+.. seealso::
+    :ref:`guide/lsa_utils:Incorporation Ranges`, which must be defined in the
+    LSA App Suite before you can trim a function.
 
-The `~cernml.lsa_utils` package also allows trimming several functions with a
-single trim, as long as they're modified in the same location. (This
-requirement may be relaxed in the future, if necessary.) Again, there are two
-ways to achieve this. The simple one is by using the same function
-`incorporate_and_trim()` as for one parameter:
+You can also modify several functions with a single trim, as long as they're
+modified in the same location. (This requirement may be relaxed in the future,
+if necessary.) As with single functions, there are two ways to achieve this.
+The simple one is by using the same function `incorporate_and_trim()`:
 
 .. code-block:: python
 
@@ -240,12 +239,11 @@ ways to achieve this. The simple one is by using the same function
     ...     description="Usage example of cernml.lsa_utils",
     ... )
 
-The first parameter is a list of all functions that should be changed
-simultaneously, the second is the context to use. Then come the point to modify
-(measured in milliseconds since the start of cycle) and the value to
-incorporate. This may be anything that converts to a NumPy array of the correct
-size (including a single float). The remaining parameters are the same as
-before.
+This is analogous to the case with a single function, except in place of
+a parameter name, you pass a list of names. For the value parameter, you can
+pass anything that NumPy can :doc:`broadcast <np:user/basics.broadcasting>` to an
+array of the correct size – including a single `float`. The remaining
+parameters are the same as before.
 
 For a more object-oriented interface, you can use `IncorporatorGroup`:
 
@@ -267,8 +265,8 @@ For a more object-oriented interface, you can use `IncorporatorGroup`:
     ...     4460.0, 0.1, relative=True, description="Usage example"
     ... )
 
-The group also allows creating one `Incorporator` for each parameter
-individually:
+From an `IncorporatorGroup`, you can also derive individual `Incorporator`\
+s for each parameter:
 
 .. code-block:: python
 
@@ -286,10 +284,9 @@ See also the sections on :ref:`guide/lsa_utils:Relative Trims` and
 Relative Trims
 --------------
 
-By default, trims sent through `~cernml.lsa_utils` are *absolute*; that means
-that the value you pass is the value that is written to the database.
-
-You can also send *relative* trims, in which the value that you pass is added
+By default, trims sent through `trim_scalar_settings()` are *absolute*; that
+means that the value you pass is the value that is written to the database. You
+can also send *relative* trims, in which the value that you pass is **added**
 to the current value in the database. You do this by passing `True` to the
 *relative* parameter of any trim function.
 
@@ -315,12 +312,16 @@ value:
     ...     relative=True,
     ... )
 
+The function `incorporate_and_trim()` has no default value for the *relative*
+argument; you must explicitly state whether an incorporation is absolute or
+relative every time.
+
 Transient Trims
 ---------------
 
-Trims that are sent through `~cernml.lsa_utils` are marked as *transient* by
-default. This means that the LSA server will delete them after a while to save
-bandwidth and keep the trim history manageable.
+Trims that are sent through `.lsa_utils` are marked as *transient* by default.
+This means that the LSA server will delete them after a while to save bandwidth
+and keep the trim history manageable.
 
 The specifics may vary, but usually, they will be deleted if they no longer
 contain active or reference settings and are at least one week older than the
@@ -351,20 +352,22 @@ function is incorporated into its overall shape and serve to preserve certain
 properties of continuity, flatness, etc.
 
 Incorporation ranges are defined for each beam process, parameter and
-(optionally) parameter group. One simple way to figure out the beam processes
-for a given context by hand, you can open the LSA App Suite, start settings
-management, select the desired context and enable "Show Sub Contexts".
+(optionally) parameter group. At CERN, you can use the LSA App Suite to show
+all beam processes that belong to a cycle: simply select the cycle in the
+context selection pane and check the box :guilabel:`Show Sub Contexts`.
 
 .. image:: incorporation-settings.png
-    :alt: Screenshot of the LSA App Suite settings management.
+    :alt: Screenshot of the LSA App Suite settings management to visualize the
+       previous instructions.
 
 Creating Incorporation Ranges
 +++++++++++++++++++++++++++++
 
 To create an incorporation range, you stay within the LSA App Suite and start
-the Incorporation Ranges app under the category "Contexts". There, you can pick
-the beam process, parameter and parameter group. If a rule should apply to
-multiple similar parameters, you can set the parameter group to "all".
+the :guilabel:`Incorporation Ranges` app under the category
+:guilabel:`Contexts`. There, you can pick the beam process, parameter and
+parameter group. If a rule should apply to multiple similar parameters, you can
+set the parameter group to :guilabel:`ALL`.
 
 .. image:: incorporation-rules.png
     :alt: Screenshot of the LSA App Suite incorporation ranges manager.
@@ -379,8 +382,8 @@ process.
 It is not possible to define incorporation ranges that span multiple beam
 processes. It is also not *advisable* to modify a function close to the start
 or the end of the beam process. Generally, the incorporation rules will only be
-applied up to the beam process edge linear interpolation will occur up to the
-closest point in the next beam process, wherever that point may be.
+applied up to the beam process edge; beyond that, linear interpolation is done
+up to the nearest point in the next beam process, wherever that point may be.
 
 The forward and backward rules define how a modification at a single point is
 propagated into the range. Most rules take an additional time parameter.
@@ -394,36 +397,40 @@ List of Incorporation Rules
 The most important rules are given below. In the app, you can also click the
 question mark icon to get more help on how they work.
 
-``CONSTANTIR``
+.. option:: CONSTANTIR
+
     All points in the current beam process are set to the same value. This
     ignores the rule parameter as well as the length of the incorporation range
     (except to check whether the rule may be applied at all).
 
-``DELTAIR``
+.. option:: DELTAIR
+
     The selected point is set to the desired value. In addition, an interval
     whose length is given by the rule parameter is raised or lowered by the
     same amount. The shape of the function within this interval is preserved.
     Note that this interval is unrelated to the incorporation range. Outside of
-    this interval, no further continuity constraints are applied  – the
+    this interval, no further continuity constraints are applied – the
     function is simply linearly interpolated to the next point, wherever that
     may be.
 
-``CONSTANT_DECAY_IR``
+.. option:: CONSTANT_DECAY_IR
+
     The selected point is set to the desired value. In the interval whose
     length is given by the rule parameter, the delta that was necessary to
     achieve this change is linearly decreased to zero. The shape of the
     function within this interval is honored.
 
-``TRIANGLEIR``
+.. option:: TRIANGLEIR
+
     The selected point is set to the desired value. The function is linearly
     interpolated over an interval whose length is given by the rule parameter.
     The function is flattened over the given interval. This is the main
-    difference between this rule and ``CONSTANT_DECAY_IR``.
+    difference between this rule and :option:`CONSTANT_DECAY_IR`.
 
 Note that the incorporation range has no effect on how these rules behave; it
 only determines the time interval for which they are valid. For example, you
 can declare an incorporation range from 400 to 700 ms where both rules are
-``CONSTANT_DECAY_IR`` with a parameter of 40 ms. In this case:
+:option:`CONSTANT_DECAY_IR` with a parameter of 40 ms. In this case:
 
 1. Incorporating a change at 400 ms will modify the function in the interval
    from 360 to 440 ms by linearly decreasing the delta to zero.
@@ -447,17 +454,17 @@ modify this state without plugins such as optimization problems being aware of
 that. Until a better architecture is found, this will be done through global
 hooks.
 
-For example, it is desirable for a *host application* to influence the trim
-description sent by optimization problems – e.g. to add the host name and
-version to make the trim history more understandable. Another use case is to
+For example, it is desirable for a *host application* to add additional
+information to the trim description sent by optimization problems – e.g. the
+host name and version, or the optimization algorithm. Another use case is to
 make trims :ref:`transient or permanent <guide/lsa_utils:transient trims>`
 depending on conditions in the app that the plugin cannot (and should not) know
 about.
 
-To afford these use cases, this package defines certain *trim request hooks*.
-These hooks are able to modify the *transient* flag and the trim *description*
-nearly arbitrarily. They are called by all functions of this package that send
-a trim request to the LSA database:
+To make this possible, this package defines certain *trim request hooks*. These
+hooks are able to modify the *transient* flag and the trim *description* almost
+arbitrarily. They are called by all functions of this package that send a trim
+request to the LSA database:
 
 - `Incorporator.incorporate_and_trim()`,
 - `IncorporatorGroup.incorporate_and_trim()`,
@@ -471,16 +478,19 @@ To implement a new trim request hook, subclass the :term:`abstract base class`
 `Hooks`:
 
 .. code-block:: python
-   :emphasize-lines: 6
+   :emphasize-lines: 8
 
     >>> from typing import Optional
     >>> from cernml import lsa_utils
+    ...
     >>> class ForcefulHooks(lsa_utils.Hooks):
+    ...
     ...     def trim_description(self, desc: Optional[str]) -> str:
     ...         if not desc:
     ...             return "via my-app v1.0"
     ...         desc = super().trim_description(desc)
     ...         return f"{desc} (via my-app v1.0)"
+    ...
     ...     def trim_transient(self, transient: Optional[bool]) -> bool:
     ...         warnings.warn(f"Ignoring transient flag: {transient}")
     ...         return True
@@ -494,9 +504,9 @@ and replaced with `True`.
 The `super` call in the highlighted line deserves special attention: It calls
 the base implementation of the method, which will automatically forward the
 call to the previous hook. This ensures that you can always fall back to the
-default behavior.
+default behavior, if necessary.
 
-Becase the default behavior of the hook methods is to forward all calls to the
+Because the default behavior of the hook methods is to forward all calls to the
 previous hook, you only need to implement the methods that you're interested
 in.
 
@@ -518,7 +528,7 @@ As you can see, `Hooks.uninstall_globally()` does the opposite: it removes your
 hooks and replaces them with whatever hooks came previously.
 
 To ensure that you don't forget to uninstall your trim request hooks, you can
-also use them as a context manager:
+also use them as a :term:`context manager`:
 
     >>> with ForcefulHooks() as hooks:
     ...     lsa_utils.get_current_hooks() is hooks
