@@ -6,10 +6,18 @@
 
 """Utilities for working with OpenAI Gym."""
 
+from __future__ import annotations
+
 import typing as t
 
 import numpy as np
 from gymnasium.spaces import Box
+
+__all__ = (
+    "Scaler",
+    "scale_from_box",
+    "unscale_into_box",
+)
 
 
 class Scaler:

@@ -17,7 +17,7 @@ from ._renderer import (
     render_generator,
 )
 
-__all__ = [
+__all__ = (
     "FigureRenderer",
     "MatplotlibFigures",
     "MaybeTitledFigure",
@@ -28,4 +28,4 @@ __all__ = [
     "iter_matplotlib_figures",
     "make_renderer",
     "render_generator",
-]
+)

@@ -20,6 +20,17 @@ if t.TYPE_CHECKING:
     # pylint: disable = unused-import
     from ._iter import MatplotlibFigures
 
+__all__ = (
+    "FigureRenderer",
+    "RenderCallback",
+    "RenderGenerator",
+    "Renderer",
+    "RendererGroup",
+    "make_renderer",
+    "render_generator",
+)
+
+
 RenderGenerator = t.Generator[None, Figure, t.NoReturn]
 
 RenderCallback = t.Union[

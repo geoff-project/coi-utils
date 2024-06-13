@@ -18,6 +18,15 @@ if sys.version_info < (3, 11):
 else:
     from typing import Self
 
+__all__ = (
+    "AbstractHooks",
+    "DefaultHooks",
+    "Hooks",
+    "InconsistentHookInstalls",
+    "get_current_hooks",
+    "global_hooks",
+)
+
 
 class InconsistentHookInstalls(Warning):
     """Hooks have been installed in another order than they've been installed."""

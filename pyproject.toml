@@ -61,6 +61,8 @@ all = [
     'cernml-coi-utils[matplotlib,pjlsa,pyjapc]',
 ]
 doc-only = [
+    'types-docutils',
+    'python-docs-theme',
     'sphinx',
 ]
 doc = [

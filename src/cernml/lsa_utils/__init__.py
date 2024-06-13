@@ -57,7 +57,7 @@ try:
 except ImportError as exc:
     raise ImportError("import this package in `with LSAClient().java_api()`") from exc
 
-__all__ = [
+__all__ = (
     "AbstractHooks",
     "DefaultHooks",
     "Hooks",
@@ -71,4 +71,4 @@ __all__ = [
     "get_settings_function",
     "incorporate_and_trim",
     "trim_scalar_settings",
-]
+)

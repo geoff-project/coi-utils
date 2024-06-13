@@ -13,6 +13,8 @@ next value has arrived. Parameter streams are created via
 `subscribe_stream()`.
 """
 
+from __future__ import annotations
+
 import abc
 import contextlib
 import datetime
@@ -35,6 +37,18 @@ if t.TYPE_CHECKING:
     # pylint: disable=import-error, unused-import
     import cern.japc.core
     import pyjapc
+
+__all__ = (
+    "Header",
+    "JavaException",
+    "ParamGroupStream",
+    "ParamStream",
+    "StreamError",
+    "monitoring",
+    "subscribe_stream",
+    "subscriptions",
+)
+
 
 LOG = logging.getLogger(__name__)
 
@@ -179,10 +193,10 @@ class _BaseStream(metaclass=abc.ABCMeta):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Union[str, list[str], tuple[str, ...]],
+        name: str | list[str] | tuple[str, ...],
         *,
-        token: t.Optional[cancellation.Token],
-        maxlen: t.Optional[int],
+        token: cancellation.Token | None,
+        maxlen: int | None,
         **kwargs: t.Any,
     ) -> None:
         self._handle = japc.subscribeParam(
@@ -207,7 +221,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         self.stop_monitoring()
 
     @property
-    def token(self) -> t.Optional[cancellation.Token]:
+    def token(self) -> cancellation.Token | None:
         """The stream's cancellation token, if any.
 
         While the stream is inactive (``self.monitoring is False``), the
@@ -224,7 +238,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         return self._token
 
     @token.setter
-    def token(self, token: t.Optional[cancellation.Token]) -> None:
+    def token(self, token: cancellation.Token | None) -> None:
         if self.monitoring:
             raise StreamError("cannot change cancellation token while monitoring")
         # See comment in __init__(). We need to keep token and condition
@@ -326,7 +340,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     # Tricky: We write the docstring on this internal method and
     # dynamically copy it onto the public method in the subclasses.
-    def _pop_or_wait(self, timeout: t.Optional[float]) -> t.Optional[_Item]:
+    def _pop_or_wait(self, timeout: float | None) -> _Item | None:
         """Return the next item from the queue or wait for one.
 
         If there already is an item in the queue, it is removed and this
@@ -375,7 +389,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     # Tricky: We write the docstring on this internal method and
     # dynamically copy it onto the public method in the subclasses.
-    def _pop_if_ready(self) -> t.Optional[_Item]:
+    def _pop_if_ready(self) -> _Item | None:
         """Return the next value or None if the queue is empty.
 
         This is similar to ``pop_or_wait(timeout=0.0)``, but never
@@ -393,7 +407,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
 
     # Tricky: We write the docstring on this internal method and
     # dynamically copy it onto the public method in the subclasses.
-    def _wait_for_next(self, timeout: t.Optional[float] = None) -> t.Optional[_Item]:
+    def _wait_for_next(self, timeout: float | None = None) -> _Item | None:
         """Clear the queue and wait for a new item to arrive.
 
         This is like calling `clear()` followed by
@@ -427,7 +441,7 @@ class _BaseStream(metaclass=abc.ABCMeta):
         self,
         names: _OneOrList[str],
         values: t.Any,
-        headers: t.Optional[_OneOrList[dict]],
+        headers: _OneOrList[dict] | None,
     ) -> None:
         assert headers is not None, "we always pass getHeader=True"
         with self._condition:
@@ -478,8 +492,8 @@ class ParamStream(_BaseStream):
         japc: "pyjapc.PyJapc",
         name: str,
         *,
-        token: t.Optional[cancellation.Token],
-        maxlen: t.Optional[int],
+        token: cancellation.Token | None,
+        maxlen: int | None,
         **kwargs: t.Any,
     ) -> None:
         super().__init__(japc, name, token=token, maxlen=maxlen, **kwargs)
@@ -514,17 +528,17 @@ class ParamStream(_BaseStream):
     def pop_or_wait(self) -> tuple[object, Header]: ...
 
     @t.overload
-    def pop_or_wait(self, timeout: float) -> t.Optional[tuple[object, Header]]: ...
+    def pop_or_wait(self, timeout: float) -> tuple[object, Header] | None: ...
 
     def pop_or_wait(  # noqa: D102
-        self, timeout: t.Optional[float] = None
-    ) -> t.Optional[tuple[object, Header]]:
+        self, timeout: float | None = None
+    ) -> tuple[object, Header] | None:
         return t.cast(tuple[object, Header], super()._pop_or_wait(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(pop_or_wait, _BaseStream._pop_or_wait, assigned=["__doc__"])
 
-    def pop_if_ready(self) -> t.Optional[tuple[object, Header]]:  # noqa: D102
+    def pop_if_ready(self) -> tuple[object, Header] | None:  # noqa: D102
         return t.cast(tuple[object, Header], super()._pop_if_ready())
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
@@ -534,11 +548,11 @@ class ParamStream(_BaseStream):
     def wait_for_next(self) -> tuple[object, Header]: ...
 
     @t.overload
-    def wait_for_next(self, timeout: float) -> t.Optional[tuple[object, Header]]: ...
+    def wait_for_next(self, timeout: float) -> tuple[object, Header] | None: ...
 
     def wait_for_next(  # noqa: D102
-        self, timeout: t.Optional[float] = None
-    ) -> t.Optional[tuple[object, Header]]:
+        self, timeout: float | None = None
+    ) -> tuple[object, Header] | None:
         return t.cast(tuple[object, Header], super()._wait_for_next(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
@@ -559,10 +573,10 @@ class ParamGroupStream(_BaseStream):
     def __init__(
         self,
         japc: "pyjapc.PyJapc",
-        name: t.Union[list[str], tuple[str, ...]],
+        name: list[str] | tuple[str, ...],
         *,
-        token: t.Optional[cancellation.Token],
-        maxlen: t.Optional[int],
+        token: cancellation.Token | None,
+        maxlen: int | None,
         **kwargs: t.Any,
     ) -> None:
         super().__init__(japc, name, token=token, maxlen=maxlen, **kwargs)
@@ -600,19 +614,17 @@ class ParamGroupStream(_BaseStream):
     def pop_or_wait(self) -> list[tuple[object, Header]]: ...
 
     @t.overload
-    def pop_or_wait(
-        self, timeout: float
-    ) -> t.Optional[list[tuple[object, Header]]]: ...
+    def pop_or_wait(self, timeout: float) -> list[tuple[object, Header]] | None: ...
 
     def pop_or_wait(  # noqa: D102
-        self, timeout: t.Optional[float] = None
-    ) -> t.Optional[list[tuple[object, Header]]]:
+        self, timeout: float | None = None
+    ) -> list[tuple[object, Header]] | None:
         return t.cast(list[tuple[object, Header]], super()._pop_or_wait(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
     update_wrapper(pop_or_wait, _BaseStream._pop_or_wait, assigned=["__doc__"])
 
-    def pop_if_ready(self) -> t.Optional[list[tuple[object, Header]]]:  # noqa: D102
+    def pop_if_ready(self) -> list[tuple[object, Header]] | None:  # noqa: D102
         return t.cast(list[tuple[object, Header]], super()._pop_if_ready())
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
@@ -622,13 +634,11 @@ class ParamGroupStream(_BaseStream):
     def wait_for_next(self) -> list[tuple[object, Header]]: ...
 
     @t.overload
-    def wait_for_next(
-        self, timeout: float
-    ) -> t.Optional[list[tuple[object, Header]]]: ...
+    def wait_for_next(self, timeout: float) -> list[tuple[object, Header]] | None: ...
 
     def wait_for_next(  # noqa: D102
-        self, timeout: t.Optional[float] = None
-    ) -> t.Optional[list[tuple[object, Header]]]:
+        self, timeout: float | None = None
+    ) -> list[tuple[object, Header]] | None:
         return t.cast(list[tuple[object, Header]], super()._wait_for_next(timeout))
 
     # Workaround for <https://github.com/python/mypy/issues/17166>.
@@ -640,11 +650,11 @@ def subscribe_stream(
     japc: "pyjapc.PyJapc",
     name_or_names: str,
     *,
-    token: t.Optional[cancellation.Token] = ...,
-    maxlen: t.Optional[int] = ...,
+    token: cancellation.Token | None = ...,
+    maxlen: int | None = ...,
     convert_to_python: bool = ...,
-    selector: t.Optional[str] = ...,
-    data_filter: t.Optional[dict[str, t.Any]] = ...,
+    selector: str | None = ...,
+    data_filter: dict[str, t.Any] | None = ...,
 ) -> ParamStream: ...
 
 
@@ -656,26 +666,26 @@ def subscribe_stream(
 @t.overload
 def subscribe_stream(
     japc: "pyjapc.PyJapc",
-    name_or_names: t.Union[list[str], tuple[str, ...]],
+    name_or_names: list[str] | tuple[str, ...],
     *,
-    token: t.Optional[cancellation.Token] = ...,
-    maxlen: t.Optional[int] = ...,
+    token: cancellation.Token | None = ...,
+    maxlen: int | None = ...,
     convert_to_python: bool = ...,
-    selector: t.Optional[str] = ...,
-    data_filter: t.Optional[dict[str, t.Any]] = ...,
+    selector: str | None = ...,
+    data_filter: dict[str, t.Any] | None = ...,
 ) -> ParamGroupStream: ...
 
 
 def subscribe_stream(
     japc: "pyjapc.PyJapc",
-    name_or_names: t.Union[str, list[str], tuple[str, ...]],
+    name_or_names: str | list[str] | tuple[str, ...],
     *,
-    token: t.Optional[cancellation.Token] = None,
-    maxlen: t.Optional[int] = 1,
+    token: cancellation.Token | None = None,
+    maxlen: int | None = 1,
     convert_to_python: bool = True,
-    selector: t.Optional[str] = None,
-    data_filter: t.Optional[dict[str, t.Any]] = None,
-) -> t.Union[ParamStream, ParamGroupStream]:
+    selector: str | None = None,
+    data_filter: dict[str, t.Any] | None = None,
+) -> ParamStream | ParamGroupStream:
     """Subscribe to a parameter and create a stream of its values.
 
     The returned stream synchronizes with the subscription handler to

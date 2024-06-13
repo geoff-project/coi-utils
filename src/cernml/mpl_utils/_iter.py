@@ -12,6 +12,12 @@ import typing as t
 
 from matplotlib.figure import Figure
 
+__all__ = (
+    "MatplotlibFigures",
+    "MaybeTitledFigure",
+    "iter_matplotlib_figures",
+)
+
 MaybeTitledFigure = t.Union[Figure, tuple[str, Figure]]
 """Helper annotation for `MatplotlibFigures`."""
 

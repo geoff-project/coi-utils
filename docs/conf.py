@@ -21,82 +21,19 @@ https://www.sphinx-doc.org/en/master/usage/configuration.html
 
 from __future__ import annotations
 
-import inspect
 import pathlib
 import sys
 import typing as t
-from importlib import import_module
-from importlib.abc import Loader, MetaPathFinder
-from importlib.machinery import ModuleSpec
-from types import ModuleType
-from unittest.mock import Mock
-
-from docutils import nodes
-from sphinx.ext import intersphinx
+from pathlib import Path
 
 if sys.version_info < (3, 10):
-    import importlib_metadata as metadata
+    import importlib_metadata as importlib_metadata
 else:
-    # Starting with Python 3.10 (see pyproject.toml).
-    # pylint: disable = ungrouped-imports
-    from importlib import metadata
+    import importlib.metadata as importlib_metadata
 
 if t.TYPE_CHECKING:
-    # pylint: disable = unused-import
-    from sphinx import addnodes
     from sphinx.application import Sphinx
-    from sphinx.environment import BuildEnvironment
 
-
-class MockModule(Mock):
-    """Mock that reproduces only its name under `repr()` and `str()`.
-
-    This class overrides the `__repr__()` method of
-    `~unittest.mock.Mock` to only show the mock name. We do this because
-    Sphinx Autodoc internally uses `repr()` to print types. Without this
-    override, any Java types produced by the `MockLoader` below would
-    appear as ``<Mock name='...', id='...'>`` in the docs.
-    """
-
-    def __str__(self) -> str:
-        return self._extract_mock_name()
-
-    def __repr__(self) -> str:
-        return self._extract_mock_name()
-
-
-class MockLoader(Loader, MetaPathFinder):
-    """An additional module loader to avoid Java-related errors.
-
-    We don't want to require a full Java Virtual Machine just to build
-    the docs, but without it, ``import cern, vaja`` deep in the LSA
-    utilities would fail.
-
-    To avoid this, we override the import mechanism and every time
-    someone tries to import one of these packages, we return a mock
-    object that will just return more mocks for every attribute.
-    """
-
-    # pylint: disable = unused-argument, missing-function-docstring
-
-    def find_spec(
-        self,
-        fullname: str,
-        path: t.Sequence[str] | None,
-        target: ModuleType | None = None,
-    ) -> ModuleSpec | None:
-        if fullname in ["cern", "java"] or fullname.startswith(("cern.", "java.")):
-            return ModuleSpec(fullname, self, is_package=True)
-        return None
-
-    def create_module(self, spec: ModuleSpec) -> t.Any:
-        return MockModule(name=spec.name)
-
-    def exec_module(self, module: ModuleType) -> None:
-        pass
-
-
-sys.meta_path.append(MockLoader())
 
 ROOTDIR = pathlib.Path(__file__).absolute().parent.parent
 
@@ -104,24 +41,41 @@ ROOTDIR = pathlib.Path(__file__).absolute().parent.parent
 # -- Project information -----------------------------------------------
 
 project = "cernml-coi-utils"
+dist = importlib_metadata.distribution(project)
+
 copyright = "2020–2024 CERN, 2023-2024 GSI Helmholtzzentrum für Schwerionenforschung"
 author = "Nico Madysa"
-release = metadata.version(project)
+release = dist.version
+version = release.partition("+")[0]
+
+for entry in dist.metadata.get_all("Project-URL", []):
+    url: str
+    kind, url = entry.split(", ")
+    if kind == "gitlab":
+        gitlab_url = url.removesuffix("/")
+        license_url = f"{gitlab_url}/-/blob/master/COPYING"
+        issues_url = f"{gitlab_url}/-/issues"
+        break
+else:
+    gitlab_url = ""
+    license_url = ""
+    issues_url = ""
 
 # -- General configuration ---------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+sys.path.append(str(Path("./_ext").resolve()))
 extensions = [
+    "fix_xrefs",
+    "extra_directives",
+    "mock_java_packages",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosectionlabel",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
 ]
-
-# Add any paths that contain templates here, relative to this directory.
-# templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -136,12 +90,36 @@ exclude_patterns = [
 # table of content of class API docs.
 toc_object_entries_show_parents = "hide"
 
+# A list of prefixes that are ignored for sorting the Python module
+# index.
+modindex_common_prefix = ["cernml."]
+
 # Avoid role annotations as much as possible.
 default_role = "py:obj"
+
+# Use one line per argument for long signatures.
+maximum_signature_line_length = 89
+
+# -- Options for HTML output -------------------------------------------
+
+# The theme to use for HTML and HTML Help pages.  See the documentation
+# for a list of builtin themes.
+html_theme = "python_docs_theme"
+html_last_updated_fmt = "%b %d %Y"
+html_theme_options = {
+    "sidebarwidth": "21rem",
+    "root_url": "https://acc-py.web.cern.ch/",
+    "root_name": "Acc-Py Documentation server",
+    "license_url": license_url,
+    "issues_url": issues_url,
+}
+templates_path = ["./_templates/"]
+html_static_path = ["./_static/"]
 
 # -- Options for Autodoc -----------------------------------------------
 
 autodoc_member_order = "bysource"
+autodoc_typehints = "signature"
 autodoc_type_aliases = {
     "MaybeTitledFigure": "~cernml.mpl_utils.MaybeTitledFigure",
     "MatplotlibFigures": "~cernml.mpl_utils.MatplotlibFigures",
@@ -151,10 +129,13 @@ autodoc_type_aliases = {
 
 napoleon_google_docstring = True
 napoleon_numpy_docstring = False
+napoleon_use_ivar = False
+napoleon_attr_annotations = True
 
 # -- options for Autosectionlabel --------------------------------------
 
 autosectionlabel_prefix_document = True
+autosectionlabel_maxdepth = 3
 
 # -- Options for Intersphinx -------------------------------------------
 
@@ -176,127 +157,35 @@ intersphinx_mapping = {
     "std": ("https://docs.python.org/3/", None),
 }
 
-# -- Options for HTML output -------------------------------------------
+# -- Options for custom extension FixXrefs -----------------------------
 
-# The theme to use for HTML and HTML Help pages.  See the documentation
-# for a list of builtin themes.
-html_theme = "sphinxdoc"
 
-# Add any paths that contain custom static files (such as style sheets)
-# here, relative to this directory. They are copied after the builtin
-# static files, so a file named "default.css" will overwrite the builtin
-# "default.css". html_static_path = ["_static"]
-
+fix_xrefs_rules = [
+    {"pattern": r"^cernml\..*\.T$", "reftarget": ("const", "typing.TypeVar")},
+    {"pattern": r"^np\.", "reftarget": ("sub", "numpy."), "contnode": ("sub", "")},
+    {"pattern": r"^t\.", "reftarget": ("sub", "typing."), "contnode": ("sub", "")},
+    {
+        "pattern": r"^cancellation\.",
+        "reftarget": ("sub", r"cernml.coi.\g<0>"),
+        "contnode": ("sub", ""),
+    },
+    {
+        "pattern": "^Value$",
+        "external": {
+            "uri": "https://abwww.cern.ch/ap/dist/accsoft/commons/accsoft-commons-value/PRO/build/docs/api/index.html?cern/accsoft/commons/value/Value.html",
+            "package": "accsoft-commons-value",
+        },
+    },
+    {
+        "pattern": "^LSAClient$",
+        "external": {
+            "uri": "https://gitlab.cern.ch/scripting-tools/pjlsa#low-level-access-to-the-java-lsa-api",
+            "package": "pjlsa",
+        },
+    },
+]
 
 # -- Custom code -------------------------------------------------------
-
-
-def replace_modname(modname: str) -> None:
-    """Change the module that a list of objects publicly belongs to.
-
-    This package follows the pattern to have private modules called
-    :samp:`_{name}` that expose a number of classes and functions that
-    are meant for public use. The parent package then exposes these like
-    this::
-
-        from ._name import Thing
-
-    However, these objects then still expose the private module via
-    their ``__module__`` attribute::
-
-        assert Thing.__module__ == 'parent._name'
-
-    This function iterates through all exported members of the package
-    or module *modname* (as determined by either ``__all__`` or
-    `vars()`) and fixes each one's module of origin up to be the
-    *modname*. It does so recursively for all public attributes (i.e.
-    those whose name does not have a leading underscore).
-    """
-    todo: list[t.Any] = [import_module(modname)]
-    while todo:
-        parent = todo.pop()
-        for pubname in pubnames(parent):
-            obj = inspect.getattr_static(parent, pubname)
-            private_modname = getattr(obj, "__module__", "")
-            if private_modname and _is_true_prefix(modname, private_modname):
-                obj.__module__ = modname
-                todo.append(obj)
-
-
-def pubnames(obj: t.Any) -> t.Iterator[str]:
-    """Return an iterator over the public names in an object."""
-    try:
-        getmembers = inspect.getmembers_static  # type: ignore[attr-defined]
-    except AttributeError:
-        getmembers = inspect.getmembers
-    return iter(
-        t.cast(list[str], getattr(obj, "__all__", None))
-        or (name for name, _ in getmembers(obj) if not name.startswith("_"))
-    )
-
-
-def _is_true_prefix(prefix: str, full: str) -> bool:
-    return full.startswith(prefix) and full != prefix
-
-
-# Do submodules first so that `coi.check()` is correctly assigned.
-replace_modname("cernml.gym_utils")
-replace_modname("cernml.japc_utils")
-replace_modname("cernml.lsa_utils")
-replace_modname("cernml.mpl_utils")
-
-
-def make_external_ref(
-    contnode: nodes.TextElement, uri: str, package: str
-) -> nodes.reference:
-    """Create a new reference node that wraps *contnode*."""
-    newnode = nodes.reference(
-        "", "", internal=False, refuri=uri, reftitle=f"(in {package!s})"
-    )
-    newnode.append(contnode)
-    return newnode
-
-
-def _fix_crossrefs(
-    app: Sphinx,
-    env: BuildEnvironment,
-    node: addnodes.pending_xref,
-    contnode: nodes.TextElement,
-) -> nodes.Element | None:
-    # Autodoc doesn't handle typing.TypeVar correctly.
-    if node["reftarget"].rpartition(".")[-1] == "T":
-        node["reftarget"] = "std:typing.TypeVar"
-        return intersphinx.missing_reference(app, env, node, contnode)
-    # Intersphinx cannot read the :canonical: attribute on the ..class
-    # directive for Box.
-    if node["reftarget"] == "gymnasium.spaces.box.Box":
-        node["reftarget"] = "gymnasium.spaces.Box"
-        return intersphinx.missing_reference(app, env, node, contnode)
-    # With `from __future__ import annotations`, import aliases don't
-    # get resolved.
-    if node["reftarget"].startswith("np."):
-        _, unqualified_name = node["reftarget"].split(".")
-        node["reftarget"] = "numpy." + unqualified_name
-        contnode = t.cast(nodes.TextElement, nodes.Text(unqualified_name))
-        return intersphinx.missing_reference(app, env, node, contnode)
-    # Cross-link Java documentation.
-    if node["reftarget"] == "Value":
-        return make_external_ref(
-            contnode,
-            uri="https://abwww.cern.ch/ap/dist/accsoft/commons/accsoft-commons-value/"
-            "PRO/build/docs/api/index.html?cern/accsoft/commons/value/Value.html",
-            package="accsoft-commons-value",
-        )
-    # No documentation exists for PJLsa, pick a related section of the
-    # README file.
-    if node["reftarget"] == "LSAClient":
-        return make_external_ref(
-            contnode,
-            uri="https://gitlab.cern.ch/scripting-tools/pjlsa#"
-            "low-level-access-to-the-java-lsa-api",
-            package="pjlsa",
-        )
-    return None
 
 
 def _fix_decorator_return_value(_app: Sphinx, obj: t.Any, _bound_method: bool) -> None:
@@ -306,5 +195,4 @@ def _fix_decorator_return_value(_app: Sphinx, obj: t.Any, _bound_method: bool) -
 
 def setup(app: Sphinx) -> None:
     """Set up hooks into Sphinx."""
-    app.connect("missing-reference", _fix_crossrefs)
     app.connect("autodoc-before-process-signature", _fix_decorator_return_value)
