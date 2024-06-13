@@ -164,7 +164,7 @@ branch = true
 exclude_also = [
     '^\s*@.*\.overload$',
     '^\s*def __del__',
-    '^\s*except ImportError:$',
+    '^\s*except ImportError( as exc)?:$',
     '^\s*from .* import',
     '^\s*if .*\.TYPE_CHECKING:$',
     '^\s*if sys\.version_info ..? \(\d, \d+\):$',
