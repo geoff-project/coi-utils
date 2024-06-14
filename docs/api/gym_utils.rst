@@ -8,6 +8,11 @@
 Gym Utilities
 =============
 
+.. seealso::
+
+    :doc:`/guide/gym_utils`
+        User guide page on this module.
+
 .. automodule:: cernml.gym_utils
 
     .. autofunction:: scale_from_box

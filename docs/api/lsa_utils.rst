@@ -8,6 +8,11 @@
 PJLSA Utilities
 ===============
 
+.. seealso::
+
+    :doc:`/guide/lsa_utils`
+        User guide page on this module.
+
 .. automodule:: cernml.lsa_utils
 
 Free-Function API

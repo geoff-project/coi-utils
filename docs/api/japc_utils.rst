@@ -8,6 +8,11 @@
 PyJapc Utilities
 ================
 
+.. seealso::
+
+    :doc:`/guide/japc_utils`
+        User guide page on this module.
+
 .. automodule:: cernml.japc_utils
 
     .. autofunction:: subscriptions
