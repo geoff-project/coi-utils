@@ -23,10 +23,7 @@ import sys
 import threading
 import typing as t
 from collections import deque
-from contextlib import AbstractContextManager as ContextManager
 from functools import update_wrapper
-
-from cernml.coi import cancellation  # pylint: disable=unused-import
 
 if sys.version_info < (3, 12):
     from typing_extensions import override
@@ -34,9 +31,10 @@ else:
     from typing import override
 
 if t.TYPE_CHECKING:
-    # pylint: disable=import-error, unused-import
     import cern.japc.core
     import pyjapc
+
+    from cernml.coi import cancellation
 
 __all__ = (
     "Header",
@@ -67,8 +65,6 @@ class Header(dict):
     This is a dict for all intents and purposes, but also allows
     attribute access to the most common fields.
     """
-
-    # pylint: disable = missing-function-docstring
 
     @property
     def acquisition_stamp(self) -> datetime.datetime:
@@ -101,7 +97,7 @@ class Header(dict):
         return self["isImmediateUpdate"]
 
 
-T = t.TypeVar("T")  # pylint: disable=invalid-name
+T = t.TypeVar("T")
 _OneOrList = t.Union[T, list[T]]
 _Item = _OneOrList[tuple[object, Header]]
 _Event = t.Union[_Item, JavaException]
@@ -140,7 +136,9 @@ def subscriptions(japc: "pyjapc.PyJapc") -> t.Iterator["pyjapc.PyJapc"]:
 
 
 # Fix up return type annotation for the docs.
-subscriptions.__annotations__["return"] = ContextManager["pyjapc.PyJapc"]
+subscriptions.__annotations__["return"] = contextlib.AbstractContextManager[
+    "pyjapc.PyJapc"
+]
 
 
 @contextlib.contextmanager
@@ -172,7 +170,7 @@ def monitoring(handle: T) -> t.Iterator[T]:
 
 
 # Fix up return type annotation for the docs.
-monitoring.__annotations__["return"] = ContextManager[T]  # type: ignore[valid-type]
+monitoring.__annotations__["return"] = contextlib.AbstractContextManager["T"]  # type: ignore[valid-type]
 
 
 class _BaseStream(metaclass=abc.ABCMeta):

@@ -4,10 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-# pylint: disable = missing-class-docstring
-# pylint: disable = missing-function-docstring
-# pylint: disable = redefined-outer-name
-
 """Test the JAPC utilities."""
 
 from __future__ import annotations
@@ -24,7 +20,6 @@ from cernml import japc_utils
 from cernml.coi import cancellation
 
 if t.TYPE_CHECKING:
-    # pylint: disable=import-error, unused-import
     import pyjapc
 
 
@@ -65,9 +60,6 @@ class MockJapc:
     the subscription parameter's name is used as a key into the mapping
     to retrieve the list of mock values.
     """
-
-    # pylint: disable = invalid-name
-    # pylint: disable = too-few-public-methods
 
     TIME_STEP_SECONDS = 0.01
 
@@ -139,8 +131,6 @@ class MockSubscriptionHandle:
                 for iteration in self.mock_values
             ), self.mock_values
 
-    # pylint: disable = invalid-name
-
     def isMonitoring(self) -> bool:
         return bool(self.thread)
 
@@ -166,8 +156,6 @@ class MockSubscriptionHandle:
         parameter_group = Mock()
         parameter_group.getNames.return_value = list(self.name)
         return parameter_group
-
-    # pylint: enable = invalid-name
 
     def _mock_headers(self) -> japc_utils.Header | list[japc_utils.Header]:
         if isinstance(self.name, str):
@@ -202,7 +190,6 @@ def mock_japc(
 def extract_mock_handle(
     stream: japc_utils.ParamStream | japc_utils.ParamGroupStream,
 ) -> MockSubscriptionHandle:
-    # pylint: disable = protected-access
     return t.cast(MockSubscriptionHandle, stream._handle)
 
 

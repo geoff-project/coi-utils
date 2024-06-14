@@ -4,10 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-# pylint: disable = import-outside-toplevel
-# pylint: disable = missing-function-docstring
-# pylint: disable = unused-argument
-
 """Pytest configuration file."""
 
 from collections.abc import Iterator

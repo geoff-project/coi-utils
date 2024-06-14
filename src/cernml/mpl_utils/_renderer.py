@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import abc
-import sys
 import typing as t
 
 from matplotlib import pyplot as plt
@@ -18,7 +17,8 @@ from matplotlib.figure import Figure
 from ._iter import iter_matplotlib_figures
 
 if t.TYPE_CHECKING:
-    # pylint: disable = unused-import
+    import sys
+
     from ._iter import MatplotlibFigures
 
     if sys.version_info < (3, 11):
@@ -457,13 +457,10 @@ def make_renderer(
     return RendererGroup(renderers)
 
 
-T = t.TypeVar("T")  # pylint: disable=invalid-name
+T = t.TypeVar("T")
 
 
 class _RenderDescriptor(t.Generic[T]):
-    # pylint: disable = too-few-public-methods
-    # pylint: disable = invalid-name
-
     def __init__(
         self,
         func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],

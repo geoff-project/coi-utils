@@ -132,8 +132,10 @@ pydocstyle.ignore-decorators = ['overload', 'overrides']
 format.ignore-long-lines = '<?https?://\S+>?$'
 # Ignore Java packages imported via JPype as if they really existed.
 main.ignored-modules = ['java', 'cern']
-main.ignore-paths = ['docs/']
-main.ignore-patterns = ['.*\.pyi$', 'test_.*\.py$']
+# The `.*` part ensures that the regex matches both absolute and relative
+# paths. Necessary for PyLSP, which always passes absolute paths to PyLint.
+main.ignore-paths = ['.*docs/']
+main.ignore-patterns = ['conftest\.py$', '.*\.pyi$', 'test_.*\.py$']
 main.extension-pkg-whitelist = 'PyQt5'
 'messages control'.disable = ['all']
 'messages control'.enable = [

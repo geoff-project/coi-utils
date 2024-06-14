@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-# pylint: disable = missing-function-docstring
-# pylint: disable = missing-class-docstring
-# pylint: disable = import-outside-toplevel
-# pylint: disable = redefined-outer-name
-
 """Tests for `cernml.mpl_utils`."""
 
 import typing as t
@@ -50,7 +45,6 @@ class TestFigureRenderer:
     def test_requires_super_init(self) -> None:
         class BadRenderer(FigureRenderer):
             def __init__(self) -> None:
-                # pylint: disable = super-init-not-called
                 pass
 
             _init_figure = _update_figure = Mock()
@@ -61,7 +55,6 @@ class TestFigureRenderer:
 
     @pytest.mark.parametrize("mode", ["human", "matplotlib_figures"])
     def test_update_logic(self, mode: str) -> None:
-        # pylint: disable = protected-access
         renderer = self.MockFigureRenderer()
         renderer.make_figure = Mock()  # type: ignore[method-assign]
         assert renderer.figure is None
@@ -154,8 +147,6 @@ class TestRendererGroup:
 
 
 class TestRenderGenerator:
-    # pylint: disable = too-few-public-methods
-
     # This test class merely covers weird edge cases that shouldn't be
     # enumerated in the doctest of mpl_utils.render_generator.
 
@@ -165,7 +156,6 @@ class TestRenderGenerator:
             def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
                 pass
 
-        # pylint: disable = no-member
         Container.first.__set_name__(Container, "first")
 
     def test_bad_assign(self) -> None:
@@ -180,7 +170,6 @@ class TestRenderGenerator:
         with pytest.raises(RuntimeError) as exc:
 
             class Container:
-                # pylint: disable = unused-variable
                 @render_generator
                 def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
                     pass

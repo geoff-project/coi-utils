@@ -4,9 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-# pylint: disable = missing-class-docstring
-# pylint: disable = missing-function-docstring
-
 """Add custom directives for this package.
 
 These custom directives are:

@@ -4,11 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-# pylint: disable = missing-function-docstring
-# pylint: disable = missing-class-docstring
-# pylint: disable = import-outside-toplevel
-# pylint: disable = redefined-outer-name
-
 """Tests for `cernml.gym_utils`."""
 
 import typing as t

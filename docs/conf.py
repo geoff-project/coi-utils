@@ -4,12 +4,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
-# pylint: disable = import-outside-toplevel
-# pylint: disable = invalid-name
-# pylint: disable = redefined-builtin
-# pylint: disable = too-many-arguments
-# pylint: disable = unused-argument
-
 """Configuration file for the Sphinx documentation builder.
 
 This file only contains a selection of the most common options. For a

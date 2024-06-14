@@ -49,8 +49,6 @@ class MockLoader(Loader, MetaPathFinder):
     object that will just return more mocks for every attribute.
     """
 
-    # pylint: disable = unused-argument, missing-function-docstring
-
     def find_spec(
         self,
         fullname: str,

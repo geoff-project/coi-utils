@@ -267,7 +267,6 @@ class IncorporatorGroup:
             == list(self.incorporators())`` is generally False.
         """
         for parameter in self._parameters:
-            # pylint: disable = protected-access
             yield Incorporator._from_raw(parameter, self._cycle)
 
     def get(self, parameter: str) -> Incorporator:
@@ -283,7 +282,6 @@ class IncorporatorGroup:
         """
         for param in self._parameters:
             if param.getName() == parameter:
-                # pylint: disable = protected-access
                 return Incorporator._from_raw(param, self._cycle)
         raise KeyError(parameter)
 

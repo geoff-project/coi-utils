@@ -113,8 +113,6 @@ class Hooks(AbstractHooks):
     def __init__(self) -> None:
         self.__parent: Hooks | None = None
 
-    # pylint: disable = global-statement
-
     def install_globally(self) -> None:
         """Install this object as the new global trim request hook.
 
@@ -195,7 +193,6 @@ class DefaultHooks(Hooks):
     """
 
     def __eq__(self, other: object) -> bool:
-        # pylint: disable = unidiomatic-typecheck
         if type(self) is type(other):
             return True
         return NotImplemented
