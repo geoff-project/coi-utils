@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import abc
+import sys
 import typing as t
 
 from matplotlib import pyplot as plt
@@ -19,6 +20,11 @@ from ._iter import iter_matplotlib_figures
 if t.TYPE_CHECKING:
     # pylint: disable = unused-import
     from ._iter import MatplotlibFigures
+
+    if sys.version_info < (3, 11):
+        from typing_extensions import Self
+    else:
+        from typing import Self
 
 __all__ = (
     "FigureRenderer",
@@ -454,7 +460,7 @@ def make_renderer(
 T = t.TypeVar("T")  # pylint: disable=invalid-name
 
 
-class _Decorator(t.Generic[T]):
+class _RenderDescriptor(t.Generic[T]):
     # pylint: disable = too-few-public-methods
     # pylint: disable = invalid-name
 
@@ -483,7 +489,7 @@ class _Decorator(t.Generic[T]):
             )
 
     @t.overload
-    def __get__(self, instance: None, owner: type[T]) -> _Decorator[T]: ...
+    def __get__(self, instance: None, owner: type[T]) -> Self: ...
 
     @t.overload
     def __get__(
@@ -492,7 +498,7 @@ class _Decorator(t.Generic[T]):
 
     def __get__(
         self, instance: T | None, owner: type[T]
-    ) -> _Decorator[T] | t.Callable[[str], "MatplotlibFigures" | None]:
+    ) -> Self | t.Callable[[str], MatplotlibFigures | None]:
         if instance is None:
             return self
         if self.attrname is None:
@@ -506,7 +512,7 @@ class _Decorator(t.Generic[T]):
 
 def render_generator(
     func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
-) -> _Decorator:
+) -> _RenderDescriptor[T]:
     """Decorator wrapper for `FigureRenderer`.
 
     This is a wrapper around `FigureRenderer.from_callback()`. It
@@ -560,6 +566,6 @@ def render_generator(
         >>> problem.update_figure
         <bound method FigureRenderer.update of <...>>
         >>> Problem.update_figure
-        <mpl_utils..._Decorator object at ...>
+        <..._RenderDescriptor object at ...>
     """
-    return _Decorator(func)
+    return _RenderDescriptor(func)

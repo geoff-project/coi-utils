@@ -20,7 +20,7 @@ import pytest
 from cernml.mpl_utils import FigureRenderer, Renderer, RendererGroup, render_generator
 
 if t.TYPE_CHECKING:
-    from cernml.mpl_utils._renderer import _Decorator
+    from cernml.mpl_utils._renderer import _RenderDescriptor
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -170,7 +170,7 @@ class TestRenderGenerator:
 
     def test_bad_assign(self) -> None:
         class Container:
-            first: t.Optional["_Decorator"] = None
+            first: t.Optional["_RenderDescriptor"] = None
 
         Container.first = render_generator(lambda _self, _fig: None)
         with pytest.raises(TypeError, match="__set_name__"):
