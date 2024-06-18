@@ -8,9 +8,17 @@
 
 from __future__ import annotations
 
+import sys
 import typing as t
 
-from matplotlib.figure import Figure
+if t.TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
+if sys.version_info < (3, 12):
+    from typing_extensions import TypeAlias
+else:
+    from typing import TypeAlias
+
 
 __all__ = (
     "MatplotlibFigures",
@@ -18,19 +26,19 @@ __all__ = (
     "iter_matplotlib_figures",
 )
 
-MaybeTitledFigure = t.Union[Figure, tuple[str, Figure]]
+MaybeTitledFigure: TypeAlias = t.Union["Figure", tuple[str, "Figure"]]
 """Helper annotation for `MatplotlibFigures`."""
 
 MatplotlibFigures = t.Union[
-    Figure,
+    "Figure",
     t.Iterable[MaybeTitledFigure],
-    t.Mapping[str, Figure],
+    t.Mapping[str, "Figure"],
 ]
 """Type of the return value of render mode :rmode:`"matplotlib_figures"`."""
 
 
 def iter_matplotlib_figures(
-    figures: "MatplotlibFigures",
+    figures: MatplotlibFigures,
 ) -> t.Iterator[tuple[str, Figure]]:
     """Handle result of render mode :rmode:`"matplotlib_figures"`.
 
@@ -94,13 +102,13 @@ def iter_matplotlib_figures(
         TypeError: not a figure: 'not_a_title'
     """
     if hasattr(figures, "items"):
-        yield from iter(t.cast(t.Mapping[str, Figure], figures).items())
+        yield from iter(t.cast(t.Mapping[str, "Figure"], figures).items())
         return
     try:
         iterator = iter(t.cast(t.Iterable, figures))
     except TypeError:
         # Not iterable, assume a single figure.
-        yield "", t.cast(Figure, figures)
+        yield "", t.cast("Figure", figures)
         return
     for item in iterator:
         # Unpack `item` if it is iterable. We avoid catching `TypeError`
@@ -110,7 +118,7 @@ def iter_matplotlib_figures(
         if isinstance(item, str):
             raise TypeError(f"not a figure: {item!r}")
         if hasattr(item, "__iter__") or hasattr(item, "__getitem__"):
-            title, figure = t.cast(tuple[str, Figure], item)
+            title, figure = t.cast(tuple[str, "Figure"], item)
         else:
             title, figure = "", item
         yield title, figure

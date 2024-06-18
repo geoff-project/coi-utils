@@ -21,43 +21,70 @@ Matplotlib Utilities
 
     .. autofunction:: iter_matplotlib_figures
     .. autofunction:: make_renderer
-    .. autoclass:: Renderer
-        :show-inheritance:
-        :members:
-    .. autoclass:: FigureRenderer
-        :show-inheritance:
-        :members: close, from_callback, _init_figure, _update_figure
-    .. autoclass:: RendererGroup
-        :show-inheritance: tuple
-    .. autodecorator:: render_generator
+    .. autodecorator:: render_generator()
 
-    ..
-        Manual annotation of the type aliases; If we used any of the auto
-        directives, these would be annotated as ``py:data`` (by virtue of being
-        module-scope variables, not true classes). This, in turn, confuses the
-        autodoc signature handler, which expects to link to a ``py:class``.
+Class-based Interface
+---------------------
 
-        Manually annotating these as classes is the easiest way to circumvent
-        this mess.
+.. autoclass:: Renderer
+    :show-inheritance:
+    :members:
+    :exclude-members: strategy, KNOWN_STRATEGIES, update
 
-    .. class:: cernml.mpl_utils.MatplotlibFigures
+    .. autoattribute:: strategy
 
-        alias of `~matplotlib.figure.Figure` |
-        `~typing.Iterable`\[`~cernml.mpl_utils.MaybeTitledFigure`] |
-        `~typing.Mapping`\[`str`, `~matplotlib.figure.Figure`]
+    .. autoattribute:: KNOWN_STRATEGIES
+        :no-value:
 
-    .. class:: cernml.mpl_utils.MaybeTitledFigure
+    .. automethod:: update
 
-        alias of `~matplotlib.figure.Figure` |
-        `~typing.Tuple`\[`str`, `~matplotlib.figure.Figure`]
+.. autoclass:: FigureRenderer
+    :show-inheritance:
+    :members: close, from_callback, _init_figure, _update_figure
 
-    .. class:: cernml.mpl_utils.RenderGenerator
+.. autoclass:: RendererGroup
+    :show-inheritance: tuple
 
-        alias of `~typing.Generator`\[`None`,
-        `~matplotlib.figure.Figure`, `~typing.NoReturn`]
+.. autoclass:: AbstractRenderer
+    :show-inheritance:
 
-    .. class:: cernml.mpl_utils.RenderCallback
+    .. automethod:: update
+        :no-index:
 
-        alias of `~typing.Callable`\[[`~matplotlib.figure.Figure`], `None`] |
-        `~typing.Callable`\[[`~matplotlib.figure.Figure`],
-        `~cernml.mpl_utils.RenderGenerator`]]
+..
+    Manual annotation of the type aliases; If we used any of the auto
+    directives, these would be annotated as ``py:data`` (by virtue of being
+    module-scope variables, not true classes). This, in turn, confuses the
+    autodoc signature handler, which expects to link to a ``py:class``.
+
+    Manually annotating these as classes is the easiest way to circumvent
+    this mess.
+
+.. class:: cernml.mpl_utils.MatplotlibFigures
+
+    alias of `~matplotlib.figure.Figure` |
+    `~typing.Iterable`\[`~cernml.mpl_utils.MaybeTitledFigure`] |
+    `~typing.Mapping`\[`str`, `~matplotlib.figure.Figure`]
+
+.. class:: cernml.mpl_utils.MaybeTitledFigure
+
+    alias of `~matplotlib.figure.Figure` |
+    `~typing.Tuple`\[`str`, `~matplotlib.figure.Figure`]
+
+.. class:: cernml.mpl_utils.RenderGenerator
+
+    alias of `~typing.Generator`\[`None`,
+    `~matplotlib.figure.Figure`, `~typing.NoReturn`]
+
+.. class:: cernml.mpl_utils.RenderCallback
+
+    alias of `~typing.Callable`\[[`~matplotlib.figure.Figure`], `None`] |
+    `~typing.Callable`\[[`~matplotlib.figure.Figure`],
+    `~cernml.mpl_utils.RenderGenerator`]]
+
+Strategies
+----------
+
+.. autoclass:: FigureStrategy
+.. autoclass:: HumanStrategy
+.. autoclass:: MatplotlibFiguresStrategy

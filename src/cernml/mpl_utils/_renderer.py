@@ -8,26 +8,29 @@
 
 from __future__ import annotations
 
-import abc
+import sys
 import typing as t
+from abc import abstractmethod
+from functools import partial
 
-from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
-
-from ._iter import iter_matplotlib_figures
+from ._iter import MatplotlibFigures, iter_matplotlib_figures
+from ._strategies import FigureStrategy, HumanStrategy, MatplotlibFiguresStrategy
 
 if t.TYPE_CHECKING:
-    import sys
+    from matplotlib.figure import Figure
 
-    from ._iter import MatplotlibFigures
+    from cernml.coi.protocols import Problem
 
-    if sys.version_info < (3, 11):
-        from typing_extensions import Self
-    else:
-        from typing import Self
+if sys.version_info < (3, 12):
+    from typing_extensions import Self, TypeAlias, override
+else:
+    from typing import Self, TypeAlias, override
+
 
 __all__ = (
+    "AbstractRenderer",
     "FigureRenderer",
+    "InconsistentRenderModeError",
     "RenderCallback",
     "RenderGenerator",
     "Renderer",
@@ -37,58 +40,32 @@ __all__ = (
 )
 
 
-RenderGenerator = t.Generator[None, Figure, t.NoReturn]
-
-RenderCallback = t.Union[
-    t.Callable[[Figure], None],
-    t.Callable[[Figure], RenderGenerator],
+RenderGenerator: TypeAlias = t.Generator[None, "Figure", t.NoReturn]
+RenderCallback: TypeAlias = t.Union[
+    t.Callable[["Figure"], None],
+    t.Callable[["Figure"], RenderGenerator],
 ]
 
 
-class Renderer(metaclass=abc.ABCMeta):
-    """Interface for types that facilitate Matplotlib rendering.
+@t.runtime_checkable
+class AbstractRenderer(t.Protocol):
+    """Base protocol of all renderers.
 
-    This is an abstract base class. You should use a concrete
-    implementation, e.g. `FigureRenderer`.
+    This has been split out of `Renderer` and encapsulates the pure
+    behavior of renderers, with none of the attributes. This is
+    necessary for `RendererGroup`, which does not contain a `.strategy`
+    of its own.
     """
 
-    @staticmethod
-    def make_figure(mode: str) -> Figure:
-        """Create the correct kind of figure for the render mode.
+    __slots__ = ()
 
-        This creates a managed figure in the mode :rmode:`"human"` and
-        an unmanaged figure in the mode :rmode:`"matplotlib_figures"`.
-
-        Raises:
-            KeyError: if *mode* is neither of the two known render
-                modes.
-        """
-        handlers: dict[str, t.Callable[[], Figure]] = {
-            "human": plt.figure,
-            "matplotlib_figures": Figure,
-        }
-        return handlers[mode]()
-
-    @t.overload
-    def update(self, mode: t.Literal["human"]) -> None: ...
-
-    @t.overload
-    def update(self, mode: t.Literal["matplotlib_figures"]) -> MatplotlibFigures: ...
-
-    @t.overload
-    def update(self, mode: str) -> MatplotlibFigures | None: ...
-
-    @abc.abstractmethod
-    def update(self, mode: str) -> MatplotlibFigures | None:
+    @abstractmethod
+    def update(self) -> MatplotlibFigures | None:
         """Update the renderer's figures and return them.
 
         On the first call, this should initialize the renderer's
         figures. On all subsequent calls, it should reuse the figures
         and update their contents.
-
-        Args:
-            mode: The render mode. This must be either :rmode:`"human"`
-                or :rmode:`"matplotlib_figures"`.
 
         Returns:
             None if the render mode is :rmode:`"human"`. Otherwise,
@@ -96,7 +73,44 @@ class Renderer(metaclass=abc.ABCMeta):
         """
 
 
-class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
+class Renderer(AbstractRenderer):
+    """Interface for types that facilitate Matplotlib rendering.
+
+    This is an :term:`abstract base class`. You should use a concrete
+    implementation, e.g. `FigureRenderer`.
+
+    Args:
+        render_mode: The render mode. Should be None or :rmode:`"human"`
+            or :rmode:`"matplotlib_figures"`.
+    """
+
+    __slots__ = ("strategy",)
+
+    strategy: FigureStrategy | None
+    """The strategy_ to interact with the `~matplotlib.figure.Figure`
+    object. Usually this is either `HumanStrategy` or
+    `MatplotlibFiguresStrategy`, but users can supply their own
+    implementation.
+
+    .. _strategy: https://en.wikipedia.org/wiki/Strategy_pattern
+    """
+
+    KNOWN_STRATEGIES: t.ClassVar[dict[str, FigureStrategy]] = {
+        "human": HumanStrategy(),
+        "matplotlib_figures": MatplotlibFiguresStrategy(),
+    }
+    """Translation table from render mode to `strategy`. If you
+    want to define a custom render mode, insert it into this global
+    mapping."""
+
+    def __init__(self, render_mode: str | None) -> None:
+        if isinstance(render_mode, FigureStrategy) or render_mode is None:
+            self.strategy = render_mode
+        else:
+            self.strategy = self.KNOWN_STRATEGIES[render_mode]
+
+
+class FigureRenderer(Renderer):
     """Renderer that manages a single figure.
 
     Args:
@@ -105,6 +119,8 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
             in other render modes. In particular, this does *not* add a
             title to the figure's contents. For this, use
             :meth:`~matplotlib.figure.Figure.suptitle()` instead.
+        render_mode: The render mode. Should be None or :rmode:`"human"`
+            or :rmode:`"matplotlib_figures"`. See also Strategies_.
 
     This is another :term:`abstract base class`. There are three typical
     use cases:
@@ -115,20 +131,22 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
        `~Renderer.update()` call::
 
         >>> import numpy as np
+        >>> from cernml import coi
         ...
-        >>> class Problem:
-        ...     metadata = {"render.modes": ["matplotlib_figures"]}
+        >>> class Problem(coi.Problem):
+        ...     metadata = {"render_modes": ["matplotlib_figures"]}
         ...
-        ...     def __init__(self):
+        ...     def __init__(self, render_mode=None):
+        ...         super().__init__(render_mode)
         ...         self.data = np.random.uniform(size=10)
         ...         self.renderer = FigureRenderer.from_callback(
-        ...             self._iter_updates
+        ...             self._iter_updates, render_mode=render_mode
         ...         )
         ...
-        ...     def render(self, mode="human"):
-        ...         if mode in self.metadata["render.modes"]:
-        ...             return self.renderer.update(mode)
-        ...         return super().render(mode)
+        ...     def render(self):
+        ...         if self.render_mode in self.metadata["render_modes"]:
+        ...             return self.renderer.update()
+        ...         return super().render()
         ...
         ...     def _iter_updates(self, fig):
         ...         # First iteration, initialize.
@@ -144,10 +162,10 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         ...             points.set_ydata(self.data)
         ...             print("updated")
         ...
-        >>> problem = Problem()
-        >>> fig = problem.render("matplotlib_figures")
+        >>> problem = Problem("matplotlib_figures")
+        >>> fig = problem.render()
         initialized
-        >>> fig = problem.render("matplotlib_figures")
+        >>> fig = problem.render()
         updated
 
     2. You pass a function to `from_callback()`. This returns a
@@ -155,20 +173,22 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
        `~Renderer.update()` call.
 
         >>> import numpy as np
+        >>> from cernml import coi
         ...
-        >>> class Problem:
-        ...     metadata = {"render.modes": ["matplotlib_figures"]}
+        >>> class Problem(coi.Problem):
+        ...     metadata = {"render_modes": ["matplotlib_figures"]}
         ...
-        ...     def __init__(self):
+        ...     def __init__(self, render_mode=None):
+        ...         super().__init__(render_mode)
         ...         self.data = np.random.uniform(size=10)
         ...         self.renderer = FigureRenderer.from_callback(
-        ...             self._update_figure
+        ...             self._update_figure, render_mode=render_mode
         ...         )
         ...
-        ...     def render(self, mode="human"):
-        ...         if mode in self.metadata["render.modes"]:
-        ...             return self.renderer.update(mode)
-        ...         return super().render(mode)
+        ...     def render(self):
+        ...         if self.render_mode in self.metadata["render_modes"]:
+        ...             return self.renderer.update()
+        ...         return super().render()
         ...
         ...     def _update_figure(self, fig):
         ...         # Grab or create a subplot.
@@ -178,10 +198,10 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         ...         axes.plot(self.data, "o")
         ...         print("redrawn")
         ...
-        >>> problem = Problem()
-        >>> fig = problem.render("matplotlib_figures")
+        >>> problem = Problem("matplotlib_figures")
+        >>> fig = problem.render()
         redrawn
-        >>> fig = problem.render("matplotlib_figures")
+        >>> fig = problem.render()
         redrawn
 
     3. You inherit from this class and implement `_init_figure()`
@@ -189,10 +209,11 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
        `~Renderer.update()` at the appropriate times.
 
         >>> import numpy as np
+        >>> from cernml import coi
         ...
         >>> class ProblemRenderer(FigureRenderer):
-        ...     def __init__(self, problem):
-        ...         super().__init__()
+        ...     def __init__(self, problem, render_mode):
+        ...         super().__init__(render_mode=render_mode)
         ...         self.problem = problem
         ...
         ...     def _init_figure(self, figure):
@@ -207,28 +228,40 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         ...         curve.set_data(np.arange(len(data)), data)
         ...         print("updated")
         ...
-        >>> class Problem:
-        ...     metadata = {"render.modes": ["matplotlib_figures"]}
+        >>> class Problem(coi.Problem):
+        ...     metadata = {"render_modes": ["matplotlib_figures"]}
         ...
-        ...     def __init__(self):
+        ...     def __init__(self, render_mode=None):
+        ...         super().__init__(render_mode)
         ...         self.data = np.random.uniform(size=10)
-        ...         self.renderer = ProblemRenderer(self)
+        ...         self.renderer = ProblemRenderer(self, render_mode)
         ...
         ...     def render(self, mode="human"):
-        ...         if mode in self.metadata["render.modes"]:
-        ...             return self.renderer.update(mode)
-        ...         return super().render(mode)
+        ...         if self.render_mode in self.metadata["render_modes"]:
+        ...             return self.renderer.update()
+        ...         return super().render()
         ...
-        >>> problem = Problem()
-        >>> fig = problem.render("matplotlib_figures")
+        >>> problem = Problem("matplotlib_figures")
+        >>> fig = problem.render()
         initialized
-        >>> fig = problem.render("matplotlib_figures")
+        >>> fig = problem.render()
         updated
     """
 
-    def __init__(self, title: str | None = None) -> None:
+    __slots__ = ("title", "figure")
+
+    title: str | None
+    """The figure title passed to `__init__ <FigureRenderer>`."""
+
+    figure: Figure | None
+    """The figure managed by this renderer. This is initialized on the
+    first call to `update()`, unless the render mode is None; in that
+    case, this attribute is always `None`."""
+
+    def __init__(self, title: str | None = None, *, render_mode: str | None) -> None:
+        super().__init__(render_mode)
+        self.title = title
         self.figure: Figure | None = None
-        self._title = title
 
     def close(self) -> None:
         """Close the figure managed by this renderer.
@@ -236,51 +269,26 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         Unless the render mode is :rmode:`"human"` (and figures are
         managed by Matplotlib), this does nothing.
         """
-        # Do not call ``pyplot.close(None)`` -- that closes the current
-        # figure, as returned by ``pyplot.gcf()``, which might be
-        # completely unrelated to us.
-        # On the other hand, it's safe to close a figure that is not
-        # managed by pyplot. This case is caught internally and nothing
-        # happens.
-        if self.figure is not None:
-            plt.close(self.figure)
+        figure, self.figure = self.figure, None
+        if figure is not None and self.strategy is not None:
+            self.strategy.close_figure(figure)
 
-    @t.overload
-    def update(self, mode: t.Literal["human"]) -> None: ...
-
-    @t.overload
-    def update(self, mode: t.Literal["matplotlib_figures"]) -> MatplotlibFigures: ...
-
-    @t.overload
-    def update(self, mode: str) -> MatplotlibFigures | None: ...
-
-    def update(self, mode: str) -> MatplotlibFigures | None:
+    @override
+    def update(self) -> MatplotlibFigures | None:
         try:
             figure = self.figure
         except AttributeError:
             raise TypeError("super().__init__() not called") from None
+        if (strategy := self.strategy) is None:
+            return None
         if figure is None:
-            figure = self.figure = self.make_figure(mode)
-            self._init_figure(self.figure)
+            figure = self.figure = strategy.make_figure(self.title)
+            self._init_figure(figure)
         else:
             self._update_figure(figure)
-        if mode == "human":
-            # In human mode, we must manually update our figure to
-            # ensure that the results of `self._update` become visible.
-            figure.show(warn=False)
-            # Use draw_idle() to actually postpone drawing until the
-            # next GUI pause. In `matplotlib_figures` mode, we return
-            # our figure to the caller, so they are free to call draw()
-            # themselves.
-            figure.canvas.draw_idle()
-            return None
-        if mode == "matplotlib_figures":
-            if self._title is None:
-                return (figure,)
-            return ((self._title, figure),)
-        raise KeyError(mode)
+        return strategy.update_figure(figure)
 
-    @abc.abstractmethod
+    @abstractmethod
     def _init_figure(self, figure: Figure) -> None:
         """Initialize the figure.
 
@@ -289,7 +297,7 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         plot.
         """
 
-    @abc.abstractmethod
+    @abstractmethod
     def _update_figure(self, figure: Figure) -> None:
         """Update the figure, reflecting any new data.
 
@@ -300,7 +308,9 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
         """
 
     @staticmethod
-    def from_callback(func: RenderCallback, title: str | None = None) -> FigureRenderer:
+    def from_callback(
+        func: RenderCallback, title: str | None = None, *, render_mode: str | None
+    ) -> FigureRenderer:
         """Create a renderer via a callback function or generator.
 
         Args:
@@ -310,36 +320,41 @@ class FigureRenderer(Renderer, metaclass=abc.ABCMeta):
                 The iterator is polled on every `.update()`.
             title: If passed, a string to attach to the figure in the
                 render mode :rmode:`"matplotlib_figures"`.
+            render_mode: The render mode. Should be None or
+                :rmode:`"human"` or :rmode:`"matplotlib_figures"`. See
+                also Strategies_.
 
         Returns:
             An unspecified subclass of `FigureRenderer`.
         """
-        return _FigureFuncRenderer(func, title)
+        return _FigureFuncRenderer(func, title, render_mode=render_mode)
 
 
 class _FigureFuncRenderer(FigureRenderer):
     """Return type of `FigureRenderer.from_callback()`."""
 
+    __slots__ = ("_func", "_generator")
+
     def __init__(
-        self,
-        func: RenderCallback,
-        title: str | None = None,
+        self, func: RenderCallback, title: str | None = None, *, render_mode: str | None
     ) -> None:
-        super().__init__(title)
+        super().__init__(title, render_mode=render_mode)
         self._func = func
         self._generator: RenderGenerator | None = None
 
     def __repr__(self) -> str:
-        if self._title is not None:
-            return f"<{type(self).__name__}({self._func!r}, {self._title!r})>"
+        if self.title is not None:
+            return f"<{type(self).__name__}({self._func!r}, {self.title!r})>"
         return f"<{type(self).__name__}({self._func!r})>"
 
+    @override
     def _init_figure(self, figure: Figure) -> None:
         generator = self._func(figure)
         if generator is not None:
             self._generator = generator
             next(generator)
 
+    @override
     def _update_figure(self, figure: Figure) -> None:
         if self._generator is not None:
             self._generator.send(figure)
@@ -347,19 +362,19 @@ class _FigureFuncRenderer(FigureRenderer):
             self._func(figure)
 
 
-class RendererGroup(Renderer, tuple[Renderer, ...]):
-    """A composite renderer that dispatches to multiple children.
+class RendererGroup(AbstractRenderer, tuple[AbstractRenderer, ...]):
+    """A composite renderer that dispatches to multiple elements.
 
     This is just a tuple of renderers that implements itself the
-    `Renderer` interface. Calling `~Renderer.update()`
-    forwards the call to each child.
+    `AbstractRenderer` interface. Calling `.update()` forwards the call
+    to each element renderer.
 
     Example::
 
         >>> class PrintRenderer(Renderer):
         ...     def __init__(self, index):
         ...         self.index = index
-        ...     def update(self, mode):
+        ...     def update(self):
         ...         print(f"Renderer {self.index} updated")
         >>> g = RendererGroup(PrintRenderer(i) for i in range(1, 6))
         >>> len(g)
@@ -372,38 +387,65 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
         Renderer 3 updated
         Renderer 4 updated
         Renderer 5 updated
+
+    Note:
+        Because a renderer group does not manage or know the render
+        mode, it has to guess it based on the return type of the element
+        renderers. It assumes :rmode:`"human"` if they return `None` and
+        :rmode:`"matplotlib_figures"` otherwise.
+
+        An empty group always assumed :rmode:`"matplotlib_figures"` and
+        returns an empty list, which is the safer option.
     """
 
     __slots__ = ()
 
-    @t.overload
-    def update(self, mode: t.Literal["human"]) -> None: ...
+    def update(self) -> MatplotlibFigures | None:
+        """Update all element renderers.
 
-    @t.overload
-    def update(self, mode: t.Literal["matplotlib_figures"]) -> "MatplotlibFigures": ...
+        Returns:
+            None if all element renderers return None. A list of figures
+            and title–figure tuples if all element renderers return
+            figures. An empty group always returns an empty list.
 
-    @t.overload
-    def update(self, mode: str) -> "MatplotlibFigures" | None: ...
-
-    def update(self, mode: str = "human") -> "MatplotlibFigures" | None:
-        if mode == "human":
-            for renderer in self:
-                renderer.update("human")
+        Raises:
+            InconsistentRenderModeError: If some but not all element
+                renderers return None. This indicates that the renderers
+                have conflicting render modes.
+        """
+        all_figures: list[tuple[str, Figure]] = []
+        any_none = False
+        for renderer in self:
+            figures = renderer.update()
+            if figures is None:
+                if all_figures:
+                    raise InconsistentRenderModeError(all_figures)
+                any_none = True
+            elif any_none:
+                raise InconsistentRenderModeError(figures)
+            else:
+                all_figures.extend(iter_matplotlib_figures(figures))
+        if any_none:
             return None
-        if mode == "matplotlib_figures":
-            res: list[tuple[str, Figure]] = []
-            for renderer in self:
-                res.extend(
-                    iter_matplotlib_figures(renderer.update("matplotlib_figures"))
-                )
-            return res
-        raise KeyError(mode)
+        return all_figures
+
+
+class InconsistentRenderModeError(RuntimeError):
+    """A `RendererGroup` contains renderers with conflicting render modes."""
+
+    def __init__(self, figures: MatplotlibFigures, *args: object) -> None:
+        msg = (
+            f"renderers with conflicting render mode; "
+            f"received None and also {figures!r}"
+        )
+        super().__init__(msg, *args)
 
 
 def make_renderer(
     *funcs: RenderCallback | t.Mapping[str, RenderCallback],
     squeeze: bool = True,
-) -> Renderer:
+    render_mode: str | None,
+) -> AbstractRenderer:
     """Build a renderer from one or more callbacks.
 
     This is a convenience function that calls
@@ -412,25 +454,30 @@ def make_renderer(
 
     1. With a single callback function or generator::
 
-        >>> def callback(fig):
-        ...     ...
-        >>> make_renderer(callback)
+        >>> def callback(fig): ...
+        ...
+        >>> make_renderer(callback, render_mode=None)
         <_FigureFuncRenderer(<function callback at ...>)>
 
     2. With multiple callbacks::
 
-        >>> g = make_renderer(callback, callback)
+        >>> g = make_renderer(callback, callback, render_mode=None)
         >>> type(g).__name__
         'RendererGroup'
+        >>> isinstance(g, tuple)
+        True
         >>> len(g)
         2
 
     3. With a mapping from strings to callbacks. The strings are used as
        titles in this case::
 
-        >>> make_renderer({"Figure 1": callback})
+        >>> make_renderer({"Figure 1": callback}, render_mode=None)
         <_FigureFuncRenderer(<function callback at ...>, 'Figure 1')>
-        >>> g = make_renderer({"foo": callback, "bar": callback})
+        >>> g = make_renderer(
+        ...     {"foo": callback, "bar": callback},
+        ...     render_mode=None,
+        ... )
         >>> len(g)
         2
 
@@ -438,29 +485,35 @@ def make_renderer(
     is always a `RendererGroup` – even if only one callback is
     passed::
 
-        >>> len(make_renderer(callback, squeeze=False))
+        >>> len(make_renderer(callback, squeeze=False, render_mode=None))
         1
-        >>> len(make_renderer({"foo": callback}, squeeze=False))
+        >>> len(make_renderer(
+        ...     {"foo": callback}, squeeze=False, render_mode=None
+        ... ))
         1
     """
     renderers: list[Renderer] = []
     for func_or_mapping in funcs:
         if isinstance(func_or_mapping, t.Mapping):
             renderers.extend(
-                _FigureFuncRenderer(func, title)
+                _FigureFuncRenderer(func, title, render_mode=render_mode)
                 for title, func in func_or_mapping.items()
             )
         else:
-            renderers.append(_FigureFuncRenderer(func_or_mapping))
+            renderers.append(
+                _FigureFuncRenderer(func_or_mapping, render_mode=render_mode)
+            )
     if squeeze and len(renderers) == 1:
         return renderers[0]
     return RendererGroup(renderers)
 
 
-T = t.TypeVar("T")
+T = t.TypeVar("T", bound="Problem")
 
 
 class _RenderDescriptor(t.Generic[T]):
+    """The return type of `render_generator`."""
+
     def __init__(
         self,
         func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
@@ -471,10 +524,26 @@ class _RenderDescriptor(t.Generic[T]):
         self.renderer: _FigureFuncRenderer | None = None
 
     def _make_renderer(self, instance: T) -> _FigureFuncRenderer:
-        def iter_func_call(fig: Figure) -> RenderGenerator | None:
-            return self.func(instance, fig)
+        @t.overload
+        def partial_(
+            f: t.Callable[[T, Figure], None],
+        ) -> t.Callable[[Figure], None]: ...
+        @t.overload
+        def partial_(
+            f: t.Callable[[T, Figure], RenderGenerator],
+        ) -> t.Callable[[Figure], RenderGenerator]: ...
+        def partial_(
+            f: t.Callable[[T, Figure], RenderGenerator | None],
+        ) -> t.Callable[[Figure], RenderGenerator | None]:
+            return partial(f, instance)
 
-        return _FigureFuncRenderer(t.cast(RenderCallback, iter_func_call))
+        try:
+            render_mode = instance.render_mode
+        except AttributeError as exc:
+            raise AttributeError(
+                f"missing attribute `render_mode` in `Problem` instance: {instance!r}"
+            ) from exc
+        return _FigureFuncRenderer(partial_(self.func), render_mode=render_mode)
 
     def __set_name__(self, owner: type[T], name: str) -> None:
         if self.attrname is None:
@@ -491,11 +560,11 @@ class _RenderDescriptor(t.Generic[T]):
     @t.overload
     def __get__(
         self, instance: T, owner: type[T]
-    ) -> t.Callable[[str], MatplotlibFigures | None]: ...
+    ) -> t.Callable[[], MatplotlibFigures | None]: ...
 
     def __get__(
         self, instance: T | None, owner: type[T]
-    ) -> Self | t.Callable[[str], MatplotlibFigures | None]:
+    ) -> Self | t.Callable[[], MatplotlibFigures | None]:
         if instance is None:
             return self
         if self.attrname is None:
@@ -523,22 +592,25 @@ def render_generator(
 
     Example::
 
+        >>> from cernml import coi
         >>> import numpy as np
-        >>> class Problem:
+        ...
+        >>> class Problem(coi.Problem):
         ...     metadata = {
-        ...         "render.modes": ["human", "matplotlib_figures"],
+        ...         "render_modes": ["human", "matplotlib_figures"],
         ...     }
         ...
-        ...     def __init__(self):
+        ...     def __init__(self, render_mode=None):
+        ...         super().__init__(render_mode)
         ...         self.data = np.random.uniform(size=10)
         ...
-        ...     def render(self, mode="human"):
-        ...         if mode in self.metadata["render.modes"]:
+        ...     def render(self):
+        ...         if self.render_mode in self.metadata["render_modes"]:
         ...             # Manages a `FigureRenderer` in the background
         ...             # and actually calls `renderer.update(mode)`
         ...             # on it.
-        ...             return self.update_figure(mode)
-        ...         return super().render(mode)
+        ...             return self.update_figure()
+        ...         return super().render()
         ...
         ...     @render_generator
         ...     def update_figure(self, fig):
@@ -554,10 +626,11 @@ def render_generator(
         ...             # Update the plot, loop, and yield again.
         ...             points.set_ydata(self.data)
         ...             print("updated")
-        >>> problem = Problem()
-        >>> fig = problem.render("matplotlib_figures")
+        ...
+        >>> problem = Problem("matplotlib_figures")
+        >>> fig = problem.render()
         initialized
-        >>> fig = problem.render("matplotlib_figures")
+        >>> fig = problem.render()
         updated
         >>> # This is not <bound method Problem.update_figure>!
         >>> problem.update_figure

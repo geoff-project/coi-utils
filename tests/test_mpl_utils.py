@@ -6,16 +6,37 @@
 
 """Tests for `cernml.mpl_utils`."""
 
+from __future__ import annotations
+
 import typing as t
+from contextlib import ExitStack, closing
 from unittest.mock import MagicMock, Mock
 
 import matplotlib as mpl
 import pytest
 
-from cernml.mpl_utils import FigureRenderer, Renderer, RendererGroup, render_generator
+from cernml import coi
+from cernml.mpl_utils import (
+    AbstractRenderer,
+    FigureRenderer,
+    Renderer,
+    RendererGroup,
+    _strategies,
+    render_generator,
+)
 
 if t.TYPE_CHECKING:
     from cernml.mpl_utils._renderer import _RenderDescriptor
+
+
+class MockFigureRenderer(FigureRenderer):
+    def __init__(self, title: t.Any = None, *, render_mode: str | None) -> None:
+        super().__init__(title, render_mode=render_mode)
+        self._init_figure = Mock(name="bound method _init_figure")
+        self._update_figure = Mock(name="bound method _update_figure")
+
+    _init_figure = Mock(name="function _init_figure")
+    _update_figure = Mock(name="function _update_figure")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -33,62 +54,93 @@ def test_fixture() -> None:
 
 
 class TestFigureRenderer:
-    class MockFigureRenderer(FigureRenderer):
-        def __init__(self, title: t.Any = None) -> None:
-            super().__init__(title)
-            self._init_figure = Mock(name="bound method _init_figure")
-            self._update_figure = Mock(name="bound method _update_figure")
-
-        _init_figure = Mock(name="function _init_figure")
-        _update_figure = Mock(name="function _update_figure")
-
     def test_requires_super_init(self) -> None:
         class BadRenderer(FigureRenderer):
-            def __init__(self) -> None:
+            def __init__(self, *args: object) -> None:
                 pass
 
             _init_figure = _update_figure = Mock()
 
-        renderer = BadRenderer()
+        renderer = BadRenderer("human")
         with pytest.raises(TypeError, match=r"super\(\).__init__\(\) not called"):
-            renderer.update("human")
+            renderer.update()
 
-    @pytest.mark.parametrize("mode", ["human", "matplotlib_figures"])
-    def test_update_logic(self, mode: str) -> None:
-        renderer = self.MockFigureRenderer()
-        renderer.make_figure = Mock()  # type: ignore[method-assign]
+    @pytest.mark.parametrize(
+        ("mode", "strat_type"),
+        [
+            ("human", _strategies.HumanStrategy),
+            ("matplotlib_figures", _strategies.MatplotlibFiguresStrategy),
+            (None, type(None)),
+        ],
+    )
+    def test_mode_selection(self, mode: str, strat_type: type) -> None:
+        renderer = MockFigureRenderer(render_mode=mode)
+        with closing(renderer):
+            assert isinstance(renderer.strategy, strat_type)
+
+    def test_update_logic(self) -> None:
+        title = Mock()
+        strategy = Mock(_strategies.FigureStrategy)
+        renderer = MockFigureRenderer(title=title, render_mode=strategy)
+        assert renderer.strategy is strategy
         assert renderer.figure is None
-        renderer.update(mode)
-        assert renderer.figure == renderer.make_figure.return_value
-        renderer._update_figure.assert_not_called()
-        renderer.update(mode)
-        renderer.make_figure.assert_called_once_with(mode)
+
+        res = renderer.update()
+        strategy.make_figure.assert_called_once_with(title)
+        strategy.update_figure.assert_called_once_with(renderer.figure)
+        assert renderer.figure == strategy.make_figure.return_value
+        assert res == strategy.update_figure.return_value
         renderer._init_figure.assert_called_once_with(renderer.figure)
-        renderer._update_figure.assert_called_with(renderer.figure)
+        renderer._update_figure.assert_not_called()
+
+        res = renderer.update()
+        renderer._init_figure.assert_called_once_with(renderer.figure)
+        renderer._update_figure.assert_called_once_with(renderer.figure)
+        assert res == strategy.update_figure.return_value
+        assert strategy.update_figure.call_count == 2
+
+    def test_none_strategy(self) -> None:
+        mock_figure = Mock()
+        renderer = MockFigureRenderer(render_mode=None)
+        assert renderer.strategy is None
+        assert renderer.figure is None
+        res = renderer.update()
+        renderer._init_figure.assert_not_called()
+        renderer._update_figure.assert_not_called()
+        assert res is None
+        assert renderer.strategy is None
+        assert renderer.figure is None
+        renderer.figure = mock_figure
+        res = renderer.update()
+        renderer._init_figure.assert_not_called()
+        renderer._update_figure.assert_not_called()
+        assert res is None
+        assert renderer.strategy is None
+        assert renderer.figure is mock_figure
 
     def test_human_extra_logic(self) -> None:
         figure = Mock()
-        renderer = self.MockFigureRenderer()
+        renderer = MockFigureRenderer(render_mode="human")
         renderer.figure = figure
-        result = renderer.update("human")
+        result = renderer.update()
         assert result is None
         figure.show.assert_called_once()
         figure.canvas.draw_idle.assert_called_once()
 
     @pytest.mark.parametrize("title", [None, Mock()])
     def test_mpl_figures_retval(self, title: t.Any) -> None:
-        renderer = self.MockFigureRenderer(title)
-        result = renderer.update("matplotlib_figures")
+        renderer = MockFigureRenderer(title, render_mode="matplotlib_figures")
+        result = renderer.update()
         if title is None:
             assert result == (renderer.figure,)
         else:
-            assert result == ((title, renderer.figure),)
+            assert result == ((str(title), renderer.figure),)
 
     def test_close_closes_figure(self, monkeypatch: pytest.MonkeyPatch) -> None:
         pyplot = Mock()
         figure = Mock()
         monkeypatch.setattr("matplotlib.pyplot.close", pyplot.close)
-        renderer = self.MockFigureRenderer()
+        renderer = MockFigureRenderer(render_mode="human")
         renderer.figure = figure
         renderer.close()
         pyplot.close.assert_called_once_with(figure)
@@ -96,50 +148,65 @@ class TestFigureRenderer:
     def test_close_avoids_calling_none(self, monkeypatch: pytest.MonkeyPatch) -> None:
         pyplot = Mock()
         monkeypatch.setattr("matplotlib.pyplot.close", pyplot.close)
-        renderer = self.MockFigureRenderer()
+        renderer = MockFigureRenderer(render_mode="human")
         renderer.close()
         pyplot.close.assert_not_called()
 
     def test_unknown_render_mode(self) -> None:
-        renderer = self.MockFigureRenderer()
-        renderer.figure = Mock()
         with pytest.raises(KeyError, match="numpy_array"):
-            renderer.update("numpy_array")
+            MockFigureRenderer(render_mode="numpy_array")
 
 
 class TestRendererGroup:
     def test_is_tuple(self) -> None:
-        renderers = [Mock(name=f"Renderer #{i+1}") for i in range(5)]
+        renderers = [Mock(Renderer, name=f"Renderer #{i}") for i in range(1, 6)]
         group = RendererGroup(renderers)
         assert list(group) == renderers
         assert len(group) == len(renderers)
-        assert isinstance(group, Renderer)
+        assert not isinstance(group, Renderer)
+        assert isinstance(group, AbstractRenderer)
         assert isinstance(group, tuple)
 
-    @pytest.mark.parametrize("mode", ["human", "matplotlib_figures", "unknown"])
+    @pytest.mark.parametrize("mode", ["human", "matplotlib_figures"])
     def test_update_all(self, mode: str) -> None:
         group = RendererGroup(
-            MagicMock(FigureRenderer, name=f"Renderer #{i+1}") for i in range(5)
+            MagicMock(FigureRenderer, name=f"Renderer #{i}") for i in range(1, 6)
         )
-        if mode == "unknown":
-            with pytest.raises(KeyError, match=mode):
-                group.update(mode)
-            return
-        group.update(mode)
+        group.update()
         for renderer in group:
-            t.cast(Mock, renderer.update).assert_called_once_with(mode)
+            t.cast(Mock, renderer.update).assert_called_once_with()
+
+    def test_update_empty_group(self) -> None:
+        group = RendererGroup()
+        assert group.update() == []
+
+    @pytest.mark.parametrize(
+        "modes",
+        [
+            ("human", "matplotlib_figures"),
+            ("matplotlib_figures", "human"),
+        ],
+    )
+    def test_inconsistent_order(self, modes: tuple[str, ...]) -> None:
+        renderers = tuple(MockFigureRenderer(render_mode=mode) for mode in modes)
+        stack = ExitStack()
+        for renderer in renderers:
+            stack.enter_context(closing(renderer))
+        with stack, pytest.raises(RuntimeError):
+            RendererGroup(renderers).update()
 
     def test_mpl_figure_retval(self) -> None:
         group = RendererGroup(
             [
                 FigureRenderer.from_callback(
-                    func=Mock(name=f"Renderer callback #{i+1}", return_value=None),
-                    title=f"Renderer title #{i+1}",
+                    func=Mock(name=f"Renderer callback #{i}", return_value=None),
+                    title=f"Renderer title #{i}",
+                    render_mode="matplotlib_figures",
                 )
-                for i in range(4)
+                for i in range(1, 5)
             ]
         )
-        result = group.update("matplotlib_figures")
+        result = group.update()
         assert result == [
             (f"Renderer title #{i+1}", t.cast(FigureRenderer, renderer).figure)
             for i, renderer in enumerate(group)
@@ -151,7 +218,7 @@ class TestRenderGenerator:
     # enumerated in the doctest of mpl_utils.render_generator.
 
     def test_good_double_assign(self) -> None:
-        class Container:
+        class Container(coi.Problem):
             @render_generator
             def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
                 pass
@@ -159,8 +226,8 @@ class TestRenderGenerator:
         Container.first.__set_name__(Container, "first")
 
     def test_bad_assign(self) -> None:
-        class Container:
-            first: t.Optional["_RenderDescriptor"] = None
+        class Container(coi.Problem):
+            first: _RenderDescriptor | None = None
 
         Container.first = render_generator(lambda _self, _fig: None)
         with pytest.raises(TypeError, match="__set_name__"):
@@ -169,7 +236,7 @@ class TestRenderGenerator:
     def test_bad_double_assign(self) -> None:
         with pytest.raises(RuntimeError) as exc:
 
-            class Container:
+            class Container(coi.Problem):
                 @render_generator
                 def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
                     pass
@@ -177,3 +244,27 @@ class TestRenderGenerator:
                 second = first
 
         assert isinstance(exc.value.__cause__, TypeError)
+
+    def test_bad_class(self) -> None:
+        class Container:
+            render_mode: str | None
+            metadata: dict[str, t.Any]
+            spec: coi.registration.MinimalEnvSpec
+            unwrapped: coi.protocols.Problem
+
+            def close(self) -> None:
+                raise NotImplementedError
+
+            def render(self) -> t.Any:
+                raise NotImplementedError
+
+            def get_wrapper_attr(self, name: str) -> t.Any:
+                raise NotImplementedError
+
+            @render_generator
+            def update(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
+                pass
+
+        container = Container()
+        with pytest.raises(AttributeError, match="render_mode"):
+            container.update()

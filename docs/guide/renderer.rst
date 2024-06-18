@@ -38,22 +38,23 @@ hold a `~cernml.mpl_utils.FigureRenderer` in your hand, the implementation of
 
     class MyProblem(SingleOptimizable):
         metadata = {
-            "render.modes": ["human", "ansi", "matplotlib_figures"],
+            "render_modes": ["human", "ansi", "matplotlib_figures"],
         }
 
-        def __init__(self):
+        def __init__(self, render_mode=None):
+            super().__init__(render_mode)
             self._renderer: FigureRenderer = ...
             ...
 
-        def render(self, mode="str"):
-            if mode in ["human", "matplotlib_figures"]:
+        def render(self):
+            if self.render_mode in ["human", "matplotlib_figures"]:
                 # This automatically creates the right kind of figure and
                 # calls its internal (abstract) methods to fill it with
                 # graphs. The return value adapts to the render mode.
-                return self._renderer.update(mode)
-            if mode == "ansi":
+                return self._renderer.update()
+            if self.render_mode == "ansi":
                 return ...
-            return super().render(mode)
+            return super().render()
 
         ...
 
@@ -100,18 +101,26 @@ Acc-Py tutorial`_.
     ...
     >>> class MyProblem(coi.SingleOptimizable):
     ...     metadata = {
-    ...         "render.modes": ["human", "matplotlib_figures"],
+    ...         "render_modes": ["human", "matplotlib_figures"],
     ...         "cern.machine": coi.Machine.NO_MACHINE,
     ...     }
     ...     optimization_space = Box(-1.0, 1.0, shape=(4,))
     ...
-    ...     def __init__(self):
+    ...     def __init__(self, render_mode=None):
+    ...         super().__init__(render_mode)
     ...         self._last_readings = None
-    ...         self._renderer = make_renderer(self._iter_updates)
+    ...         self._renderer = make_renderer(
+    ...             self._iter_updates,
+    ...             render_mode=render_mode,
+    ...         )
     ...         self.response = np.random.uniform(size=(10, 4))
     ...
-    ...     def get_initial_params(self):
+    ...     def get_initial_params(self, seed=None, options=None):
     ...         print("get_initial_params()")
+    ...         super().get_initial_params(seed=seed, options=options)
+    ...         if seed is not None:
+    ...             seed = self.np_random.bit_generator.random_raw()
+    ...             self.optimization_space.seed(seed)
     ...         self._last_readings = None
     ...         return self.optimization_space.sample()
     ...
@@ -122,11 +131,11 @@ Acc-Py tutorial`_.
     ...         loss = np.sqrt(np.mean(np.square(self._last_readings)))
     ...         return loss
     ...
-    ...     def render(self, mode="human"):
+    ...     def render(self):
     ...         # As before.
-    ...         if mode in self.metadata["render.modes"]:
-    ...             return self._renderer.update(mode)
-    ...         return super().render(mode)
+    ...         if self.render_mode in self.metadata["render_modes"]:
+    ...             return self._renderer.update()
+    ...         return super().render()
     ...
     ...     # This is a generator. It contains `yield` instead of `return`.
     ...     def _iter_updates(self, figure):
@@ -176,17 +185,17 @@ The following program shows the order in which these functions call each other:
 
 .. code-block:: python
 
-    >>> problem = MyProblem()
+    >>> problem = MyProblem(render_mode="matplotlib_figures")
     >>> x0 = problem.get_initial_params()
     get_initial_params()
-    >>> fig = problem.render("matplotlib_figures")
+    >>> fig = problem.render()
     initializing the figure
     render(no data)
     >>> for i in range(1, 4):
     ...     print(f"iteration #{i}")
     ...     x = problem.optimization_space.sample()
     ...     loss = problem.compute_single_objective(x)
-    ...     fig = problem.render("matplotlib_figures")
+    ...     fig = problem.render()
     iteration #1
     compute_single_objective()
     render(reset initial)
@@ -199,11 +208,11 @@ The following program shows the order in which these functions call each other:
     >>> # Start from scratch, to show that it works.
     >>> x0 = problem.get_initial_params()
     get_initial_params()
-    >>> fig = problem.render("matplotlib_figures")
+    >>> fig = problem.render()
     render(no data)
     >>> loss = problem.compute_single_objective(x0)
     compute_single_objective()
-    >>> fig = problem.render("matplotlib_figures")
+    >>> fig = problem.render()
     render(reset initial)
 
 

@@ -151,6 +151,7 @@ main.extension-pkg-whitelist = 'PyQt5'
     'typevar-double-variance',
     'typevar-name-incorrect-variance',
     'typevar-name-mismatch',
+    'undefined-all-variable',
     'unrecognized-inline-option',
     'unrecognized-option',
 ]

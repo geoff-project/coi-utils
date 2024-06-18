@@ -8,7 +8,9 @@
 
 from ._iter import MatplotlibFigures, MaybeTitledFigure, iter_matplotlib_figures
 from ._renderer import (
+    AbstractRenderer,
     FigureRenderer,
+    InconsistentRenderModeError,
     RenderCallback,
     Renderer,
     RendererGroup,
@@ -16,10 +18,16 @@ from ._renderer import (
     make_renderer,
     render_generator,
 )
+from ._strategies import FigureStrategy, HumanStrategy, MatplotlibFiguresStrategy
 
 __all__ = (
+    "AbstractRenderer",
     "FigureRenderer",
+    "FigureStrategy",
+    "HumanStrategy",
+    "InconsistentRenderModeError",
     "MatplotlibFigures",
+    "MatplotlibFiguresStrategy",
     "MaybeTitledFigure",
     "RenderCallback",
     "RenderGenerator",

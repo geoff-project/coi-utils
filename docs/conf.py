@@ -165,6 +165,7 @@ fix_xrefs_rules = [
     {"pattern": r"^cernml\..*\.T$", "reftarget": ("const", "typing.TypeVar")},
     {"pattern": r"^np\.", "reftarget": ("sub", "numpy."), "contnode": ("sub", "")},
     {"pattern": r"^t\.", "reftarget": ("sub", "typing."), "contnode": ("sub", "")},
+    {"pattern": r"^Figure$", "reftarget": ("const", "matplotlib.figure.Figure")},
     {
         "pattern": r"^cancellation\.",
         "reftarget": ("sub", r"cernml.coi.\g<0>"),
