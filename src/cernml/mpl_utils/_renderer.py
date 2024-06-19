@@ -333,23 +333,26 @@ class FigureRenderer(Renderer):
 class _FigureFuncRenderer(FigureRenderer):
     """Return type of `FigureRenderer.from_callback()`."""
 
-    __slots__ = ("_func", "_generator")
+    __slots__ = ("func", "_generator")
+
+    func: RenderCallback
+    """The callback passed to the constructor."""
 
     def __init__(
         self, func: RenderCallback, title: str | None = None, *, render_mode: str | None
     ) -> None:
         super().__init__(title, render_mode=render_mode)
-        self._func = func
+        self.func = func
         self._generator: RenderGenerator | None = None
 
     def __repr__(self) -> str:
         if self.title is not None:
-            return f"<{type(self).__name__}({self._func!r}, {self.title!r})>"
-        return f"<{type(self).__name__}({self._func!r})>"
+            return f"<{type(self).__name__}({self.func!r}, {self.title!r})>"
+        return f"<{type(self).__name__}({self.func!r})>"
 
     @override
     def _init_figure(self, figure: Figure) -> None:
-        generator = self._func(figure)
+        generator = self.func(figure)
         if generator is not None:
             self._generator = generator
             next(generator)
@@ -359,7 +362,7 @@ class _FigureFuncRenderer(FigureRenderer):
         if self._generator is not None:
             self._generator.send(figure)
         else:
-            self._func(figure)
+            self.func(figure)
 
 
 class RendererGroup(AbstractRenderer, tuple[AbstractRenderer, ...]):
@@ -517,13 +520,15 @@ class _RenderDescriptor(t.Generic[T]):
     def __init__(
         self,
         func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
+        title: str | None = None,
     ) -> None:
         self.func = func
+        self.title = title
         self.__doc__ = func.__doc__
         self.attrname: str | None = None
         self.renderer: _FigureFuncRenderer | None = None
 
-    def _make_renderer(self, instance: T) -> _FigureFuncRenderer:
+    def _make_renderer(self, instance: T, owner: type[T]) -> _FigureFuncRenderer:
         @t.overload
         def partial_(
             f: t.Callable[[T, Figure], None],
@@ -535,7 +540,7 @@ class _RenderDescriptor(t.Generic[T]):
         def partial_(
             f: t.Callable[[T, Figure], RenderGenerator | None],
         ) -> t.Callable[[Figure], RenderGenerator | None]:
-            return partial(f, instance)
+            return f.__get__(instance, owner)
 
         try:
             render_mode = instance.render_mode
@@ -543,7 +548,9 @@ class _RenderDescriptor(t.Generic[T]):
             raise AttributeError(
                 f"missing attribute `render_mode` in `Problem` instance: {instance!r}"
             ) from exc
-        return _FigureFuncRenderer(partial_(self.func), render_mode=render_mode)
+        return _FigureFuncRenderer(
+            partial_(self.func), title=self.title, render_mode=render_mode
+        )
 
     def __set_name__(self, owner: type[T], name: str) -> None:
         if self.attrname is None:
@@ -572,70 +579,57 @@ class _RenderDescriptor(t.Generic[T]):
                 "cannot use renderer instance without calling __set_name__ on it"
             )
         if self.renderer is None:
-            self.renderer = self._make_renderer(instance)
+            self.renderer = self._make_renderer(instance, owner)
         return self.renderer.update
 
 
+UnboundRenderCallback: TypeAlias = t.Union[
+    t.Callable[[T, "Figure"], None], t.Callable[[T, "Figure"], RenderGenerator]
+]
+
+
+@t.overload
+def render_generator(func: UnboundRenderCallback[T], /) -> _RenderDescriptor[T]: ...
+
+
+@t.overload
 def render_generator(
-    func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
-) -> _RenderDescriptor[T]:
-    """Decorator wrapper for `FigureRenderer`.
+    title: str | None = None, /
+) -> t.Callable[[UnboundRenderCallback[T]], _RenderDescriptor[T]]: ...
 
-    This is a wrapper around `FigureRenderer.from_callback()`. It
-    automatically manages a `FigureRenderer` for you. Calling the
-    decorated method will call `.update()` on that renderer instead.
-    This keeps your :samp:`render()` implementation short and avoids
-    duplicate code in your plotting logic.
 
-    For a less magical interface, see the `FigureRenderer` class
-    itself.
+def render_generator(
+    title: UnboundRenderCallback[T] | str | None = None, /
+) -> (
+    _RenderDescriptor[T] | t.Callable[[UnboundRenderCallback[T]], _RenderDescriptor[T]]
+):
+    """Decorator wrapper for `FigureRenderer.from_callback()`.
 
-    Example::
+    This decorator automatically manages a `FigureRenderer` for you.
+    Calling the decorated method will instead call `.update()` on that
+    renderer. This keeps your :samp:`render()` implementation short and
+    avoids duplicate code in your plotting logic.
+
+    Example use::
 
         >>> from cernml import coi
-        >>> import numpy as np
         ...
         >>> class Problem(coi.Problem):
-        ...     metadata = {
-        ...         "render_modes": ["human", "matplotlib_figures"],
-        ...     }
-        ...
-        ...     def __init__(self, render_mode=None):
-        ...         super().__init__(render_mode)
-        ...         self.data = np.random.uniform(size=10)
-        ...
-        ...     def render(self):
-        ...         if self.render_mode in self.metadata["render_modes"]:
-        ...             # Manages a `FigureRenderer` in the background
-        ...             # and actually calls `renderer.update(mode)`
-        ...             # on it.
-        ...             return self.update_figure()
-        ...         return super().render()
+        ...     ...
         ...
         ...     @render_generator
-        ...     def update_figure(self, fig):
-        ...         # First iteration, initialize.
-        ...         axes = fig.subplots()
-        ...         [points] = axes.plot(self.data, "o")
-        ...         print("initialized")
-        ...         while True:
-        ...             # First iteration is done, yield to the
-        ...             # caller. We continue from here on the
-        ...             # next `update()` call.
-        ...             yield
-        ...             # Update the plot, loop, and yield again.
-        ...             points.set_ydata(self.data)
-        ...             print("updated")
+        ...     def update_fig1(self, fig: Figure) -> None:
+        ...         ...
         ...
-        >>> problem = Problem("matplotlib_figures")
-        >>> fig = problem.render()
-        initialized
-        >>> fig = problem.render()
-        updated
-        >>> # This is not <bound method Problem.update_figure>!
-        >>> problem.update_figure
-        <bound method FigureRenderer.update of <...>>
-        >>> Problem.update_figure
-        <..._RenderDescriptor object at ...>
+        ...     @render_generator("Title of Figure 2")
+        ...     def update_fig2(self, fig: Figure) -> RenderGenerator:
+        ...         ...
+        ...
     """
-    return _RenderDescriptor(func)
+    # Note: This documentation is shorter than usual. Because this
+    # function uses typing.overload, we cannot customize its signature
+    # for the API docs. Thus we avoid `autodectorator` and document it
+    # manually. See <https://github.com/sphinx-doc/sphinx/issues/10351>
+    if callable(title):
+        return _RenderDescriptor(func=title, title=None)
+    return partial(_RenderDescriptor, title=title)

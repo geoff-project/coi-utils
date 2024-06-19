@@ -18,10 +18,73 @@ Matplotlib Utilities
         User guide page on renderers.
 
 .. automodule:: cernml.mpl_utils
+    :members: iter_matplotlib_figures, make_renderer
 
-    .. autofunction:: iter_matplotlib_figures
-    .. autofunction:: make_renderer
-    .. autodecorator:: render_generator()
+.. decorator:: render_generator(method, /)
+    render_generator(title: str | None = None, /)
+
+    Decorator wrapper for `FigureRenderer.from_callback()`.
+
+    This decorator automatically manages a `FigureRenderer` for you. Calling
+    the decorated method will instead call `.update()` on that renderer. This
+    keeps your :samp:`render()` implementation short and avoids duplicate code
+    in your plotting logic.
+
+    Example::
+
+        >>> from cernml import coi
+        >>> import numpy as np
+        ...
+        >>> class Problem(coi.Problem):
+        ...     metadata = {
+        ...         "render_modes": ["human", "matplotlib_figures"],
+        ...     }
+        ...
+        ...     def render(self):
+        ...         if self.render_mode in self.metadata["render_modes"]:
+        ...             return [
+        ...                 self.update_untitled_figure(),
+        ...                 *self.update_titled_figure(),
+        ...             ]
+        ...         return super().render()
+        ...
+        ...     @render_generator
+        ...     def update_untitled_figure(self, fig):
+        ...         print(f"initialized (title={fig.get_label()!r})")
+        ...         while True:
+        ...             yield
+        ...             print("updated")
+        ...
+        ...     @render_generator("Figure 1")
+        ...     def update_titled_figure(self, fig):
+        ...         print(f"initialized (title={fig.get_label()!r})")
+        ...         while True:
+        ...             yield
+        ...             print("updated")
+        ...
+        >>> problem = Problem("matplotlib_figures")
+        >>> _ = problem.render()
+        initialized (title=None)
+        initialized (title='Figure 1')
+        >>> _ = problem.render()
+        updated
+        updated
+
+    Note that the binding :samp:`{problem}.update_figure` returns
+    a method bound to the renderer, not to the problem::
+
+        >>> problem.update_untitled_figure
+        <bound method FigureRenderer.update of <...>>
+        >>> Problem.update_untitled_figure
+        <..._RenderDescriptor object at ...>
+
+    You can recover the renderer via `method.__self__`::
+
+        >>> renderer = problem.update_titled_figure.__self__
+        >>> renderer
+        <_FigureFuncRenderer(..., 'Figure 1')>
+        >>> renderer.func
+        <bound method Problem.update_titled_figure of <...>>
 
 Class-based Interface
 ---------------------

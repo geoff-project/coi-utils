@@ -17,16 +17,12 @@ from __future__ import annotations
 
 import pathlib
 import sys
-import typing as t
 from pathlib import Path
 
 if sys.version_info < (3, 10):
     import importlib_metadata as importlib_metadata
 else:
     import importlib.metadata as importlib_metadata
-
-if t.TYPE_CHECKING:
-    from sphinx.application import Sphinx
 
 
 ROOTDIR = pathlib.Path(__file__).absolute().parent.parent
@@ -186,15 +182,3 @@ fix_xrefs_rules = [
         },
     },
 ]
-
-# -- Custom code -------------------------------------------------------
-
-
-def _fix_decorator_return_value(_app: Sphinx, obj: t.Any, _bound_method: bool) -> None:
-    if callable(obj) and obj.__name__ == "render_generator":
-        obj.__annotations__["return"] = "t.Callable[[str], MatplotlibFigures]"
-
-
-def setup(app: Sphinx) -> None:
-    """Set up hooks into Sphinx."""
-    app.connect("autodoc-before-process-signature", _fix_decorator_return_value)
