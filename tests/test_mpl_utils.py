@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import sys
 import typing as t
 from contextlib import ExitStack, closing
 from unittest.mock import MagicMock, Mock
@@ -234,7 +235,10 @@ class TestRenderGenerator:
             _ = Container().first
 
     def test_bad_double_assign(self) -> None:
-        with pytest.raises(RuntimeError) as exc:
+        # On Python 3.12+, we receive the original exception; before, it
+        # got wrapped in a RuntimeError. See
+        # <https://github.com/python/cpython/issues/77757>.
+        with pytest.raises((RuntimeError, TypeError)) as exc:
 
             class Container(coi.Problem):
                 @render_generator
@@ -243,7 +247,10 @@ class TestRenderGenerator:
 
                 second = first
 
-        assert isinstance(exc.value.__cause__, TypeError)
+        if sys.version_info < (3, 12):  # pragma: no cover
+            assert isinstance(exc.value.__cause__, TypeError)
+        else:  # pragma: no cover
+            assert isinstance(exc.value, TypeError)
 
     def test_bad_class(self) -> None:
         class Container:
