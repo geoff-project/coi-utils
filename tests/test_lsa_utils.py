@@ -15,7 +15,10 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 
-from cernml import lsa_utils
+if t.TYPE_CHECKING:
+    from cernml import lsa_utils
+else:
+    lsa_utils = pytest.importorskip("cernml.lsa_utils", exc_type=ImportError)
 
 
 def _is_sorted(array: np.ndarray) -> bool:

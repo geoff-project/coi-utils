@@ -12,8 +12,12 @@
     that we won't accidentally send trims to the LSA database. (Note that even
     if we did, it shouldn't be a problem, since we use LSA NEXT, not PRO.)
 
-    >>> from cernml.lsa_utils import _services
-    >>> _services.trim  # doctest: +FAIL_FAST
+    >>> import pytest
+    >>> lsa_utils = pytest.importorskip(
+    ...     "cernml.lsa_utils",
+    ...     exc_type=ImportError,
+    ... )
+    >>> lsa_utils._services.trim  # doctest: +FAIL_FAST
     <Mock spec='cern.lsa.client.TrimService' id='...'>
 
 Communicating with the LSA Database

@@ -6,20 +6,37 @@
 
 """Pytest configuration file."""
 
+import warnings
 from collections.abc import Iterator
 from contextlib import ExitStack
 from typing import Union
 from unittest.mock import Mock
 
+import jpype  # type: ignore[import-untyped]
 import pytest
 from pjlsa import LSAClient  # type: ignore[import-untyped]
 
 exit_stack = ExitStack()
 
+collect_ignore: list[str] = []
+
 
 def pytest_sessionstart(session: pytest.Session) -> None:
-    lsa_client = LSAClient(server="next")
-    exit_stack.enter_context(lsa_client.java_api())
+    try:
+        lsa_client = LSAClient(server="next")
+    except jpype.JVMNotFoundException:
+        warnings.warn("JVM not found, skipping LSA tests", stacklevel=1)
+        collect_ignore.extend(
+            (
+                "src/cernml/lsa_utils/__init__.py",
+                "src/cernml/lsa_utils/_hooks.py",
+                "src/cernml/lsa_utils/_incorporator.py",
+                "src/cernml/lsa_utils/_services.py",
+                "src/cernml/lsa_utils/_utils.py",
+            )
+        )
+    else:
+        exit_stack.enter_context(lsa_client.java_api())
 
 
 def pytest_sessionfinish(
@@ -30,8 +47,11 @@ def pytest_sessionfinish(
 
 @pytest.fixture(autouse=True)
 def trim_service(monkeypatch: pytest.MonkeyPatch) -> Iterator[Mock]:
-    from cernml.lsa_utils import _services
+    if jpype.isJVMStarted():
+        from cernml.lsa_utils import _services
 
-    service = Mock(spec=_services.TrimService)
-    monkeypatch.setattr(_services, "trim", service)
+        service = Mock(spec=_services.TrimService)
+        monkeypatch.setattr(_services, "trim", service)
+    else:
+        service = Mock(spec=object())
     return service
