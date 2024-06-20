@@ -23,10 +23,13 @@ from cernml.mpl_utils import (
     Renderer,
     RendererGroup,
     _strategies,
+    iter_matplotlib_figures,
     render_generator,
 )
 
 if t.TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
     from cernml.mpl_utils._renderer import _RenderDescriptor
 
 
@@ -52,6 +55,110 @@ def _mpl_backend() -> t.Iterator[None]:
 
 def test_fixture() -> None:
     assert mpl.rcParams["backend"] == "agg"
+
+
+class TestIterMplFigures:
+    def test_nothing(self) -> None:
+        assert list(iter_matplotlib_figures()) == []
+
+    def test_empty_list(self) -> None:
+        assert list(iter_matplotlib_figures([])) == []
+
+    def test_single_figure(self) -> None:
+        fig = Mock(mpl.figure.Figure)
+        assert list(iter_matplotlib_figures(fig)) == [("", fig)]
+
+    def test_iterator(self) -> None:
+        figs = [Mock(mpl.figure.Figure) for _ in range(3)]
+        assert list(iter_matplotlib_figures(figs)) == [
+            ("", figs[0]),
+            ("", figs[1]),
+            ("", figs[2]),
+        ]
+
+    def test_titles(self) -> None:
+        figs = [Mock(mpl.figure.Figure) for _ in range(4)]
+        inputs: list = [
+            ["title 1", figs[0]],
+            ("title 2", figs[1]),
+            figs[2],
+            (i for i in ["title 4", figs[3]]),
+        ]
+        assert list(iter_matplotlib_figures(inputs)) == [
+            ("title 1", figs[0]),
+            ("title 2", figs[1]),
+            ("", figs[2]),
+            ("title 4", figs[3]),
+        ]
+
+    def test_mapping(self) -> None:
+        figs = [Mock(mpl.figure.Figure) for _ in range(3)]
+        inputs: dict = {
+            "title 1": figs[0],
+            "title 2": figs[1],
+            "": figs[2],
+        }
+        assert list(iter_matplotlib_figures(inputs)) == [
+            ("title 1", figs[0]),
+            ("title 2", figs[1]),
+            ("", figs[2]),
+        ]
+
+    def test_multi_args(self) -> None:
+        figs = [Mock(mpl.figure.Figure) for _ in range(10)]
+        assert list(iter_matplotlib_figures(*figs)) == [("", fig) for fig in figs]
+
+    def test_bad_string(self) -> None:
+        with pytest.raises(TypeError, match="not a figure: 'string'"):
+            iter_matplotlib_figures(t.cast(t.Any, "string"))
+
+    def test_bad_string_list(self) -> None:
+        with pytest.raises(TypeError, match="not a figure: 'string'"):
+            iter_matplotlib_figures([t.cast(t.Any, "string")])
+
+    def test_bad_mapping(self) -> None:
+        class BadDict(dict):
+            items = None  # type: ignore[assignment]
+
+        figs = [Mock(mpl.figure.Figure) for _ in range(2)]
+        inputs = BadDict({"title 1": figs[0], "title 2": figs[1]})
+        with pytest.raises(TypeError, match="not a figure: 'title 1'"):
+            iter_matplotlib_figures(inputs)
+
+    def test_bad_tuple_length_1(self) -> None:
+        with pytest.raises(ValueError, match="not enough values to unpack"):
+            iter_matplotlib_figures([t.cast(t.Any, ("a",))])
+
+    def test_bad_tuple_length_3(self) -> None:
+        with pytest.raises(ValueError, match="too many values to unpack"):
+            iter_matplotlib_figures([t.cast(t.Any, ("a", Mock(), Mock()))])
+
+    def test_skip_instance_items(self) -> None:
+        class WeirdDict(dict):
+            pass
+
+        figs = [Mock(mpl.figure.Figure) for _ in range(2)]
+        inputs = WeirdDict({"title 1": figs[0], "title 2": figs[1]})
+        inputs.items = None  # type: ignore[method-assign, assignment]
+        assert list(iter_matplotlib_figures(inputs)) == [
+            ("title 1", figs[0]),
+            ("title 2", figs[1]),
+        ]
+
+    def test_accept_sequence_style_tuple(self) -> None:
+        fig = Mock(mpl.figure.Figure)
+
+        class WeirdTuple:
+            def __getitem__(self, key: int) -> str | Figure:
+                if key == 0:
+                    return "title"
+                if key == 1:
+                    return fig
+                raise IndexError(key)
+
+        assert list(iter_matplotlib_figures([t.cast(t.Any, WeirdTuple())])) == [
+            ("title", fig)
+        ]
 
 
 class TestFigureRenderer:
@@ -221,7 +328,7 @@ class TestRenderGenerator:
     def test_good_double_assign(self) -> None:
         class Container(coi.Problem):
             @render_generator
-            def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
+            def first(self, _: Figure) -> None:  # pragma: no cover
                 pass
 
         Container.first.__set_name__(Container, "first")
@@ -242,7 +349,7 @@ class TestRenderGenerator:
 
             class Container(coi.Problem):
                 @render_generator
-                def first(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
+                def first(self, _: Figure) -> None:  # pragma: no cover
                     pass
 
                 second = first
@@ -269,7 +376,7 @@ class TestRenderGenerator:
                 raise NotImplementedError
 
             @render_generator
-            def update(self, _: mpl.figure.Figure) -> None:  # pragma: no cover
+            def update(self, _: Figure) -> None:  # pragma: no cover
                 pass
 
         container = Container()

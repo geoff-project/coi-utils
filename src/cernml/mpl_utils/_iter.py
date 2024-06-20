@@ -71,21 +71,9 @@ def iter_matplotlib_figures(
         >>> def print_matplotlib_figures(*figures):
         ...     for t, f in iter_matplotlib_figures(*figures):
         ...         print(f"{t!r}: {f!r}")
-
-        >>> # A single figure:
+        ...
         >>> print_matplotlib_figures(Figure())
         '': Figure()
-
-        >>> # Multiple figures:
-        >>> print_matplotlib_figures(Figure() for _ in range(2))
-        '': Figure()
-        '': Figure()
-
-        >>> # Nothing:
-        >>> print_matplotlib_figures(); print("Nothing!")
-        Nothing!
-
-        >>> # Mixed list of figures and title-figure pairs:
         >>> print_matplotlib_figures([
         ...     ["Foo", Figure()],
         ...     ("Bar", Figure()),
@@ -94,23 +82,13 @@ def iter_matplotlib_figures(
         'Foo': Figure()
         'Bar': Figure()
         '': Figure()
-
-        >>> # Title-figure mappings:
-        >>> print_matplotlib_figures({"Foo": Figure(), "Bar": Figure()})
-        'Foo': Figure()
-        'Bar': Figure()
-
-        >>> # Output from multiple render functions:
         >>> print_matplotlib_figures(Figure(), {"Foo": Figure()})
         '': Figure()
         'Foo': Figure()
-
-        >>> # We get a clear error message if a string is passed.
-        >>> print_matplotlib_figures(("not_a_title", Figure()))
-        Traceback (most recent call last):
-        ...
-        TypeError: not a figure: 'not_a_title'
     """
+    # Run through all sub-iterators first, _then_ return the resulting
+    # iterator. Otherwise, we might end up not updating all renderers
+    # just because our caller didn't exhaust `results`.
     results: list[tuple[str, Figure]] = []
     for part in figures:
         results.extend(_iter(part))
