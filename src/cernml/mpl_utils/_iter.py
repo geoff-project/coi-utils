@@ -38,7 +38,7 @@ MatplotlibFigures = t.Union[
 
 
 def iter_matplotlib_figures(
-    figures: MatplotlibFigures,
+    *figures: MatplotlibFigures,
 ) -> t.Iterator[tuple[str, Figure]]:
     """Handle result of render mode :rmode:`"matplotlib_figures"`.
 
@@ -47,13 +47,20 @@ def iter_matplotlib_figures(
     possible return types and produces one consistent iterator.
 
     Args:
-        figures: Whatever :meth:`~cernml.coi.Problem.render()` returned
-            in render mode :rmode:`"matplotlib_figures"`.
+        *figures: Each argument is the return value of
+            a call to :meth:`~cernml.coi.Problem.render()` in render
+            mode :rmode:`"matplotlib_figures"`.
 
     Yields:
-        A 2-tuple :samp:`({title}, {figure})` for every item in
-        *figures*. For any item without a title, the empty string is
+        2-tuples :samp:`({title}, {figure})` for every item in
+        *figures*. For any item without a *title*, the empty string is
         used.
+
+    Note:
+        Even though this function returns an iterator, it is *eager*:
+        all arguments are evaluated immediately when this function is
+        called. This ensures that rendering happens in a predictable,
+        consistent manner.
 
     Examples:
 
@@ -61,26 +68,24 @@ def iter_matplotlib_figures(
         ...     def __repr__(self) -> str:
         ...         return "Figure()"
         ...
-        >>> def print_matplotlib_figures(figures):
-        ...     for t, f in iter_matplotlib_figures(figures):
+        >>> def print_matplotlib_figures(*figures):
+        ...     for t, f in iter_matplotlib_figures(*figures):
         ...         print(f"{t!r}: {f!r}")
 
         >>> # A single figure:
         >>> print_matplotlib_figures(Figure())
         '': Figure()
 
-        >>> # Lists of figures:
-        >>> print_matplotlib_figures([Figure(), Figure()])
+        >>> # Multiple figures:
+        >>> print_matplotlib_figures(Figure() for _ in range(2))
         '': Figure()
         '': Figure()
 
-        >>> # Arbitrary iterables of figures:
-        >>> print_matplotlib_figures(Figure() for _ in range(3))
-        '': Figure()
-        '': Figure()
-        '': Figure()
+        >>> # Nothing:
+        >>> print_matplotlib_figures(); print("Nothing!")
+        Nothing!
 
-        >>> # Lists of title-figure tuples OR figures:
+        >>> # Mixed list of figures and title-figure pairs:
         >>> print_matplotlib_figures([
         ...     ["Foo", Figure()],
         ...     ("Bar", Figure()),
@@ -90,10 +95,15 @@ def iter_matplotlib_figures(
         'Bar': Figure()
         '': Figure()
 
-        >>> # Mappings from titles to figures:
+        >>> # Title-figure mappings:
         >>> print_matplotlib_figures({"Foo": Figure(), "Bar": Figure()})
         'Foo': Figure()
         'Bar': Figure()
+
+        >>> # Output from multiple render functions:
+        >>> print_matplotlib_figures(Figure(), {"Foo": Figure()})
+        '': Figure()
+        'Foo': Figure()
 
         >>> # We get a clear error message if a string is passed.
         >>> print_matplotlib_figures(("not_a_title", Figure()))
@@ -101,6 +111,13 @@ def iter_matplotlib_figures(
         ...
         TypeError: not a figure: 'not_a_title'
     """
+    results: list[tuple[str, Figure]] = []
+    for part in figures:
+        results.extend(_iter(part))
+    return iter(results)
+
+
+def _iter(figures: MatplotlibFigures) -> t.Iterator[tuple[str, Figure]]:
     if hasattr(figures, "items"):
         yield from iter(t.cast(t.Mapping[str, "Figure"], figures).items())
         return
