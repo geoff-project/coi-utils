@@ -26,52 +26,46 @@ Matplotlib Utilities
     keeps your :samp:`render()` implementation short and avoids duplicate code
     in your plotting logic.
 
-    Example::
+    .. rubric:: Examples
 
-        >>> from cernml import coi
+    .. code-block:: python
+
+        >>> from cernml.coi import Problem
+        >>> from cernml.mpl_utils import iter_matplotlib_figures, render_generator
         >>> import numpy as np
         ...
-        >>> class Problem(coi.Problem):
+        >>> class MyProblem(Problem):
         ...     metadata = {
         ...         "render_modes": ["human", "matplotlib_figures"],
         ...     }
         ...
         ...     def render(self):
         ...         if self.render_mode in self.metadata["render_modes"]:
-        ...             return [
+        ...             return iter_matplotlib_figures(
         ...                 self.update_untitled_figure(),
-        ...                 *self.update_titled_figure(),
-        ...             ]
+        ...                 self.update_titled_figure(),
+        ...             )
         ...         return super().render()
         ...
         ...     @render_generator
         ...     def update_untitled_figure(self, fig):
-        ...         print(f"initialized (title={fig.get_label()!r})")
-        ...         while True:
-        ...             yield
-        ...             print("updated")
+        ...         print(f"updated (title={fig.get_label()!r})")
         ...
         ...     @render_generator("Figure 1")
         ...     def update_titled_figure(self, fig):
-        ...         print(f"initialized (title={fig.get_label()!r})")
-        ...         while True:
-        ...             yield
-        ...             print("updated")
+        ...         print(f"updated (title={fig.get_label()!r})")
         ...
-        >>> problem = Problem("matplotlib_figures")
+        >>> problem = MyProblem("matplotlib_figures")
         >>> _ = problem.render()
-        initialized (title=None)
-        initialized (title='Figure 1')
-        >>> _ = problem.render()
-        updated
-        updated
+        updated (title=None)
+        updated (title='Figure 1')
 
-    Note that the binding :samp:`{problem}.update_figure` returns
-    a method bound to the renderer, not to the problem::
+    Note that :samp:`{problem}.update_figure` is a method bound **to the
+    renderer**, not to the problem::
 
         >>> problem.update_untitled_figure
         <bound method FigureRenderer.update of <...>>
-        >>> Problem.update_untitled_figure
+        >>> MyProblem.update_untitled_figure
         <..._RenderDescriptor object at ...>
 
     You can recover the renderer via `method.__self__`::
@@ -80,22 +74,24 @@ Matplotlib Utilities
         >>> renderer
         <_FigureFuncRenderer(..., 'Figure 1')>
         >>> renderer.func
-        <bound method Problem.update_titled_figure of <...>>
+        <bound method MyProblem.update_titled_figure of <...>>
 
 Class-based Interface
 ---------------------
 
+.. autoclass:: AbstractRenderer
+    :show-inheritance:
+    :members:
+
 .. autoclass:: Renderer
     :show-inheritance:
     :members:
-    :exclude-members: strategy, KNOWN_STRATEGIES, update
+    :exclude-members: strategy, KNOWN_STRATEGIES
 
     .. autoattribute:: strategy
 
     .. autoattribute:: KNOWN_STRATEGIES
         :no-value:
-
-    .. automethod:: update
 
 .. autoclass:: FigureRenderer
     :show-inheritance:
@@ -103,12 +99,6 @@ Class-based Interface
 
 .. autoclass:: RendererGroup
     :show-inheritance: tuple
-
-.. autoclass:: AbstractRenderer
-    :show-inheritance:
-
-    .. automethod:: update
-        :no-index:
 
 ..
     Manual annotation of the type aliases; If we used any of the auto

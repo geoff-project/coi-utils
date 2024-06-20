@@ -158,7 +158,7 @@ main.extension-pkg-whitelist = 'PyQt5'
 
 [tool.pytest.ini_options]
 addopts = '--doctest-modules --doctest-glob=*.rst'
-testpaths = ['tests', 'src', 'docs/guide']
+testpaths = ['tests', 'src', 'docs/guide', 'docs/api']
 doctest_optionflags = ['ELLIPSIS', 'IGNORE_EXCEPTION_DETAIL']
 
 [tool.coverage.run]

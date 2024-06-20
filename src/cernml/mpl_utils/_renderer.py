@@ -51,10 +51,9 @@ RenderCallback: TypeAlias = t.Union[
 class AbstractRenderer(t.Protocol):
     """Base protocol of all renderers.
 
-    This has been split out of `Renderer` and encapsulates the pure
-    behavior of renderers, with none of the attributes. This is
-    necessary for `RendererGroup`, which does not contain a `.strategy`
-    of its own.
+    You usually don't need to use this class. It exists because
+    `RendererGroup` does not (and cannot) have a `.strategy` and so does
+    not satisfy the `Renderer` interface.
     """
 
     __slots__ = ()
@@ -113,139 +112,19 @@ class Renderer(AbstractRenderer):
 class FigureRenderer(Renderer):
     """Renderer that manages a single figure.
 
+    Typically, you use `make_renderer()` or `from_callback()` to create
+    instances of this class. However, you may also subclass it to
+    customize its behavior by implementing `_init_figure()` and
+    `_update_figure()`.
+
     Args:
         title: If passed, a figure title that is used in the return
-            value of ``renderer.update("matplotlib_figures")``. Unused
-            in other render modes. In particular, this does *not* add a
-            title to the figure's contents. For this, use
-            :meth:`~matplotlib.figure.Figure.suptitle()` instead.
+            value of `renderer.update("matplotlib_figures") <.update>`.
+            It is also used to set the label and window title of the
+            figure. It is **not**, however, passed to
+            :meth:`~matplotlib.figure.Figure.suptitle()`.
         render_mode: The render mode. Should be None or :rmode:`"human"`
             or :rmode:`"matplotlib_figures"`. See also Strategies_.
-
-    This is another :term:`abstract base class`. There are three typical
-    use cases:
-
-    1. You pass a :term:`generator` to `from_callback()`. On the first
-       `~Renderer.update()` call, the generator is called to create an
-       :term:`iterator`. This iterator is polled on each
-       `~Renderer.update()` call::
-
-        >>> import numpy as np
-        >>> from cernml import coi
-        ...
-        >>> class Problem(coi.Problem):
-        ...     metadata = {"render_modes": ["matplotlib_figures"]}
-        ...
-        ...     def __init__(self, render_mode=None):
-        ...         super().__init__(render_mode)
-        ...         self.data = np.random.uniform(size=10)
-        ...         self.renderer = FigureRenderer.from_callback(
-        ...             self._iter_updates, render_mode=render_mode
-        ...         )
-        ...
-        ...     def render(self):
-        ...         if self.render_mode in self.metadata["render_modes"]:
-        ...             return self.renderer.update()
-        ...         return super().render()
-        ...
-        ...     def _iter_updates(self, fig):
-        ...         # First iteration, initialize.
-        ...         axes = fig.subplots()
-        ...         [points] = axes.plot(self.data, "o")
-        ...         print("initialized")
-        ...         while True:
-        ...             # First iteration is done, yield to the
-        ...             # caller. We continue from here on the
-        ...             # next `update()` call.
-        ...             yield
-        ...             # Update the plot, loop, and yield again.
-        ...             points.set_ydata(self.data)
-        ...             print("updated")
-        ...
-        >>> problem = Problem("matplotlib_figures")
-        >>> fig = problem.render()
-        initialized
-        >>> fig = problem.render()
-        updated
-
-    2. You pass a function to `from_callback()`. This returns a
-       subclass that calls this function on each
-       `~Renderer.update()` call.
-
-        >>> import numpy as np
-        >>> from cernml import coi
-        ...
-        >>> class Problem(coi.Problem):
-        ...     metadata = {"render_modes": ["matplotlib_figures"]}
-        ...
-        ...     def __init__(self, render_mode=None):
-        ...         super().__init__(render_mode)
-        ...         self.data = np.random.uniform(size=10)
-        ...         self.renderer = FigureRenderer.from_callback(
-        ...             self._update_figure, render_mode=render_mode
-        ...         )
-        ...
-        ...     def render(self):
-        ...         if self.render_mode in self.metadata["render_modes"]:
-        ...             return self.renderer.update()
-        ...         return super().render()
-        ...
-        ...     def _update_figure(self, fig):
-        ...         # Grab or create a subplot.
-        ...         [axes] = fig.axes or [fig.subplots()]
-        ...         # Clear and redraw from scratch on each turn.
-        ...         axes.clear()
-        ...         axes.plot(self.data, "o")
-        ...         print("redrawn")
-        ...
-        >>> problem = Problem("matplotlib_figures")
-        >>> fig = problem.render()
-        redrawn
-        >>> fig = problem.render()
-        redrawn
-
-    3. You inherit from this class and implement `_init_figure()`
-       and `_update_figure()`, which get called by
-       `~Renderer.update()` at the appropriate times.
-
-        >>> import numpy as np
-        >>> from cernml import coi
-        ...
-        >>> class ProblemRenderer(FigureRenderer):
-        ...     def __init__(self, problem, render_mode):
-        ...         super().__init__(render_mode=render_mode)
-        ...         self.problem = problem
-        ...
-        ...     def _init_figure(self, figure):
-        ...         axes = figure.subplots()
-        ...         axes.plot(self.problem.data, "o")
-        ...         print("initialized")
-        ...
-        ...     def _update_figure(self, figure):
-        ...         [axes] = figure.axes
-        ...         [curve] = axes.lines
-        ...         data = self.problem.data
-        ...         curve.set_data(np.arange(len(data)), data)
-        ...         print("updated")
-        ...
-        >>> class Problem(coi.Problem):
-        ...     metadata = {"render_modes": ["matplotlib_figures"]}
-        ...
-        ...     def __init__(self, render_mode=None):
-        ...         super().__init__(render_mode)
-        ...         self.data = np.random.uniform(size=10)
-        ...         self.renderer = ProblemRenderer(self, render_mode)
-        ...
-        ...     def render(self, mode="human"):
-        ...         if self.render_mode in self.metadata["render_modes"]:
-        ...             return self.renderer.update()
-        ...         return super().render()
-        ...
-        >>> problem = Problem("matplotlib_figures")
-        >>> fig = problem.render()
-        initialized
-        >>> fig = problem.render()
-        updated
     """
 
     __slots__ = ("title", "figure")
@@ -301,8 +180,8 @@ class FigureRenderer(Renderer):
     def _update_figure(self, figure: Figure) -> None:
         """Update the figure, reflecting any new data.
 
-        This is called on every subsequent `.update()` (but not on the
-        first one). It should recreate or update the contents of the
+        This is called on every subsequent `.update()` (but **not** on
+        the first one). It should recreate or update the contents of the
         figure. Afterwards, `.update()` will automatically display the
         figure to the user.
         """
@@ -313,11 +192,14 @@ class FigureRenderer(Renderer):
     ) -> FigureRenderer:
         """Create a renderer via a callback function or generator.
 
+        This is the function ultimately called by `make_renderer()`.
+
         Args:
             func: Either a regular function or a generator. If the
                 former, it is called on every `.update()`. If the
                 latter, it is called once to create an :term:`iterator`.
-                The iterator is polled on every `.update()`.
+                The iterator is polled on every `.update()` (including
+                the first one).
             title: If passed, a string to attach to the figure in the
                 render mode :rmode:`"matplotlib_figures"`.
             render_mode: The render mode. Should be None or
@@ -372,24 +254,22 @@ class RendererGroup(AbstractRenderer, tuple[AbstractRenderer, ...]):
     `AbstractRenderer` interface. Calling `.update()` forwards the call
     to each element renderer.
 
-    Example::
+    Example:
 
         >>> class PrintRenderer(Renderer):
         ...     def __init__(self, index):
         ...         self.index = index
         ...     def update(self):
         ...         print(f"Renderer {self.index} updated")
-        >>> g = RendererGroup(PrintRenderer(i) for i in range(1, 6))
+        >>> g = RendererGroup(PrintRenderer(i) for i in range(1, 4))
         >>> len(g)
-        5
+        3
         >>> tuple(g) == g
         True
         >>> g.update()
         Renderer 1 updated
         Renderer 2 updated
         Renderer 3 updated
-        Renderer 4 updated
-        Renderer 5 updated
 
     Note:
         Because a renderer group does not manage or know the render
