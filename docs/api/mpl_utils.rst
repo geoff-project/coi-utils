@@ -8,14 +8,10 @@
 Matplotlib Utilities
 ====================
 
-.. currentmodule:: cernml.mpl_utils
-
 .. seealso::
 
-    :doc:`/guide/iter_mpl_figures`
-        User guide page on `iter_matplotlib_figures()`.
-    :doc:`/guide/renderer`
-        User guide page on renderers.
+    :doc:`/guide/mpl_utils`
+        User guide page on this module.
 
 .. automodule:: cernml.mpl_utils
     :members: iter_matplotlib_figures, make_renderer

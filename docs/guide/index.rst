@@ -20,5 +20,4 @@ the namespace ``cernml``::
     japc_utils
     lsa_utils
     gym_utils
-    iter_mpl_figures
-    renderer
+    mpl_utils
