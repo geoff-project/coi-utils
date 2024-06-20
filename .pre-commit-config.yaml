@@ -35,6 +35,8 @@ repos:
   hooks:
   - id: mypy
     exclude: ^docs/
+    additional_dependencies:
+      - git+https://gitlab.cern.ch/geoff/cernml-coi.git
 - repo: local
   hooks:
   - id: pylint
