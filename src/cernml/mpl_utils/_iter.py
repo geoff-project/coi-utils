@@ -96,24 +96,33 @@ def iter_matplotlib_figures(
 
 
 def _iter(figures: MatplotlibFigures) -> t.Iterator[tuple[str, Figure]]:
-    if hasattr(figures, "items"):
-        yield from iter(t.cast(t.Mapping[str, "Figure"], figures).items())
+    # Test for strings to avoid a confusing error message.
+    if isinstance(figures, str):
+        raise TypeError(f"not a figure: {figures!r}")
+    # Look up `items()` on the type, not the instance, to emulate how
+    # magic methods work.
+    if (items := getattr(type(figures), "items", None)) is not None:
+        figures = t.cast(t.Mapping[str, "Figure"], figures)
+        yield from items(figures)
         return
     try:
-        iterator = iter(t.cast(t.Iterable, figures))
+        figures = t.cast(t.Iterable[MaybeTitledFigure], figures)
+        iterator = iter(figures)
     except TypeError:
         # Not iterable, assume a single figure.
         yield "", t.cast("Figure", figures)
         return
     for item in iterator:
-        # Unpack `item` if it is iterable. We avoid catching `TypeError`
-        # because we are inside a loop and it would be eight times
-        # slower. Make a special exception for strings (which are
-        # iterable), since they would produce a confusing error message.
+        # Unpack `item` if it is iterable. Don't catch `TypeError`
+        # (which we do above) because it is eight times slower than
+        # `hasattr()` and we're inside a loop.
+        # Test for strings to avoid a confusing error message.
         if isinstance(item, str):
             raise TypeError(f"not a figure: {item!r}")
         if hasattr(item, "__iter__") or hasattr(item, "__getitem__"):
-            title, figure = t.cast(tuple[str, "Figure"], item)
+            item = t.cast(tuple[str, "Figure"], item)
+            # Automatic length check and easily discernible traceback:
+            title, figure = item
         else:
             title, figure = "", item
         yield title, figure
