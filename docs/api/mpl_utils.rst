@@ -106,27 +106,24 @@ Class-based Interface
     Manually annotating these as classes is the easiest way to circumvent
     this mess.
 
-.. class:: cernml.mpl_utils.MatplotlibFigures
+.. class:: MatplotlibFigures
 
-    alias of `~matplotlib.figure.Figure` |
-    `~typing.Iterable`\[`~cernml.mpl_utils.MaybeTitledFigure`] |
-    `~typing.Mapping`\[`str`, `~matplotlib.figure.Figure`]
+    alias of `Figure`
+    | `~typing.Iterable`\[`MaybeTitledFigure`]
+    | `~typing.Mapping`\[`str`, `Figure`]
 
-.. class:: cernml.mpl_utils.MaybeTitledFigure
+.. class:: MaybeTitledFigure
 
-    alias of `~matplotlib.figure.Figure` |
-    `~typing.Tuple`\[`str`, `~matplotlib.figure.Figure`]
+    alias of `Figure` | `tuple`\[`str`, `Figure`]
 
-.. class:: cernml.mpl_utils.RenderGenerator
+.. class:: RenderGenerator
 
-    alias of `~typing.Generator`\[`None`,
-    `~matplotlib.figure.Figure`, `~typing.NoReturn`]
+    alias of `~typing.Generator`\[`None`, `Figure`, `~typing.NoReturn`]
 
-.. class:: cernml.mpl_utils.RenderCallback
+.. class:: RenderCallback
 
-    alias of `~typing.Callable`\[[`~matplotlib.figure.Figure`], `None`] |
-    `~typing.Callable`\[[`~matplotlib.figure.Figure`],
-    `~cernml.mpl_utils.RenderGenerator`]]
+    alias of `~typing.Callable`\[[`Figure`], `None`]
+    | `~typing.Callable`\[[`Figure`], `RenderGenerator`]]
 
 Strategies
 ----------
