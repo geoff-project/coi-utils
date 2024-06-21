@@ -14,7 +14,10 @@ Matplotlib Utilities
         User guide page on this module.
 
 .. automodule:: cernml.mpl_utils
-    :members: iter_matplotlib_figures, make_renderer
+
+    .. autofunction:: iter_matplotlib_figures
+    .. autofunction:: concat_matplotlib_figures
+    .. autofunction:: make_renderer
 
 .. decorator:: render_generator(method, /)
     render_generator(title: str | None = None, /)

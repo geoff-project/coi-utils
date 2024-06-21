@@ -24,6 +24,7 @@ __all__ = (
     "MatplotlibFigures",
     "MaybeTitledFigure",
     "iter_matplotlib_figures",
+    "concat_matplotlib_figures",
 )
 
 MaybeTitledFigure: TypeAlias = t.Union["Figure", tuple[str, "Figure"]]
@@ -86,13 +87,24 @@ def iter_matplotlib_figures(
         '': Figure()
         'Foo': Figure()
     """
+    return iter(concat_matplotlib_figures(*figures))
+
+
+def concat_matplotlib_figures(
+    *figures: MatplotlibFigures,
+) -> list[tuple[str, Figure]]:
+    """Like `iter_matplotlib_figures()` but return a list.
+
+    Because the former internally creates a list anyway, this is more
+    efficient than :samp:`list(iter_matplotlib_figures({args}))`.
+    """
     # Run through all sub-iterators first, _then_ return the resulting
     # iterator. Otherwise, we might end up not updating all renderers
     # just because our caller didn't exhaust `results`.
     results: list[tuple[str, Figure]] = []
     for part in figures:
         results.extend(_iter(part))
-    return iter(results)
+    return results
 
 
 def _iter(figures: MatplotlibFigures) -> t.Iterator[tuple[str, Figure]]:

@@ -6,7 +6,12 @@
 
 """Utilities for working with the Matplotlib."""
 
-from ._iter import MatplotlibFigures, MaybeTitledFigure, iter_matplotlib_figures
+from ._iter import (
+    MatplotlibFigures,
+    MaybeTitledFigure,
+    concat_matplotlib_figures,
+    iter_matplotlib_figures,
+)
 from ._renderer import (
     AbstractRenderer,
     FigureRenderer,
@@ -33,6 +38,7 @@ __all__ = (
     "RenderGenerator",
     "Renderer",
     "RendererGroup",
+    "concat_matplotlib_figures",
     "iter_matplotlib_figures",
     "make_renderer",
     "render_generator",
