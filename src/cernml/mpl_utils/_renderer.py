@@ -402,7 +402,6 @@ class _RenderDescriptor(t.Generic[T]):
         self.title = title
         self.__doc__ = func.__doc__
         self.attrname: str | None = None
-        self.renderer: _FigureFuncRenderer | None = None
 
     def _make_renderer(self, instance: T, owner: type[T]) -> _FigureFuncRenderer:
         @t.overload
@@ -454,9 +453,29 @@ class _RenderDescriptor(t.Generic[T]):
             raise TypeError(
                 "cannot use renderer instance without calling __set_name__ on it"
             )
-        if self.renderer is None:
-            self.renderer = self._make_renderer(instance, owner)
-        return self.renderer.update
+        try:
+            renderer = vars(instance)[self.attrname]
+        except KeyError:
+            renderer = vars(instance)[self.attrname] = self._make_renderer(
+                instance, owner
+            )
+        return renderer.update
+
+    # Because we manage a FigureRenderer for the instance, we must stash
+    # this renderer somewhere. The only obvious choice is the instance
+    # dict. The only choice for a dict key is the name of this
+    # descriptor itself.
+    #
+    # If we didn't implement `__delete__`, this would be a non-data
+    # descriptor and the stashed renderer would override the descriptor
+    # upon binding access. Because we implement `__delete__`, this is
+    # a data descriptor and we always override it.
+    def __delete__(self, instance: T) -> None:
+        if self.attrname is None:
+            raise TypeError(
+                "cannot use renderer instance without calling __set_name__ on it"
+            )
+        del vars(self)[self.attrname]
 
 
 UnboundRenderCallback: TypeAlias = t.Union[

@@ -11,7 +11,7 @@ from __future__ import annotations
 import sys
 import typing as t
 from contextlib import ExitStack, closing
-from unittest.mock import MagicMock, Mock
+from unittest.mock import MagicMock, Mock, call
 
 import matplotlib as mpl
 import pytest
@@ -330,6 +330,31 @@ class TestRendererGroup:
 class TestRenderGenerator:
     # This test class merely covers weird edge cases that shouldn't be
     # enumerated in the doctest of mpl_utils.render_generator.
+
+    def test_two_instances(self) -> None:
+        callback = Mock(name="callback")
+
+        class Container(coi.Problem):
+            metadata: dict[str, t.Any] = {  # noqa: RUF012
+                "render_modes": ["human", "matplotlib_figures"]
+            }
+
+            def __init__(self, name: str) -> None:
+                self.name = name
+                super().__init__(render_mode="matplotlib_figures")
+
+            @render_generator
+            def update(self, _: Figure) -> None:
+                callback(self)
+
+            def __repr__(self) -> str:  # pragma: no cover
+                return f"{self.__class__.__name__}({self.name!r})"
+
+        c1 = Container("c1")
+        c2 = Container("c2")
+        c1.update()
+        c2.update()
+        assert callback.call_args_list == [call(c1), call(c2)]
 
     def test_good_double_assign(self) -> None:
         class Container(coi.Problem):
