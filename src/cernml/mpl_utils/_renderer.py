@@ -10,10 +10,10 @@ from __future__ import annotations
 
 import sys
 import typing as t
-from abc import abstractmethod
+from abc import ABCMeta, abstractmethod
 from functools import partial
 
-from ._iter import MatplotlibFigures, iter_matplotlib_figures
+from ._iter import MatplotlibFigures, concat_matplotlib_figures
 from ._strategies import FigureStrategy, HumanStrategy, MatplotlibFiguresStrategy
 
 if t.TYPE_CHECKING:
@@ -22,13 +22,12 @@ if t.TYPE_CHECKING:
     from cernml.coi.protocols import Problem
 
 if sys.version_info < (3, 12):
-    from typing_extensions import Self, TypeAlias, override
+    from typing_extensions import Self, TypeAlias, TypeGuard, override
 else:
-    from typing import Self, TypeAlias, override
+    from typing import Self, TypeAlias, TypeGuard, override
 
 
 __all__ = (
-    "AbstractRenderer",
     "FigureRenderer",
     "InconsistentRenderModeError",
     "RenderCallback",
@@ -47,16 +46,49 @@ RenderCallback: TypeAlias = t.Union[
 ]
 
 
-@t.runtime_checkable
-class AbstractRenderer(t.Protocol):
-    """Base protocol of all renderers.
+class Renderer(metaclass=ABCMeta):
+    """Interface for types that facilitate Matplotlib rendering.
 
-    You usually don't need to use this class. It exists because
-    `RendererGroup` does not (and cannot) have a `.strategy` and so does
-    not satisfy the `Renderer` interface.
+    This is an :term:`abstract base class`. You should use a concrete
+    implementation, e.g. `FigureRenderer`.
+
+    Args:
+        render_mode: The render mode. Should be None or :rmode:`"human"`
+            or :rmode:`"matplotlib_figures"`.
     """
 
     __slots__ = ()
+
+    KNOWN_STRATEGIES: t.ClassVar[dict[str, FigureStrategy]] = {
+        "human": HumanStrategy(),
+        "matplotlib_figures": MatplotlibFiguresStrategy(),
+    }
+    """Translation table from render mode to `strategy`. If you
+    want to define a custom render mode, insert it into this global
+    mapping."""
+
+    def __init__(self, render_mode: str | FigureStrategy | None) -> None:
+        self.strategy = (
+            render_mode
+            if isinstance(render_mode, FigureStrategy) or render_mode is None
+            else self.KNOWN_STRATEGIES[render_mode]
+        )
+
+    @property
+    def strategy(self) -> FigureStrategy | None:
+        """The strategy_ to handle the `~matplotlib.figure.Figure` objects.
+
+        Usually this is either `HumanStrategy` or
+        `MatplotlibFiguresStrategy`, but users can supply their own
+        implementation.
+
+        .. _strategy: https://en.wikipedia.org/wiki/Strategy_pattern
+        """
+        return vars(self)["strategy"]
+
+    @strategy.setter
+    def strategy(self, strategy: FigureStrategy | None) -> None:
+        vars(self)["strategy"] = strategy
 
     @abstractmethod
     def update(self) -> MatplotlibFigures | None:
@@ -70,43 +102,6 @@ class AbstractRenderer(t.Protocol):
             None if the render mode is :rmode:`"human"`. Otherwise,
             a sequence of all figures managed by this renderer.
         """
-
-
-class Renderer(AbstractRenderer):
-    """Interface for types that facilitate Matplotlib rendering.
-
-    This is an :term:`abstract base class`. You should use a concrete
-    implementation, e.g. `FigureRenderer`.
-
-    Args:
-        render_mode: The render mode. Should be None or :rmode:`"human"`
-            or :rmode:`"matplotlib_figures"`.
-    """
-
-    __slots__ = ("strategy",)
-
-    strategy: FigureStrategy | None
-    """The strategy_ to interact with the `~matplotlib.figure.Figure`
-    object. Usually this is either `HumanStrategy` or
-    `MatplotlibFiguresStrategy`, but users can supply their own
-    implementation.
-
-    .. _strategy: https://en.wikipedia.org/wiki/Strategy_pattern
-    """
-
-    KNOWN_STRATEGIES: t.ClassVar[dict[str, FigureStrategy]] = {
-        "human": HumanStrategy(),
-        "matplotlib_figures": MatplotlibFiguresStrategy(),
-    }
-    """Translation table from render mode to `strategy`. If you
-    want to define a custom render mode, insert it into this global
-    mapping."""
-
-    def __init__(self, render_mode: str | None) -> None:
-        if isinstance(render_mode, FigureStrategy) or render_mode is None:
-            self.strategy = render_mode
-        else:
-            self.strategy = self.KNOWN_STRATEGIES[render_mode]
 
 
 class FigureRenderer(Renderer):
@@ -127,7 +122,7 @@ class FigureRenderer(Renderer):
             or :rmode:`"matplotlib_figures"`. See also Strategies_.
     """
 
-    __slots__ = ("title", "figure")
+    __slots__ = ("figure", "strategy", "title")
 
     title: str | None
     """The figure title passed to `__init__ <FigureRenderer>`."""
@@ -247,17 +242,23 @@ class _FigureFuncRenderer(FigureRenderer):
             self.func(figure)
 
 
-class RendererGroup(AbstractRenderer, tuple[AbstractRenderer, ...]):
+class RendererGroup(Renderer, tuple[Renderer, ...]):
     """A composite renderer that dispatches to multiple elements.
 
     This is just a tuple of renderers that implements itself the
-    `AbstractRenderer` interface. Calling `.update()` forwards the call
-    to each element renderer.
+    `Renderer` interface. Calling `.update()` forwards the call to each
+    element renderer. Upon construction, it verifies that all
+    sub-renderers have the same render mode.
+
+    Raises:
+        RuntimeError: if the *renderers* don't all have the same render
+            mode.
 
     Example:
 
         >>> class PrintRenderer(Renderer):
         ...     def __init__(self, index):
+        ...         super().__init__(render_mode=None)
         ...         self.index = index
         ...     def update(self):
         ...         print(f"Renderer {self.index} updated")
@@ -270,18 +271,29 @@ class RendererGroup(AbstractRenderer, tuple[AbstractRenderer, ...]):
         Renderer 1 updated
         Renderer 2 updated
         Renderer 3 updated
-
-    Note:
-        Because a renderer group does not manage or know the render
-        mode, it has to guess it based on the return type of the element
-        renderers. It assumes :rmode:`"human"` if they return `None` and
-        :rmode:`"matplotlib_figures"` otherwise.
-
-        An empty group always assumed :rmode:`"matplotlib_figures"` and
-        returns an empty list, which is the safer option.
     """
 
     __slots__ = ()
+
+    def __init__(self, renderers: t.Iterable[Renderer] = (), /) -> None:  # noqa: ARG002
+        super().__init__(self.strategy)
+
+    @property
+    @override
+    def strategy(self) -> FigureStrategy | None:
+        if not self:
+            return None
+        strategies = {r.strategy for r in self}
+        try:
+            [strategy] = strategies
+        except ValueError as exc:
+            raise RuntimeError(f"inconsistent render mode: {strategies!r}") from exc
+        return strategy
+
+    @strategy.setter
+    def strategy(self, strategy: FigureStrategy | None) -> None:
+        for r in self:
+            r.strategy = strategy
 
     def update(self) -> MatplotlibFigures | None:
         """Update all element renderers.
@@ -289,46 +301,30 @@ class RendererGroup(AbstractRenderer, tuple[AbstractRenderer, ...]):
         Returns:
             None if all element renderers return None. A list of figures
             and title–figure tuples if all element renderers return
-            figures. An empty group always returns an empty list.
+            figures. An empty group returns None.
 
         Raises:
             InconsistentRenderModeError: If some but not all element
                 renderers return None. This indicates that the renderers
                 have conflicting render modes.
         """
-        all_figures: list[tuple[str, Figure]] = []
-        any_none = False
-        for renderer in self:
-            figures = renderer.update()
-            if figures is None:
-                if all_figures:
-                    raise InconsistentRenderModeError(all_figures)
-                any_none = True
-            elif any_none:
-                raise InconsistentRenderModeError(figures)
-            else:
-                all_figures.extend(iter_matplotlib_figures(figures))
-        if any_none:
+        results = [r.update() for r in self]
+        if all(res is None for res in results):
             return None
-        return all_figures
+        if _has_no_none(results):
+            return concat_matplotlib_figures(*results)
+        raise InconsistentRenderModeError("some renderers returned None")
 
 
 class InconsistentRenderModeError(RuntimeError):
     """A `RendererGroup` contains renderers with conflicting render modes."""
-
-    def __init__(self, figures: MatplotlibFigures, *args: object) -> None:
-        msg = (
-            f"renderers with conflicting render mode; "
-            f"received None and also {figures!r}"
-        )
-        super().__init__(msg, *args)
 
 
 def make_renderer(
     *funcs: RenderCallback | t.Mapping[str, RenderCallback],
     squeeze: bool = True,
     render_mode: str | None,
-) -> AbstractRenderer:
+) -> Renderer:
     """Build a renderer from one or more callbacks.
 
     This is a convenience function that calls
@@ -513,3 +509,10 @@ def render_generator(
     if callable(title):
         return _RenderDescriptor(func=title, title=None)
     return partial(_RenderDescriptor, title=title)
+
+
+def _has_no_none(
+    items: list[MatplotlibFigures | None],
+) -> TypeGuard[list[MatplotlibFigures]]:
+    """Type guard that checks all items of a list are non-None."""
+    return not any(x is None for x in items)

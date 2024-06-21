@@ -18,11 +18,12 @@ import pytest
 
 from cernml import coi
 from cernml.mpl_utils import (
-    AbstractRenderer,
     FigureRenderer,
+    FigureStrategy,
+    HumanStrategy,
+    MatplotlibFiguresStrategy,
     Renderer,
     RendererGroup,
-    _strategies,
     iter_matplotlib_figures,
     render_generator,
 )
@@ -176,8 +177,8 @@ class TestFigureRenderer:
     @pytest.mark.parametrize(
         ("mode", "strat_type"),
         [
-            ("human", _strategies.HumanStrategy),
-            ("matplotlib_figures", _strategies.MatplotlibFiguresStrategy),
+            ("human", HumanStrategy),
+            ("matplotlib_figures", MatplotlibFiguresStrategy),
             (None, type(None)),
         ],
     )
@@ -188,7 +189,7 @@ class TestFigureRenderer:
 
     def test_update_logic(self) -> None:
         title = Mock()
-        strategy = Mock(_strategies.FigureStrategy)
+        strategy = Mock(FigureStrategy)
         renderer = MockFigureRenderer(title=title, render_mode=strategy)
         assert renderer.strategy is strategy
         assert renderer.figure is None
@@ -267,18 +268,23 @@ class TestFigureRenderer:
 
 class TestRendererGroup:
     def test_is_tuple(self) -> None:
-        renderers = [Mock(Renderer, name=f"Renderer #{i}") for i in range(1, 6)]
+        strategy = Mock(FigureStrategy)
+        renderers = [
+            Mock(Renderer, strategy=strategy, name=f"Renderer #{i}")
+            for i in range(1, 6)
+        ]
         group = RendererGroup(renderers)
         assert list(group) == renderers
         assert len(group) == len(renderers)
-        assert not isinstance(group, Renderer)
-        assert isinstance(group, AbstractRenderer)
+        assert isinstance(group, Renderer)
         assert isinstance(group, tuple)
 
     @pytest.mark.parametrize("mode", ["human", "matplotlib_figures"])
     def test_update_all(self, mode: str) -> None:
+        strategy = Mock(FigureStrategy)
         group = RendererGroup(
-            MagicMock(FigureRenderer, name=f"Renderer #{i}") for i in range(1, 6)
+            MagicMock(FigureRenderer, strategy=strategy, name=f"Renderer #{i}")
+            for i in range(1, 6)
         )
         group.update()
         for renderer in group:
@@ -286,7 +292,7 @@ class TestRendererGroup:
 
     def test_update_empty_group(self) -> None:
         group = RendererGroup()
-        assert group.update() == []
+        assert group.update() is None
 
     @pytest.mark.parametrize(
         "modes",

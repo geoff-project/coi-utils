@@ -13,7 +13,6 @@ from ._iter import (
     iter_matplotlib_figures,
 )
 from ._renderer import (
-    AbstractRenderer,
     FigureRenderer,
     InconsistentRenderModeError,
     RenderCallback,
@@ -26,7 +25,6 @@ from ._renderer import (
 from ._strategies import FigureStrategy, HumanStrategy, MatplotlibFiguresStrategy
 
 __all__ = (
-    "AbstractRenderer",
     "FigureRenderer",
     "FigureStrategy",
     "HumanStrategy",

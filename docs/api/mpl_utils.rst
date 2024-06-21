@@ -82,16 +82,10 @@ Matplotlib Utilities
 Class-based Interface
 ---------------------
 
-.. autoclass:: AbstractRenderer
-    :show-inheritance:
-    :members:
-
 .. autoclass:: Renderer
     :show-inheritance:
     :members:
-    :exclude-members: strategy, KNOWN_STRATEGIES
-
-    .. autoattribute:: strategy
+    :exclude-members: KNOWN_STRATEGIES
 
     .. autoattribute:: KNOWN_STRATEGIES
         :no-value:
@@ -101,7 +95,7 @@ Class-based Interface
     :members: close, from_callback, _init_figure, _update_figure
 
 .. autoclass:: RendererGroup
-    :show-inheritance: tuple
+    :show-inheritance:
 
 ..
     Manual annotation of the type aliases; If we used any of the auto
