@@ -18,6 +18,7 @@ if t.TYPE_CHECKING:
     from types import ModuleType
 
     from sphinx.application import Sphinx
+    from sphinx.util.typing import ExtensionMetadata
 
 
 class MockModule(Mock):
@@ -66,6 +67,11 @@ class MockLoader(Loader, MetaPathFinder):
         pass
 
 
-def setup(app: Sphinx) -> None:
+def setup(app: Sphinx) -> ExtensionMetadata:
     """Set up hooks into Sphinx."""
     sys.meta_path.append(MockLoader())
+    return {
+        "version": "1.0",
+        "parallel_read_safe": True,
+        "parallel_write_safe": True,
+    }
