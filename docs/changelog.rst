@@ -5,8 +5,12 @@
 
     SPDX-License-Identifier: GPL-3.0-or-later OR EUPL-1.2+
 
+:tocdepth: 3
+
 Changelog
 =========
+
+.. currentmodule:: cernml
 
 This package uses a variant of `Semantic Versioning <https://semver.org/>`__
 that makes additional promises during the initial development (major version
@@ -20,118 +24,171 @@ Unreleased
 
 No changes yet!
 
-v0.2.12
--------
+v0.2
+----
 
-- FIX: A bug that prevented :ref:`guide/lsa_utils:Global Trim Request Hooks`
+v0.2.12
+^^^^^^^
+
+Bug fixes
+~~~~~~~~~
+- Fix a bug that prevented :ref:`guide/lsa_utils:Global Trim Request Hooks`
   from properly forwarding calls to their parent hooks.
 
 v0.2.11
--------
+^^^^^^^
 
-- FIX: Type hint of :meth:`~object.__enter__()` method on
-  `cernml.lsa_utils.Hooks` now specifies `~typing.Self` instead of
-  `~cernml.lsa_utils.Hooks`. This requires an additional dependency on
+Bug fixes
+~~~~~~~~~
+- The type hint of :meth:`~object.__enter__()` method on `lsa_utils.Hooks` now
+  specifies `~typing.Self` instead of `.Hooks`. This requires a dependency on
   `typing_extensions <https://github.com/python/typing_extensions/>`_ for
   Python versions below 3.11.
 
 v0.2.10
--------
+^^^^^^^
 
-- ADD: Support for :ref:`guide/lsa_utils:transient trims`. This increases the
+Additions
+~~~~~~~~~
+- Add support for :ref:`guide/lsa_utils:transient trims`. This increases the
   PJLSA requirement to 0.2.18.
-- ADD: :ref:`guide/lsa_utils:Global Trim Request Hooks` that allow host
+- Add :ref:`guide/lsa_utils:Global Trim Request Hooks` that allow host
   applications like `GeOFF <https://gitlab.cern.ch/geoff/geoff-app>`_ to
   enhance trim descriptions with information that is not available inside of
   optimization problems.
-- ADD: :class:`str() <str>` and :func:`repr` implementations for
-  `~cernml.lsa_utils.Incorporator` and `~cernml.lsa_utils.IncorporatorGroup`.
-- FIX: Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
-- FIX: Type annotations for *data_filter* parameter of
-  `~cernml.japc_utils.subscribe_stream()`.
-- FIX: Add `~typing.Tuple`\ [`str`, …] to type annotations for
-  *name_or_names* parameter of `~cernml.japc_utils.subscribe_stream()` for
-  consistency with `~pyjapc.PyJapc`.
-- FIX: Change the type of `ParamGroupStream.parameter_names
-  <cernml.japc_utils.ParamGroupStream.parameter_names>` from `~typing.List`\
-  [`str`] to `~typing.Tuple`\ [`str`, …] to prevent users from subtly broken
-  code like :samp:`stream.parameter_names.append({name})`. This is technically
-  a breaking change, but the impact is assumed to be negligible.
+- Add :class:`str() <str>` and :func:`repr` overloads for `.Incorporator` and
+  `.IncorporatorGroup`.
+
+Bug fixes
+~~~~~~~~~
+- Bump PyJapc dependency from 0.2.2 to 0.2.6 to gain type annotations.
+- Fix type annotations for *data_filter* parameter of `.subscribe_stream()`.
+- Add `~typing.Tuple`\ [`str`, …] to type annotations for *name_or_names*
+  parameter of `.subscribe_stream()` for consistency with `~pyjapc.PyJapc`.
+- Change the type of `.ParamGroupStream.parameter_names` from
+  `~typing.List`\ [`str`] to `~typing.Tuple`\ [`str`, …] to prevent users from
+  subtly broken code like :samp:`stream.parameter_names.append({name})`. This
+  is technically a breaking change, but the impact is assumed to be negligible.
 
 v0.2.9
-------
+^^^^^^
 
-- FIX: Bad CI configuration that prevented the package from being released.
+Bug fixes
+~~~~~~~~~
+- Fix bad CI configuration that prevented the package from being released.
 
 v0.2.8
-------
+^^^^^^
 
-- FIX: Bad CI config that prevented the docs from being built.
+Bug fixes
+~~~~~~~~~
+- Fix bad CI config that prevented the docs from being built.
 
 v0.2.7
-------
+^^^^^^
 
-- ADD: Support for Python 3.9 has been added.
-- FIX: Various dead links in the documentation. One minor consequence is that
-  `cernml.mpl_utils.render_generator` now is a function and no longer a type.
-  This should not have any impact on user code.
-- OTHER: Open-source this package by adding the appropriate license notices.
+Additions
+~~~~~~~~~
+- Add support for Python 3.9.
+
+Bug fixes
+~~~~~~~~~
+- Fix various dead links in the documentation. One minor consequence is that
+  `.render_generator` now is a function and no longer a type. This should not
+  have any impact on user code.
+
+Other changes
+~~~~~~~~~~~~~
+- Open-source this package by adding the appropriate license notices.
 
 v0.2.6
-------
+^^^^^^
 
-- ADD: `~cernml.lsa_utils.trim_scalar_settings()`.
-- FIX: Several broken links in the documentation.
-- OTHER: Switched project manifest from ``setup.cfg`` to ``pyproject.toml``.
+Additions
+~~~~~~~~~
+- Add `lsa_utils.trim_scalar_settings()`.
+
+Bug fixes
+~~~~~~~~~
+- Fix several broken links in the documentation.
+
+Other changes
+~~~~~~~~~~~~~
+- Switch project manifest from :file:`setup.cfg` to :file:`pyproject.toml`.
 
 v0.2.5
-------
+^^^^^^
 
-- ADD: Install extra ``doc_only`` to build docs in a non-CERN environment. (This skips the PyJapc and PJLSA dependencies.)
-- ADD: `cernml.mpl_utils.FigureRenderer.close()`.
-- ADD: `cernml.lsa_utils.IncorporatorGroup`.
-- ADD: Ability to trim multiple functions with one call to `~cernml.lsa_utils.incorporate_and_trim()`.
-- FIX: Type annotation of `cernml.lsa_utils.Incorporator.user`.
-- FIX: Type annotation of `cernml.mpl_utils.render_generator`.
+Additions
+~~~~~~~~~
+- Add install extra ``doc_only`` to build docs in a non-CERN environment. (This skips the PyJapc and PJLSA dependencies.)
+- Add `mpl_utils.FigureRenderer.close()`.
+- Add `lsa_utils.IncorporatorGroup`.
+- Add ability to trim multiple functions with one call to `~lsa_utils.incorporate_and_trim()`.
+
+Bug fixes
+~~~~~~~~~
+- Fix type annotation of `.Incorporator.user`.
+- Fix type annotation of `.render_generator`.
 
 v0.2.4
-------
+^^^^^^
 
-- Add `~cernml.mpl_utils.FigureRenderer.close()` to `~cernml.mpl_utils.FigureRenderer`.
+- Add `~.FigureRenderer.close()` to `.FigureRenderer`.
 
 v0.2.3
-------
+^^^^^^
 
-- Add optional parameter *description* to `~cernml.lsa_utils.incorporate_and_trim()`.
-- Add a section on incorporation ranges to the `user guide <guide/lsa_utils.md#incorporation-ranges>`__.
+Additions
+~~~~~~~~~
+- Add optional parameter *description* to `~lsa_utils.incorporate_and_trim()`.
+- Add a section on :ref:`guide/lsa_utils:incorporation ranges` to the user guide.
 
 v0.2.2
-------
+^^^^^^
 
-- FIX: Properly handle multiple particle transfers in `cernml.lsa_utils.incorporate_and_trim()`.
+Bug fixes
+~~~~~~~~~
+- Properly handle multiple particle transfers in `~lsa_utils.incorporate_and_trim()`.
 
 v0.2.1
-------
+^^^^^^
 
-- ADD: :doc:`Installation guide <guide/install>`.
-- FIX: Mark `~cernml.lsa_utils` as type-annotated.
-- FIX: Include ``pjlsa`` dependency in extra ``all``.
-- FIX: Overly loose dependency on :doc:`cernml-coi <coi:index>`.
+Additions
+~~~~~~~~~
+- Add :doc:`guide/install` guide.
+
+Bug fixes
+~~~~~~~~~
+- Mark `.lsa_utils` as type-annotated.
+- Include ``pjlsa`` dependency in extra ``all``.
+- Restrict overly loose dependency on :doc:`cernml-coi <coi:index>`.
 
 v0.2.0
-------
+^^^^^^
 
-- BREAKING: rename `~cernml.japc_utils.ParamStream` and `~cernml.japc_utils.ParamGroupStream` methods: ``wait_next()`` becomes `~cernml.japc_utils.ParamStream.pop_or_wait()`, ``next_if_ready()`` becomes `~cernml.japc_utils.ParamStream.pop_if_ready()`.
-- BREAKING: Refactor the renderer API: ``SimpleRenderer`` is replaced by `~cernml.mpl_utils.FigureRenderer`, which is an :term:`ABC <abstract base class>`. Replace ``from_generator()`` with `~cernml.mpl_utils.FigureRenderer.from_callback()`.
-- ADD: Method `~cernml.japc_utils.ParamStream.wait_for_next()` to `~cernml.japc_utils.ParamStream` and `~cernml.japc_utils.ParamGroupStream`.
-- ADD: `~cernml.mpl_utils.make_renderer()` and `~cernml.mpl_utils.RendererGroup`.
-- ADD: `~cernml.lsa_utils.get_cycle_type_attributes()` from cernml-coi-funcs 0.2.2.
-- ADD: `Scaler.scaled_space <cernml.gym_utils.Scaler.scaled_space>`.
-- ADD: The *symmetric* parameter to `~cernml.gym_utils.Scaler`, `~cernml.gym_utils.scale_from_box()` and `~cernml.gym_utils.unscale_into_box()`.
-- OTHER: Extend and reorganize the documentation.
+Breaking changes
+~~~~~~~~~~~~~~~~
+- Rename `.ParamStream` and `.ParamGroupStream` methods: ``wait_next()`` becomes `~.ParamStream.pop_or_wait()`, ``next_if_ready()`` becomes `~.ParamStream.pop_if_ready()`.
+- Refactor the renderer API: ``SimpleRenderer`` is replaced by `.FigureRenderer`, which is an :term:`abstract base class`. Replace ``from_generator()`` with `.from_callback()`.
+
+Additions
+~~~~~~~~~
+- Add method `~.ParamStream.wait_for_next()` to `.ParamStream` and `.ParamGroupStream`.
+- Add `.make_renderer()` and `.RendererGroup`.
+- Add `.get_cycle_type_attributes()` from cernml-coi-funcs 0.2.2.
+- Add `.Scaler.scaled_space`.
+- Add The *symmetric* parameter to `.Scaler`, `.scale_from_box()` and `.unscale_into_box()`.
+
+Other changes
+~~~~~~~~~~~~~
+- Extend and reorganize the documentation.
+
+v0.1
+----
 
 v0.1.0
-------
+^^^^^^
 
 Initial version. Code has been extracted from cernml-coi_ and
 cernml-coi-funcs_. Documentation has been adjusted.
