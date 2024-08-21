@@ -74,6 +74,23 @@ class Renderer(metaclass=ABCMeta):
             else self.KNOWN_STRATEGIES[render_mode]
         )
 
+    @abstractmethod
+    def update(self) -> MatplotlibFigures | None:
+        """Update the renderer's figures and return them.
+
+        On the first call, this should initialize the renderer's
+        figures. On all subsequent calls, it should reuse the figures
+        and update their contents.
+
+        Returns:
+            None if the render mode is :rmode:`"human"`. Otherwise,
+            a sequence of all figures managed by this renderer.
+        """
+
+    @abstractmethod
+    def close(self) -> None:
+        """Close the figures managed by this renderer."""
+
     @property
     def strategy(self) -> FigureStrategy | None:
         """The strategy_ to handle the `~matplotlib.figure.Figure` objects.
@@ -89,19 +106,6 @@ class Renderer(metaclass=ABCMeta):
     @strategy.setter
     def strategy(self, strategy: FigureStrategy | None) -> None:
         vars(self)["strategy"] = strategy
-
-    @abstractmethod
-    def update(self) -> MatplotlibFigures | None:
-        """Update the renderer's figures and return them.
-
-        On the first call, this should initialize the renderer's
-        figures. On all subsequent calls, it should reuse the figures
-        and update their contents.
-
-        Returns:
-            None if the render mode is :rmode:`"human"`. Otherwise,
-            a sequence of all figures managed by this renderer.
-        """
 
 
 class FigureRenderer(Renderer):
@@ -137,16 +141,6 @@ class FigureRenderer(Renderer):
         self.title = title
         self.figure: Figure | None = None
 
-    def close(self) -> None:
-        """Close the figure managed by this renderer.
-
-        Unless the render mode is :rmode:`"human"` (and figures are
-        managed by Matplotlib), this does nothing.
-        """
-        figure, self.figure = self.figure, None
-        if figure is not None and self.strategy is not None:
-            self.strategy.close_figure(figure)
-
     @override
     def update(self) -> MatplotlibFigures | None:
         try:
@@ -161,6 +155,12 @@ class FigureRenderer(Renderer):
         else:
             self._update_figure(figure)
         return strategy.update_figure(figure)
+
+    @override
+    def close(self) -> None:
+        figure, self.figure = self.figure, None
+        if figure is not None and self.strategy is not None:
+            self.strategy.close_figure(figure)
 
     @abstractmethod
     def _init_figure(self, figure: Figure) -> None:
@@ -278,23 +278,6 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
     def __init__(self, renderers: t.Iterable[Renderer] = (), /) -> None:  # noqa: ARG002
         super().__init__(self.strategy)
 
-    @property
-    @override
-    def strategy(self) -> FigureStrategy | None:
-        if not self:
-            return None
-        strategies = {r.strategy for r in self}
-        try:
-            [strategy] = strategies
-        except ValueError as exc:
-            raise RuntimeError(f"inconsistent render mode: {strategies!r}") from exc
-        return strategy
-
-    @strategy.setter
-    def strategy(self, strategy: FigureStrategy | None) -> None:
-        for r in self:
-            r.strategy = strategy
-
     def update(self) -> MatplotlibFigures | None:
         """Update all element renderers.
 
@@ -314,6 +297,28 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
         if _has_no_none(results):
             return concat_matplotlib_figures(*results)
         raise InconsistentRenderModeError("some renderers returned None")
+
+    @override
+    def close(self) -> None:
+        for r in self:
+            r.close()
+
+    @property
+    @override
+    def strategy(self) -> FigureStrategy | None:
+        if not self:
+            return None
+        strategies = {r.strategy for r in self}
+        try:
+            [strategy] = strategies
+        except ValueError as exc:
+            raise RuntimeError(f"inconsistent render mode: {strategies!r}") from exc
+        return strategy
+
+    @strategy.setter
+    def strategy(self, strategy: FigureStrategy | None) -> None:
+        for r in self:
+            r.strategy = strategy
 
 
 class InconsistentRenderModeError(RuntimeError):
