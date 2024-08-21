@@ -149,7 +149,6 @@ intersphinx_mapping = {
     "np": ("https://numpy.org/doc/stable", None),
     "pip": (rtd_link("pip-python3"), None),
     "pyjapc": (acc_py_docs_link("scripting-tools/pyjapc"), None),
-    "python": ("https://docs.python.org/3", None),
     "setuptools": ("https://setuptools.pypa.io/en/stable", None),
     "std": ("https://docs.python.org/3", None),
 }
