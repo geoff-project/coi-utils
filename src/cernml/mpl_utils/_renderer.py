@@ -8,10 +8,10 @@
 
 from __future__ import annotations
 
+import functools
 import sys
 import typing as t
 from abc import ABCMeta, abstractmethod
-from functools import partial
 
 from ._iter import MatplotlibFigures, concat_matplotlib_figures
 from ._strategies import FigureStrategy, HumanStrategy, MatplotlibFiguresStrategy
@@ -389,14 +389,16 @@ def make_renderer(
 
 T = t.TypeVar("T", bound="Problem")
 
+UnboundRenderCallback: TypeAlias = t.Union[
+    t.Callable[[T, "Figure"], None], t.Callable[[T, "Figure"], RenderGenerator]
+]
+
 
 class _RenderDescriptor(t.Generic[T]):
     """The return type of `render_generator`."""
 
     def __init__(
-        self,
-        func: t.Callable[[T, Figure], None] | t.Callable[[T, Figure], RenderGenerator],
-        title: str | None = None,
+        self, func: UnboundRenderCallback[T], title: str | None = None
     ) -> None:
         self.func = func
         self.title = title
@@ -478,11 +480,6 @@ class _RenderDescriptor(t.Generic[T]):
         del vars(self)[self.attrname]
 
 
-UnboundRenderCallback: TypeAlias = t.Union[
-    t.Callable[[T, "Figure"], None], t.Callable[[T, "Figure"], RenderGenerator]
-]
-
-
 @t.overload
 def render_generator(func: UnboundRenderCallback[T], /) -> _RenderDescriptor[T]: ...
 
@@ -527,7 +524,12 @@ def render_generator(
     # manually. See <https://github.com/sphinx-doc/sphinx/issues/10351>
     if callable(title):
         return _RenderDescriptor(func=title, title=None)
-    return partial(_RenderDescriptor, title=title)
+
+    @functools.wraps(_RenderDescriptor)
+    def wrapper(func: UnboundRenderCallback[T]) -> _RenderDescriptor[T]:
+        return _RenderDescriptor(func, title)
+
+    return wrapper
 
 
 def _has_no_none(
