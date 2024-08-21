@@ -21,9 +21,11 @@ from cernml.mpl_utils import (
     FigureRenderer,
     FigureStrategy,
     HumanStrategy,
+    InconsistentRenderModeError,
     MatplotlibFiguresStrategy,
     Renderer,
     RendererGroup,
+    RenderGenerator,
     iter_matplotlib_figures,
     render_generator,
 )
@@ -162,6 +164,15 @@ class TestIterMplFigures:
         ]
 
 
+class TestInterface:
+    def test_close_does_nothing(self) -> None:
+        class NullRenderer(Renderer):
+            def update(self) -> None:
+                pass
+
+        assert NullRenderer(None).close() is None  # type: ignore[func-returns-value]
+
+
 class TestFigureRenderer:
     def test_requires_super_init(self) -> None:
         class BadRenderer(FigureRenderer):
@@ -290,6 +301,17 @@ class TestRendererGroup:
         for renderer in group:
             t.cast(Mock, renderer.update).assert_called_once_with()
 
+    @pytest.mark.parametrize("mode", ["human", "matplotlib_figures"])
+    def test_close_all(self, mode: str) -> None:
+        strategy = Mock(FigureStrategy)
+        group = RendererGroup(
+            MagicMock(FigureRenderer, strategy=strategy, name=f"Renderer #{i}")
+            for i in range(1, 6)
+        )
+        group.close()
+        for renderer in group:
+            t.cast(Mock, renderer.close).assert_called_once_with()
+
     def test_update_empty_group(self) -> None:
         group = RendererGroup()
         assert group.update() is None
@@ -306,8 +328,26 @@ class TestRendererGroup:
         stack = ExitStack()
         for renderer in renderers:
             stack.enter_context(closing(renderer))
-        with stack, pytest.raises(RuntimeError):
-            RendererGroup(renderers).update()
+        with closing(stack), pytest.raises(InconsistentRenderModeError):
+            RendererGroup(renderers)
+
+    @pytest.mark.parametrize(
+        "modes",
+        [
+            ("human", "matplotlib_figures"),
+            ("matplotlib_figures", "human"),
+        ],
+    )
+    def test_inconsistent_order_modify(self, modes: tuple[str, str]) -> None:
+        renderers = RendererGroup(
+            (
+                MockFigureRenderer(render_mode=modes[0]),
+                MockFigureRenderer(render_mode=modes[0]),
+            )
+        )
+        renderers[1].strategy = Renderer.KNOWN_STRATEGIES[modes[1]]
+        with closing(renderers), pytest.raises(InconsistentRenderModeError):
+            renderers.update()
 
     def test_mpl_figure_retval(self) -> None:
         group = RendererGroup(
@@ -366,7 +406,7 @@ class TestRenderGenerator:
 
     def test_bad_assign(self) -> None:
         class Container(coi.Problem):
-            first: _RenderDescriptor | None = None
+            first: _RenderDescriptor
 
         Container.first = render_generator(lambda _self, _fig: None)
         with pytest.raises(TypeError, match="__set_name__"):
@@ -413,3 +453,48 @@ class TestRenderGenerator:
         container = Container()
         with pytest.raises(AttributeError, match="render_mode"):
             container.update()
+
+    def test_delete_render_generator(self) -> None:
+        class MyProblem(coi.Problem):
+            metadata = {  # noqa: RUF012
+                "render_modes": ["matplotlib_figures"],
+            }
+
+            def __init__(self, render_mode: str | None = None) -> None:
+                super().__init__(render_mode)
+                self.ncalls = 0
+
+            @render_generator
+            def update(self, _: Figure) -> RenderGenerator:
+                self.ncalls = 0
+                while True:
+                    self.ncalls += 1
+                    yield
+
+        problem = MyProblem(render_mode="matplotlib_figures")
+        assert problem.ncalls == 0
+        # Ensure that the generator works.
+        problem.update()
+        assert problem.ncalls == 1
+        problem.update()
+        assert problem.ncalls == 2
+        # Deleting the attribute should restart the generator.
+        del problem.update
+        problem.update()
+        assert problem.ncalls == 1
+        problem.update()
+        assert problem.ncalls == 2
+
+    def test_bad_delete(self) -> None:
+        class MyProblem(coi.Problem):
+            update: _RenderDescriptor[MyProblem]
+
+        @render_generator
+        def update(self: MyProblem, _: Figure) -> None:
+            pass
+
+        MyProblem.update = update
+
+        problem = MyProblem()
+        with pytest.raises(TypeError, match="without calling __set_name__"):
+            del problem.update

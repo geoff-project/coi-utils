@@ -87,9 +87,9 @@ class Renderer(metaclass=ABCMeta):
             a sequence of all figures managed by this renderer.
         """
 
-    @abstractmethod
     def close(self) -> None:
         """Close the figures managed by this renderer."""
+        return None  # noqa: RET501
 
     @property
     def strategy(self) -> FigureStrategy | None:
@@ -278,6 +278,7 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
     def __init__(self, renderers: t.Iterable[Renderer] = (), /) -> None:  # noqa: ARG002
         super().__init__(self.strategy)
 
+    @override
     def update(self) -> MatplotlibFigures | None:
         """Update all element renderers.
 
@@ -300,6 +301,7 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
 
     @override
     def close(self) -> None:
+        """Close all element renderers."""
         for r in self:
             r.close()
 
@@ -312,7 +314,7 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
         try:
             [strategy] = strategies
         except ValueError as exc:
-            raise RuntimeError(f"inconsistent render mode: {strategies!r}") from exc
+            raise InconsistentRenderModeError(repr(strategies)) from exc
         return strategy
 
     @strategy.setter
@@ -482,7 +484,7 @@ class _RenderDescriptor(t.Generic[T]):
             raise TypeError(
                 "cannot use renderer instance without calling __set_name__ on it"
             )
-        del vars(self)[self.attrname]
+        del vars(instance)[self.attrname]
 
 
 @t.overload
