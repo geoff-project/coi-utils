@@ -22,7 +22,49 @@ version 0.3.0.
 Unreleased
 ----------
 
-No changes yet!
+v0.3.0
+^^^^^^
+
+Breaking changes
+~~~~~~~~~~~~~~~~
+- Drop support for Python 3.7.
+- Increase matplotlib requirement to 3.8.
+- `.Renderer` now accepts an argument *render_mode* in the constructor. At the
+  same time, the *render_mode* parameter of `.Renderer.update()` has been
+  removed.
+- The static method ``Renderer.make_figure()`` has been replaced with the
+  attribute `.Renderer.strategy`.
+- `.RendererGroup` now deduces its render mode from the element renderers. Any
+  ambiguous result raises the new `.InconsistentRenderMode` exception.
+- `.iter_matplotlib_figures()` now accepts multiple arguments. It renders all
+  of them immediately and in order, then returns an iterator as before. If you
+  don't need iteration, consider `.concat_matplotlib_figures()`.
+- The mapping test in `.iter_matplotlib_figures()` has become stricter; to be
+  considered a mapping, a `.MatplotlibFigures` object must now have `items()
+  <dict.items>` defined on its type, not just on itself.
+
+Additions
+~~~~~~~~~
+- The decorator `.render_generator` now allows you to specify a title for the
+  figure it manages.
+- Add `.concat_matplotlib_figures()` to get the list of title–figure pairs
+  directly.
+- Add a method `.Renderer.close()` and `.RendererGroup.close()`. This allows
+  custom renderers to have logic on closure and allows renderer groups to
+  forward such calls to their elements.
+
+Bug fixes
+~~~~~~~~~
+- The decorator `.render_generator` only allowed one one renderer per class. It
+  now behaves as expected and gives each instance its own renderer. As
+  a consequence, you can now `delete <object.__delete__>` renderers managed by
+  this decorator. Doing so will effectively restart them upon the next call.
+
+Other changes
+~~~~~~~~~~~~~
+- The user guide and large parts of these docs have been rewritten.
+- When running unit tests for this package, LSA tests are now skipped
+  automatically if no JVM is available.
 
 v0.2
 ----
