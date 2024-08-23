@@ -247,8 +247,12 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
 
     This is just a tuple of renderers that implements itself the
     `Renderer` interface. Calling `.update()` forwards the call to each
-    element renderer. Upon construction, it verifies that all
-    sub-renderers have the same render mode.
+    sub-renderer.
+
+    Upon construction, it verifies that all sub-renderers have the same
+    render mode. Upon calling `.update()`, it verifies that either all
+    sub-renderers return None (render mode :rmode:`"human"`) or none of
+    them do (render mode :rmode:`"matplotlib_figures"`).
 
     Raises:
         RuntimeError: if the *renderers* don't all have the same render
@@ -324,7 +328,12 @@ class RendererGroup(Renderer, tuple[Renderer, ...]):
 
 
 class InconsistentRenderModeError(RuntimeError):
-    """A `RendererGroup` contains renderers with conflicting render modes."""
+    """A `RendererGroup` contains renderers with conflicting render modes.
+
+    This may be raised both at construction or when calling
+    `~.Renderer.update()`. It usually doesn't make sense to catch this
+    exception.
+    """
 
 
 def make_renderer(

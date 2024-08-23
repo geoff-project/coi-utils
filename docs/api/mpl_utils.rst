@@ -97,6 +97,9 @@ Class-based Interface
 .. autoclass:: RendererGroup
     :show-inheritance:
 
+.. autoexception:: InconsistentRenderModeError
+    :show-inheritance:
+
 ..
     Manual annotation of the type aliases; If we used any of the auto
     directives, these would be annotated as ``py:data`` (by virtue of being

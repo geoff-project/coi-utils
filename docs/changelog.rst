@@ -35,7 +35,7 @@ Breaking changes
 - The static method ``Renderer.make_figure()`` has been replaced with the
   attribute `.Renderer.strategy`.
 - `.RendererGroup` now deduces its render mode from the element renderers. Any
-  ambiguous result raises the new `.InconsistentRenderMode` exception.
+  ambiguous result raises the new `.InconsistentRenderModeError` exception.
 - `.iter_matplotlib_figures()` now accepts multiple arguments. It renders all
   of them immediately and in order, then returns an iterator as before. If you
   don't need iteration, consider `.concat_matplotlib_figures()`.
@@ -49,9 +49,9 @@ Additions
   figure it manages.
 - Add `.concat_matplotlib_figures()` to get the list of title–figure pairs
   directly.
-- Add a method `.Renderer.close()` and `.RendererGroup.close()`. This allows
-  custom renderers to have logic on closure and allows renderer groups to
-  forward such calls to their elements.
+- Add a method `~.Renderer.close()` to `.Renderer` and `.RendererGroup`. This
+  allows custom renderers to have logic on closure and allows renderer groups
+  to forward such calls to their elements.
 
 Bug fixes
 ~~~~~~~~~
